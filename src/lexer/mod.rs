@@ -1100,7 +1100,10 @@ mod tests {
     fn test_unterminated_double_string_errors() {
         let err = Lexer::tokenize("echo \"unterminated").unwrap_err();
         let msg = err.to_string();
-        assert!(msg.contains("Invalid token"), "Unexpected lexer error: {msg}");
+        assert!(
+            msg.contains("Invalid token"),
+            "Unexpected lexer error: {msg}"
+        );
     }
 
     #[test]

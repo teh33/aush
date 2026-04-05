@@ -40,6 +40,7 @@ mod mkdir;
 mod printf;
 mod profile;
 mod read;
+mod readlink;
 mod readonly;
 pub mod return_builtin; // Public so executor can access ReturnSignal
 mod rm;
@@ -96,6 +97,7 @@ static BUILTIN_MAP: LazyLock<HashMap<&'static str, BuiltinFn>> = LazyLock::new(|
     m.insert("unset", unset::builtin_unset);
     m.insert("printf", printf::builtin_printf);
     m.insert("read", read::builtin_read);
+    m.insert("readlink", readlink::builtin_readlink);
     m.insert("eval", eval::builtin_eval);
     m.insert("exec", exec::builtin_exec);
     m.insert("builtin", builtin::builtin_builtin);

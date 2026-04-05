@@ -759,6 +759,7 @@ fn run_interactive_with_reedline(
     // catches the case where isatty() still returns 1 on macOS revoked PTYs
     // and reedline spins returning CtrlC / empty Success instead of an error.
     let mut rapid_return_count: u32 = 0;
+    let mut first_prompt = true;
     const RAPID_RETURN_LIMIT: u32 = 20;
     loop {
         // ── PTY health checks ──────────────────────────────────────────
@@ -820,13 +821,20 @@ fn run_interactive_with_reedline(
         // Sync stored cwd with OS (handles external renames while a child process was running)
         executor.runtime_mut().refresh_cwd();
 
-        // Terminal integration: prompt marking, tab title, working directory
-        terminal::mark_prompt_start();
-        terminal::emit_osc7_cwd();
-        terminal::set_terminal_title_to_cwd();
+        // Terminal integration: prompt marking, tab title, working directory.
+        // On the very first iteration reedline hasn't painted yet; emitting
+        // OSC 133 / OSC 7 sequences before that first paint can cause some
+        // terminals to hold the display (blank screen until a keypress).
+        // Skip the first iteration and start emitting from the second onward.
+        if !first_prompt {
+            terminal::mark_prompt_start();
+            terminal::emit_osc7_cwd();
+            terminal::set_terminal_title_to_cwd();
+        }
 
         let read_start = std::time::Instant::now();
         let sig = line_editor.read_line(&prompt);
+        first_prompt = false;
 
         // ── Rapid-return detection ──────────────────────────────────
         // Normal interactive input takes >= 100ms (human typing).

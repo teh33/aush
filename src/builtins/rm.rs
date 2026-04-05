@@ -12,10 +12,12 @@ struct RmOptions {
     recursive: bool,
     /// Ignore nonexistent files and arguments, never prompt (-f, --force)
     force: bool,
-    /// Never prompt (combine with -f for scripts) (-y, --yes)
+    /// Answer yes to Rush-specific confirmation prompts (-y, --yes)
     yes: bool,
     /// Prompt before every removal (-i)
     interactive: bool,
+    /// Prompt once before recursive removal (Rush extension) (--rush-confirm-recursive)
+    confirm_recursive: bool,
     /// Remove empty directories (-d, --dir)
     dir: bool,
     /// Explain what is being done (-v, --verbose)
@@ -51,6 +53,8 @@ impl RmOptions {
                 opts.yes = true;
             } else if arg == "--interactive" {
                 opts.interactive = true;
+            } else if arg == "--rush-confirm-recursive" {
+                opts.confirm_recursive = true;
             } else if arg == "--dir" {
                 opts.dir = true;
             } else if arg == "--verbose" {
@@ -89,8 +93,7 @@ impl RmOptions {
 
     /// Check if this is a destructive recursive operation that needs confirmation
     fn needs_confirmation(&self) -> bool {
-        // Confirm for recursive operations unless --yes or --force is set
-        self.recursive && !self.yes && !self.force
+        self.recursive && self.confirm_recursive && !self.yes && !self.force
     }
 }
 
@@ -454,21 +457,20 @@ Options:
   -r, -R, --recursive  remove directories and their contents recursively
   -d, --dir         remove empty directories
   -v, --verbose     explain what is being done
-  -y, --yes         skip confirmation prompts (for use in scripts)
+  -y, --yes         answer yes to Rush-specific confirmation prompts
+  --rush-confirm-recursive
+                    prompt once before recursive removal (Rush extension)
   --help            display this help and exit
 
-CONFIRMATION PROMPTS:
-  When using -r (recursive), rm will prompt for confirmation showing:
-    - Number of files to be deleted
-    - Number of directories to be deleted
-    - Total size of data to be deleted
+RUSH EXTENSIONS:
+  GNU/POSIX-style `rm -r` does not prompt by default.
+  To enable Rush's recursive summary confirmation, use:
+    --rush-confirm-recursive
 
-  To skip the confirmation:
-    - Use -y or --yes flag
-    - Use -f or --force flag
+  To skip that Rush-specific confirmation:
+    - Use -y or --yes
+    - Use -f or --force
     - Pipe input (non-interactive mode defaults to No)
-
-  In scripts, use -y or -f to auto-confirm, or the command will fail.
 
 UNDO SUPPORT:
   Deleted files are backed up and can be restored with the 'undo' command.
@@ -476,10 +478,11 @@ UNDO SUPPORT:
 
 Examples:
   rm file.txt              Remove a file
-  rm -r dir                Remove directory (with confirmation)
-  rm -rf dir               Remove directory without confirmation
-  rm -ry dir               Remove directory, auto-confirm
+  rm -r dir                Remove directory recursively
+  rm -rf dir               Remove directory without prompts
   rm -i *.txt              Interactively remove all .txt files
+  rm --rush-confirm-recursive dir
+                           Remove directory recursively with Rush confirmation
   rm -v file1 file2        Remove files verbosely
 ";
 
@@ -607,6 +610,31 @@ mod tests {
     }
 
     #[test]
+    fn test_rm_recursive_default_behavior_matches_gnu() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut runtime = Runtime::new();
+        runtime.set_cwd(temp_dir.path().to_path_buf());
+
+        let test_dir = temp_dir.path().join("recursive_dir");
+        let sub_dir = test_dir.join("subdir");
+        let file1 = test_dir.join("file1.txt");
+        let file2 = sub_dir.join("file2.txt");
+
+        fs::create_dir_all(&sub_dir).unwrap();
+        fs::write(&file1, "content1").unwrap();
+        fs::write(&file2, "content2").unwrap();
+
+        let result = builtin_rm(
+            &["-r".to_string(), "recursive_dir".to_string()],
+            &mut runtime,
+        )
+        .unwrap();
+
+        assert_eq!(result.exit_code, 0);
+        assert!(!test_dir.exists());
+    }
+
+    #[test]
     fn test_rm_recursive_with_yes() {
         let temp_dir = TempDir::new().unwrap();
         let mut runtime = Runtime::new();
@@ -648,6 +676,25 @@ mod tests {
 
         assert_eq!(result.exit_code, 0);
         assert!(!test_dir.exists());
+    }
+
+    #[test]
+    fn test_rm_interactive_non_interactive_defaults_to_no() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut runtime = Runtime::new();
+        runtime.set_cwd(temp_dir.path().to_path_buf());
+
+        let test_file = temp_dir.path().join("interactive.txt");
+        fs::write(&test_file, "content").unwrap();
+
+        let result = builtin_rm(
+            &["-i".to_string(), "interactive.txt".to_string()],
+            &mut runtime,
+        )
+        .unwrap();
+
+        assert_eq!(result.exit_code, 0);
+        assert!(test_file.exists());
     }
 
     #[test]
@@ -810,6 +857,17 @@ mod tests {
         assert!(opts.yes);
         assert_eq!(opts.paths, vec!["dir"]);
 
+        // Test Rush-specific recursive confirmation flag
+        let opts = RmOptions::parse(&[
+            "--recursive".to_string(),
+            "--rush-confirm-recursive".to_string(),
+            "dir".to_string(),
+        ])
+        .unwrap();
+        assert!(opts.recursive);
+        assert!(opts.confirm_recursive);
+        assert_eq!(opts.paths, vec!["dir"]);
+
         // Test combined flags
         let opts =
             RmOptions::parse(&["-rvy".to_string(), "a".to_string(), "b".to_string()]).unwrap();
@@ -826,8 +884,12 @@ mod tests {
         // Not recursive - no confirmation needed
         assert!(!opts.needs_confirmation());
 
-        // Recursive without yes/force - needs confirmation
+        // Recursive alone follows GNU/POSIX behavior - no confirmation needed
         opts.recursive = true;
+        assert!(!opts.needs_confirmation());
+
+        // Rush-specific recursive confirmation requires the extension flag
+        opts.confirm_recursive = true;
         assert!(opts.needs_confirmation());
 
         // Recursive with yes - no confirmation needed
@@ -865,9 +927,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rm_recursive_non_interactive_defaults_to_no() {
-        // This tests that in non-interactive mode (like tests),
-        // rm -r (without -y or -f) fails because confirmation defaults to No
+    fn test_rm_recursive_confirmation_extension_non_interactive_defaults_to_no() {
         let temp_dir = TempDir::new().unwrap();
         let mut runtime = Runtime::new();
         runtime.set_cwd(temp_dir.path().to_path_buf());
@@ -877,11 +937,18 @@ mod tests {
         fs::create_dir(&test_dir).unwrap();
         fs::write(&file, "content").unwrap();
 
-        // rm -r without -y or -f should fail in non-interactive mode
-        let result = builtin_rm(&["-r".to_string(), "test_dir".to_string()], &mut runtime).unwrap();
+        let result = builtin_rm(
+            &[
+                "-r".to_string(),
+                "--rush-confirm-recursive".to_string(),
+                "test_dir".to_string(),
+            ],
+            &mut runtime,
+        )
+        .unwrap();
 
         assert_eq!(result.exit_code, 1);
         assert!(result.stderr.contains("cancelled"));
-        assert!(test_dir.exists()); // Directory should still exist
+        assert!(test_dir.exists());
     }
 }

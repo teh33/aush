@@ -6,12 +6,12 @@ use rush::parser::Parser;
 fn test_basic_while_loop() {
     let mut executor = Executor::new();
 
-    // Test while loop that runs a fixed number of times using true/false
+    // Test while loop that runs a fixed number of times.
     let code = r#"
         count=0
         while test "$count" != "3"; do
             echo "iteration"
-            count="$count."
+            count=$((count+1))
         done
     "#;
 
@@ -34,8 +34,8 @@ fn test_while_loop_with_break() {
         count=0
         while true; do
             echo "loop"
-            count="$count."
-            test "$count" = "..." && break
+            count=$((count+1))
+            test "$count" = "3" && break
         done
     "#;
 
@@ -56,9 +56,9 @@ fn test_while_loop_with_continue() {
 
     let code = r#"
         count=0
-        while test "$count" != "..."; do
-            count="$count."
-            test "$count" = ".." && continue
+        while test "$count" != "3"; do
+            count=$((count+1))
+            test "$count" = "2" && continue
             echo "printed"
         done
     "#;
@@ -80,13 +80,13 @@ fn test_nested_while_loops() {
 
     let code = r#"
         outer=0
-        while test "$outer" != ".."; do
+        while test "$outer" != "2"; do
             inner=0
-            while test "$inner" != "."; do
+            while test "$inner" != "1"; do
                 echo "nested"
-                inner="$inner."
+                inner=$((inner+1))
             done
-            outer="$outer."
+            outer=$((outer+1))
         done
     "#;
 
@@ -129,9 +129,9 @@ fn test_while_loop_exit_code_propagation() {
     // Last command in last iteration should set the exit code
     let code = r#"
         count=0
-        while test "$count" != ".."; do
-            count="$count."
-            test "$count" = ".."
+        while test "$count" != "2"; do
+            count=$((count+1))
+            test "$count" = "2"
         done
     "#;
 
@@ -176,8 +176,8 @@ fn test_while_true_with_break() {
         count=0
         while true; do
             echo "$count"
-            count="$count."
-            test "$count" = "....." && break
+            count=$((count+1))
+            test "$count" = "5" && break
         done
     "#;
 
@@ -196,12 +196,12 @@ fn test_while_true_with_break() {
 fn test_while_loop_multiline_condition() {
     let mut executor = Executor::new();
 
-    // POSIX allows multiple statements in condition
+    // POSIX allows multiple statements in condition.
     let code = r#"
         count=0
         while
-            count="$count."
-            test "$count" != "...."
+            count=$((count+1))
+            test "$count" != "4"
         do
             echo "loop"
         done
@@ -224,9 +224,9 @@ fn test_while_loop_with_compound_condition() {
 
     let code = r#"
         count=0
-        while test "$count" != "..." && echo "Testing"; do
+        while test "$count" != "3" && echo "Testing"; do
             echo "Loop"
-            count="$count."
+            count=$((count+1))
         done
     "#;
 

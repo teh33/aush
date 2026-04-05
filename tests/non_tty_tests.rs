@@ -7,16 +7,32 @@
 // - Used in automated scripts (cron, CI/CD, etc.)
 
 use std::io::Write;
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use tempfile::NamedTempFile;
+use tempfile::{NamedTempFile, TempDir};
 
-fn rush_binary() -> String {
-    // Use the release binary for realistic testing
+fn rush_binary() -> PathBuf {
+    if let Ok(path) = std::env::var("CARGO_BIN_EXE_rush") {
+        return PathBuf::from(path);
+    }
+
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(deps_dir) = current_exe.parent() {
+            if let Some(debug_dir) = deps_dir.parent() {
+                let debug_bin = debug_dir.join("rush");
+                if debug_bin.exists() {
+                    return debug_bin;
+                }
+            }
+        }
+    }
+
+    // Fall back to a release binary path for environments that prebuild it.
     let mut path = std::env::current_dir().unwrap();
     path.push("target");
     path.push("release");
     path.push("rush");
-    path.to_string_lossy().to_string()
+    path
 }
 
 // ============================================================================
@@ -196,6 +212,69 @@ fn test_stdin_redirection_with_empty_lines() {
     assert!(stdout.contains("first"));
     assert!(stdout.contains("second"));
     assert!(stdout.contains("third"));
+}
+
+#[test]
+fn test_stdin_redirection_rm_recursive_is_non_interactive_safe() {
+    let temp_dir = TempDir::new().unwrap();
+    let root = temp_dir.path();
+    let target_dir = root.join("rm_target");
+    std::fs::create_dir_all(target_dir.join("subdir")).unwrap();
+    std::fs::write(target_dir.join("subdir").join("file.txt"), "content").unwrap();
+
+    let mut script = NamedTempFile::new().unwrap();
+    writeln!(script, "cd {}", root.display()).unwrap();
+    writeln!(script, "rm -r rm_target").unwrap();
+    script.flush().unwrap();
+
+    let output = Command::new(rush_binary())
+        .stdin(std::fs::File::open(script.path()).unwrap())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .expect("Failed to execute");
+
+    assert!(
+        output.status.success(),
+        "script failed: stderr={} stdout={}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout)
+    );
+    assert!(
+        !target_dir.exists(),
+        "rm -r should remove recursively in non-interactive scripts by default"
+    );
+}
+
+#[test]
+fn test_stdin_redirection_rm_interactive_preserves_file_without_tty() {
+    let temp_dir = TempDir::new().unwrap();
+    let root = temp_dir.path();
+    let target_file = root.join("interactive.txt");
+    std::fs::write(&target_file, "content").unwrap();
+
+    let mut script = NamedTempFile::new().unwrap();
+    writeln!(script, "cd {}", root.display()).unwrap();
+    writeln!(script, "rm -i interactive.txt").unwrap();
+    script.flush().unwrap();
+
+    let output = Command::new(rush_binary())
+        .stdin(std::fs::File::open(script.path()).unwrap())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .expect("Failed to execute");
+
+    assert!(
+        output.status.success(),
+        "script failed: stderr={} stdout={}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout)
+    );
+    assert!(
+        target_file.exists(),
+        "rm -i should default to not removing in non-interactive scripts"
+    );
 }
 
 #[test]

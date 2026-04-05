@@ -199,8 +199,7 @@ impl Executor {
 
         let result = (|| -> Result<ExecutionResult> {
             for item in items {
-                self.runtime
-                    .set_variable(for_loop.variable.clone(), item);
+                self.runtime.set_variable(for_loop.variable.clone(), item);
                 match self.execute_loop_body(
                     &for_loop.body,
                     &mut accumulated_stdout,
@@ -241,6 +240,8 @@ impl Executor {
                 for statement in &while_loop.condition {
                     match self.execute_statement(statement.clone()) {
                         Ok(result) => {
+                            accumulated_stdout.push_str(&result.stdout());
+                            accumulated_stderr.push_str(&result.stderr);
                             condition_exit_code = result.exit_code;
                         }
                         Err(e) => return Err(e),
@@ -291,6 +292,8 @@ impl Executor {
                 for statement in &until_loop.condition {
                     match self.execute_statement(statement.clone()) {
                         Ok(result) => {
+                            accumulated_stdout.push_str(&result.stdout());
+                            accumulated_stderr.push_str(&result.stderr);
                             condition_exit_code = result.exit_code;
                         }
                         Err(e) => return Err(e),
@@ -400,11 +403,14 @@ impl Executor {
         }
     }
 
-    pub(crate) fn execute_conditional_and(&mut self, cond_and: ConditionalAnd) -> Result<ExecutionResult> {
+    pub(crate) fn execute_conditional_and(
+        &mut self,
+        cond_and: ConditionalAnd,
+    ) -> Result<ExecutionResult> {
         // Execute left side
         let left_result = self.execute_statement(*cond_and.left)?;
         self.runtime.set_last_exit_code(left_result.exit_code);
-        
+
         // Only execute right side if left succeeded (exit code 0)
         if left_result.exit_code == 0 {
             let right_result = self.execute_statement(*cond_and.right)?;
@@ -422,11 +428,14 @@ impl Executor {
         }
     }
 
-    pub(crate) fn execute_conditional_or(&mut self, cond_or: ConditionalOr) -> Result<ExecutionResult> {
+    pub(crate) fn execute_conditional_or(
+        &mut self,
+        cond_or: ConditionalOr,
+    ) -> Result<ExecutionResult> {
         // Execute left side
         let left_result = self.execute_statement(*cond_or.left)?;
         self.runtime.set_last_exit_code(left_result.exit_code);
-        
+
         // Only execute right side if left failed (exit code != 0)
         if left_result.exit_code != 0 {
             let right_result = self.execute_statement(*cond_or.right)?;

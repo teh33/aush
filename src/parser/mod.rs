@@ -985,6 +985,7 @@ impl Parser {
             Some(Token::Until) => Ok(Argument::Literal("until".to_string())),
             Some(Token::In) => Ok(Argument::Literal("in".to_string())),
             Some(Token::Case) => Ok(Argument::Literal("case".to_string())),
+            Some(Token::Match) => Ok(Argument::Literal("match".to_string())),
             Some(Token::Function) => Ok(Argument::Literal("function".to_string())),
             _ => Err(anyhow!("Expected argument")),
         }
@@ -1232,22 +1233,75 @@ impl Parser {
     fn parse_if_statement(&mut self) -> Result<Statement> {
         self.expect_token(&Token::If)?;
 
-        // Parse condition commands until we hit 'then' or '{'
-        // This determines shell-style vs Rust-style
+        // Try Rust-style `if expr { ... }` first. If the parsed expression is not
+        // followed by `{`, rewind and parse shell-style `if ...; then ... fi`.
+        let condition_start = self.position;
+        if let Ok(condition) = self.parse_expression() {
+            if self.match_token(&Token::LeftBrace) {
+                self.expect_token(&Token::LeftBrace)?;
+                let then_block = self.parse_block()?;
+                self.expect_token(&Token::RightBrace)?;
+
+                let else_block = if self.match_token(&Token::Else) {
+                    self.advance();
+                    self.expect_token(&Token::LeftBrace)?;
+                    let block = self.parse_block()?;
+                    self.expect_token(&Token::RightBrace)?;
+                    Some(block)
+                } else {
+                    None
+                };
+
+                return Ok(Statement::IfStatement(IfStatement {
+                    condition: IfCondition::Expression(condition),
+                    then_block,
+                    elif_clauses: Vec::new(),
+                    else_block,
+                }));
+            }
+        }
+        self.position = condition_start;
+
+        // Shell-style `if ...; then ... fi`
         let mut condition_stmts = Vec::new();
+        loop {
+            while matches!(self.peek(), Some(Token::Newline) | Some(Token::CrLf)) {
+                self.advance();
+            }
 
-        // Check if the next token is '{' (Rust-style: if expr { ... })
-        // or if we need to parse commands until 'then' (shell-style)
-        let is_shell_style = !self.match_token(&Token::LeftBrace) && {
-            // Peek ahead: we need to parse the condition and check if 'then' follows
-            // Shell-style if the condition is followed by 'then'
-            true
-        };
+            if matches!(self.peek(), Some(Token::Then)) {
+                break;
+            }
 
-        if is_shell_style {
-            // Parse condition statements until 'then'
+            if self.is_at_end() {
+                return Err(anyhow!("Expected 'then' in if statement"));
+            }
+
+            condition_stmts.push(self.parse_conditional_statement()?);
+
+            if matches!(self.peek(), Some(Token::Semicolon)) {
+                self.advance();
+            }
+        }
+
+        if condition_stmts.is_empty() {
+            return Err(anyhow!("if statement must have a condition"));
+        }
+
+        self.expect_token(&Token::Then)?;
+
+        while matches!(self.peek(), Some(Token::Newline) | Some(Token::CrLf)) {
+            self.advance();
+        }
+
+        let then_block = self.parse_shell_if_body()?;
+
+        let mut elif_clauses = Vec::new();
+        while matches!(self.peek(), Some(Token::Elif)) {
+            self.advance();
+
+            let mut elif_condition = Vec::new();
             loop {
-                // Skip newlines
                 while matches!(self.peek(), Some(Token::Newline) | Some(Token::CrLf)) {
                     self.advance();
                 }
@@ -1257,125 +1311,53 @@ impl Parser {
                 }
 
                 if self.is_at_end() {
-                    return Err(anyhow!("Expected 'then' in if statement"));
+                    return Err(anyhow!("Expected 'then' after elif condition"));
                 }
 
-                condition_stmts.push(self.parse_conditional_statement()?);
+                elif_condition.push(self.parse_conditional_statement()?);
 
-                // Handle optional semicolons between condition statements
                 if matches!(self.peek(), Some(Token::Semicolon)) {
                     self.advance();
                 }
             }
 
-            if condition_stmts.is_empty() {
-                return Err(anyhow!("if statement must have a condition"));
+            if elif_condition.is_empty() {
+                return Err(anyhow!("elif must have a condition"));
             }
 
             self.expect_token(&Token::Then)?;
 
-            // Skip newline after 'then'
             while matches!(self.peek(), Some(Token::Newline) | Some(Token::CrLf)) {
                 self.advance();
             }
 
-            // Parse then-block until elif/else/fi
-            let then_block = self.parse_shell_if_body()?;
+            let elif_body = self.parse_shell_if_body()?;
+            elif_clauses.push(ElifClause {
+                condition: elif_condition,
+                body: elif_body,
+            });
+        }
 
-            // Parse elif clauses
-            let mut elif_clauses = Vec::new();
-            while matches!(self.peek(), Some(Token::Elif)) {
-                self.advance(); // consume 'elif'
+        let else_block = if matches!(self.peek(), Some(Token::Else)) {
+            self.advance();
 
-                // Parse elif condition until 'then'
-                let mut elif_condition = Vec::new();
-                loop {
-                    while matches!(self.peek(), Some(Token::Newline) | Some(Token::CrLf)) {
-                        self.advance();
-                    }
-
-                    if matches!(self.peek(), Some(Token::Then)) {
-                        break;
-                    }
-
-                    if self.is_at_end() {
-                        return Err(anyhow!("Expected 'then' after elif condition"));
-                    }
-
-                    elif_condition.push(self.parse_conditional_statement()?);
-
-                    if matches!(self.peek(), Some(Token::Semicolon)) {
-                        self.advance();
-                    }
-                }
-
-                if elif_condition.is_empty() {
-                    return Err(anyhow!("elif must have a condition"));
-                }
-
-                self.expect_token(&Token::Then)?;
-
-                while matches!(self.peek(), Some(Token::Newline) | Some(Token::CrLf)) {
-                    self.advance();
-                }
-
-                let elif_body = self.parse_shell_if_body()?;
-                elif_clauses.push(ElifClause {
-                    condition: elif_condition,
-                    body: elif_body,
-                });
+            while matches!(self.peek(), Some(Token::Newline) | Some(Token::CrLf)) {
+                self.advance();
             }
 
-            // Parse optional else block
-            let else_block = if matches!(self.peek(), Some(Token::Else)) {
-                self.advance(); // consume 'else'
-
-                while matches!(self.peek(), Some(Token::Newline) | Some(Token::CrLf)) {
-                    self.advance();
-                }
-
-                let block = self.parse_shell_if_body()?;
-                Some(block)
-            } else {
-                None
-            };
-
-            self.expect_token(&Token::Fi)?;
-
-            Ok(Statement::IfStatement(IfStatement {
-                condition: IfCondition::Commands(condition_stmts),
-                then_block,
-                elif_clauses,
-                else_block,
-            }))
+            Some(self.parse_shell_if_body()?)
         } else {
-            // Rust-style: if expr { ... } else { ... }
-            // We need to backtrack - actually parse expression first
-            // Since we already checked it's not a LeftBrace and set is_shell_style=true,
-            // this branch won't be reached. But for completeness, handle Rust-style here.
-            let condition = self.parse_expression()?;
+            None
+        };
 
-            self.expect_token(&Token::LeftBrace)?;
-            let then_block = self.parse_block()?;
-            self.expect_token(&Token::RightBrace)?;
+        self.expect_token(&Token::Fi)?;
 
-            let else_block = if self.match_token(&Token::Else) {
-                self.advance();
-                self.expect_token(&Token::LeftBrace)?;
-                let block = self.parse_block()?;
-                self.expect_token(&Token::RightBrace)?;
-                Some(block)
-            } else {
-                None
-            };
-
-            Ok(Statement::IfStatement(IfStatement {
-                condition: IfCondition::Expression(condition),
-                then_block,
-                elif_clauses: Vec::new(),
-                else_block,
-            }))
-        }
+        Ok(Statement::IfStatement(IfStatement {
+            condition: IfCondition::Commands(condition_stmts),
+            then_block,
+            elif_clauses,
+            else_block,
+        }))
     }
 
     /// Parse the body of a shell-style if/elif/else block.
@@ -1505,8 +1487,9 @@ impl Parser {
                 continue;
             }
 
-            // Parse a statement in the condition
-            condition.push(self.parse_statement()?);
+            // Parse a conditional statement so shell chains like
+            // `test ... && break` stay attached to the same condition entry.
+            condition.push(self.parse_conditional_statement()?);
 
             // Handle optional semicolons or newlines between condition statements
             if matches!(self.peek(), Some(Token::Semicolon)) {
@@ -1534,7 +1517,7 @@ impl Parser {
                 continue;
             }
 
-            body.push(self.parse_statement()?);
+            body.push(self.parse_conditional_statement()?);
 
             // Handle optional semicolons or newlines between body statements
             if matches!(self.peek(), Some(Token::Semicolon)) {
@@ -1559,8 +1542,9 @@ impl Parser {
                 continue;
             }
 
-            // Parse a statement in the condition
-            condition.push(self.parse_statement()?);
+            // Parse a conditional statement so shell chains like
+            // `[ ... ] && [ ... ]` stay attached to the same condition entry.
+            condition.push(self.parse_conditional_statement()?);
 
             // Handle optional semicolons or newlines between condition statements
             if matches!(self.peek(), Some(Token::Semicolon)) {
@@ -1588,7 +1572,7 @@ impl Parser {
                 continue;
             }
 
-            body.push(self.parse_statement()?);
+            body.push(self.parse_conditional_statement()?);
 
             // Handle optional semicolons or newlines between body statements
             if matches!(self.peek(), Some(Token::Semicolon)) {
@@ -1733,66 +1717,73 @@ impl Parser {
         Ok(Statement::CaseStatement(CaseStatement { word, arms }))
     }
 
-    /// Parse a single case pattern (handles identifiers, *, strings, variables, globs)
+    /// Parse a single case pattern, joining consecutive tokens until `|` or `)`.
     fn parse_case_pattern(&mut self) -> Result<String> {
-        match self.peek() {
-            Some(Token::Identifier(s)) => {
-                let s = s.clone();
-                self.advance();
-                Ok(s)
-            }
-            Some(Token::GlobPattern(s)) => {
-                let s = s.clone();
-                self.advance();
-                Ok(s)
-            }
-            Some(Token::String(s)) => {
-                let unquoted = Self::strip_outer_quotes(&s, '"');
-                let processed = Self::process_double_quote_escapes(&unquoted);
-                self.advance();
-                Ok(processed)
-            }
-            Some(Token::SingleQuotedString(s)) => {
-                let s = Self::strip_outer_quotes(&s, '\'');
-                self.advance();
-                Ok(s)
-            }
-            Some(Token::AnsiCString(s)) => {
-                let s = s.clone();
-                self.advance();
-                Ok(s)
-            }
-            Some(Token::Integer(n)) => {
-                let s = n.to_string();
-                self.advance();
-                Ok(s)
-            }
-            Some(Token::Variable(v)) => {
-                let v = v.clone();
-                self.advance();
-                Ok(v)
-            }
-            Some(Token::ShortFlag(f)) => {
-                // Patterns like -e, -f etc.
-                let f = f.clone();
-                self.advance();
-                Ok(f)
-            }
-            Some(Token::Path(p)) => {
-                let p = p.clone();
-                self.advance();
-                Ok(p)
-            }
-            Some(Token::Dot) => {
-                self.advance();
-                Ok(".".to_string())
-            }
-            Some(Token::Dash) => {
-                self.advance();
-                Ok("-".to_string())
-            }
-            _ => Err(anyhow!("Expected case pattern, found {:?}", self.peek())),
+        let mut pattern = String::new();
+
+        loop {
+            let fragment = match self.peek() {
+                Some(Token::Pipe) | Some(Token::RightParen) => break,
+                Some(Token::Identifier(s)) => s.clone(),
+                Some(Token::GlobPattern(s)) => s.clone(),
+                Some(Token::String(s)) => {
+                    let unquoted = Self::strip_outer_quotes(s, '"');
+                    Self::process_double_quote_escapes(&unquoted)
+                }
+                Some(Token::SingleQuotedString(s)) => Self::strip_outer_quotes(s, '\''),
+                Some(Token::AnsiCString(s)) => s.clone(),
+                Some(Token::Integer(n)) => n.to_string(),
+                Some(Token::Variable(v)) | Some(Token::BracedVariable(v)) => v.clone(),
+                Some(Token::ShortFlag(f)) | Some(Token::LongFlag(f)) | Some(Token::PlusFlag(f)) => {
+                    f.clone()
+                }
+                Some(Token::Path(p)) => p.clone(),
+                Some(Token::Dot) => ".".to_string(),
+                Some(Token::Dash) => "-".to_string(),
+                Some(Token::DoubleDash) => "--".to_string(),
+                Some(Token::LeftBracket) => "[".to_string(),
+                Some(Token::RightBracket) => "]".to_string(),
+                Some(Token::Equals) => "=".to_string(),
+                Some(Token::DoubleEquals) => "==".to_string(),
+                Some(Token::NotEquals) => "!=".to_string(),
+                Some(Token::GreaterThanOrEqual) => ">=".to_string(),
+                Some(Token::LessThanOrEqual) => "<=".to_string(),
+                Some(Token::GreaterThan) => ">".to_string(),
+                Some(Token::Bang) => "!".to_string(),
+                Some(Token::Match) => "match".to_string(),
+                Some(Token::Case) => "case".to_string(),
+                Some(Token::Esac) => "esac".to_string(),
+                Some(Token::In) => "in".to_string(),
+                Some(Token::Function) => "function".to_string(),
+                Some(Token::If) => "if".to_string(),
+                Some(Token::Else) => "else".to_string(),
+                Some(Token::Then) => "then".to_string(),
+                Some(Token::Elif) => "elif".to_string(),
+                Some(Token::Fi) => "fi".to_string(),
+                Some(Token::For) => "for".to_string(),
+                Some(Token::While) => "while".to_string(),
+                Some(Token::Do) => "do".to_string(),
+                Some(Token::Done) => "done".to_string(),
+                Some(Token::Until) => "until".to_string(),
+                Some(Token::Let) => "let".to_string(),
+                Some(Token::Fn) => "fn".to_string(),
+                _ => {
+                    if pattern.is_empty() {
+                        return Err(anyhow!("Expected case pattern, found {:?}", self.peek()));
+                    }
+                    break;
+                }
+            };
+
+            self.advance();
+            pattern.push_str(&fragment);
         }
+
+        if pattern.is_empty() {
+            return Err(anyhow!("Expected case pattern, found {:?}", self.peek()));
+        }
+
+        Ok(pattern)
     }
 
     fn parse_pattern(&mut self) -> Result<Pattern> {

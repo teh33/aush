@@ -27,6 +27,40 @@ struct GrepMatch {
     context_after: Option<Vec<String>>,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+struct SearchOutcome {
+    matched: bool,
+    had_error: bool,
+}
+
+impl SearchOutcome {
+    fn matched(matched: bool) -> Self {
+        Self {
+            matched,
+            had_error: false,
+        }
+    }
+
+    fn error() -> Self {
+        Self {
+            matched: false,
+            had_error: true,
+        }
+    }
+}
+
+fn grep_exit_code(found_any: bool, had_errors: bool, quiet: bool) -> i32 {
+    if quiet && found_any {
+        0
+    } else if had_errors {
+        2
+    } else if found_any {
+        0
+    } else {
+        1
+    }
+}
+
 pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionResult> {
     let mut config = parse_args(args)?;
     if runtime.agent_mode() {
@@ -47,6 +81,7 @@ pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
     let mut stderr = Vec::new();
     let mut json_matches = Vec::new();
     let mut found_any = false;
+    let mut had_errors = false;
 
     // Build the regex matcher
     let matcher = RegexMatcherBuilder::new()
@@ -67,18 +102,23 @@ pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
                     match entry {
                         Ok(entry) => {
                             if entry.file_type().is_some_and(|ft| ft.is_file()) {
-                                if search_file_json(
+                                let outcome = search_file_json(
                                     &matcher,
                                     entry.path(),
                                     &config,
                                     &mut json_matches,
                                     &mut stderr,
-                                )? {
+                                )?;
+                                if outcome.matched {
                                     found_any = true;
+                                }
+                                if outcome.had_error {
+                                    had_errors = true;
                                 }
                             }
                         }
                         Err(e) => {
+                            had_errors = true;
                             writeln!(&mut stderr, "Error walking directory: {}", e)?;
                         }
                     }
@@ -93,11 +133,13 @@ pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
                 };
 
                 if path_buf.is_dir() {
+                    had_errors = true;
                     writeln!(&mut stderr, "grep: {}: Is a directory", path.display())?;
                     continue;
                 }
 
                 if !path_buf.exists() {
+                    had_errors = true;
                     writeln!(
                         &mut stderr,
                         "grep: {}: No such file or directory",
@@ -106,17 +148,26 @@ pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
                     continue;
                 }
 
-                if search_file_json(&matcher, &path_buf, &config, &mut json_matches, &mut stderr)? {
+                let outcome =
+                    search_file_json(&matcher, &path_buf, &config, &mut json_matches, &mut stderr)?;
+                if outcome.matched {
                     found_any = true;
+                }
+                if outcome.had_error {
+                    had_errors = true;
                 }
             }
         }
 
-        let exit_code = if found_any { 0 } else { 1 };
-        let json_value = serde_json::to_value(&json_matches)
-            .map_err(|e| anyhow!("Failed to serialize JSON: {}", e))?;
+        let exit_code = grep_exit_code(found_any, had_errors, config.quiet);
         return Ok(ExecutionResult {
-            output: crate::executor::Output::Structured(json_value),
+            output: if config.quiet {
+                crate::executor::Output::Text(String::new())
+            } else {
+                let json_value = serde_json::to_value(&json_matches)
+                    .map_err(|e| anyhow!("Failed to serialize JSON: {}", e))?;
+                crate::executor::Output::Structured(json_value)
+            },
             stderr: String::from_utf8_lossy(&stderr).to_string(),
             exit_code,
             error: None,
@@ -134,19 +185,24 @@ pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
             for entry in walker {
                 match entry {
                     Ok(entry) => {
-                        if entry.file_type().is_some_and(|ft| ft.is_file())
-                            && search_file(
+                        if entry.file_type().is_some_and(|ft| ft.is_file()) {
+                            let outcome = search_file(
                                 &matcher,
                                 entry.path(),
                                 &config,
                                 &mut stdout,
                                 &mut stderr,
-                            )?
-                        {
-                            found_any = true;
+                            )?;
+                            if outcome.matched {
+                                found_any = true;
+                            }
+                            if outcome.had_error {
+                                had_errors = true;
+                            }
                         }
                     }
                     Err(e) => {
+                        had_errors = true;
                         writeln!(&mut stderr, "Error walking directory: {}", e)?;
                     }
                 }
@@ -161,11 +217,13 @@ pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
             };
 
             if path_buf.is_dir() {
+                had_errors = true;
                 writeln!(&mut stderr, "grep: {}: Is a directory", path.display())?;
                 continue;
             }
 
             if !path_buf.exists() {
+                had_errors = true;
                 writeln!(
                     &mut stderr,
                     "grep: {}: No such file or directory",
@@ -174,13 +232,17 @@ pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
                 continue;
             }
 
-            if search_file(&matcher, &path_buf, &config, &mut stdout, &mut stderr)? {
+            let outcome = search_file(&matcher, &path_buf, &config, &mut stdout, &mut stderr)?;
+            if outcome.matched {
                 found_any = true;
+            }
+            if outcome.had_error {
+                had_errors = true;
             }
         }
     }
 
-    let exit_code = if found_any { 0 } else { 1 };
+    let exit_code = grep_exit_code(found_any, had_errors, config.quiet);
 
     Ok(ExecutionResult {
         output: crate::executor::Output::Text(String::from_utf8_lossy(&stdout).to_string()),
@@ -217,13 +279,17 @@ pub fn builtin_grep_with_stdin(
         search_stdin(&matcher, stdin_data, &config, &mut stdout, &mut stderr)?
     };
 
-    let exit_code = if found { 0 } else { 1 };
+    let exit_code = grep_exit_code(found, false, config.quiet);
 
     if config.json_output {
-        let json_value = serde_json::to_value(&json_matches)
-            .map_err(|e| anyhow!("Failed to serialize JSON: {}", e))?;
         return Ok(ExecutionResult {
-            output: crate::executor::Output::Structured(json_value),
+            output: if config.quiet {
+                crate::executor::Output::Text(String::new())
+            } else {
+                let json_value = serde_json::to_value(&json_matches)
+                    .map_err(|e| anyhow!("Failed to serialize JSON: {}", e))?;
+                crate::executor::Output::Structured(json_value)
+            },
             stderr: String::from_utf8_lossy(&stderr).to_string(),
             exit_code,
             error: None,
@@ -299,7 +365,7 @@ fn search_file(
     config: &GrepConfig,
     stdout: &mut Vec<u8>,
     stderr: &mut Vec<u8>,
-) -> Result<bool> {
+) -> Result<SearchOutcome> {
     let found = Cell::new(false);
 
     let mut searcher = SearcherBuilder::new()
@@ -347,10 +413,10 @@ fn search_file(
     );
 
     match result {
-        Ok(_) => Ok(found.get()),
+        Ok(_) => Ok(SearchOutcome::matched(found.get())),
         Err(e) => {
             writeln!(stderr, "Error searching {}: {}", path.display(), e)?;
-            Ok(false)
+            Ok(SearchOutcome::error())
         }
     }
 }
@@ -362,13 +428,13 @@ fn search_file_json(
     config: &GrepConfig,
     matches: &mut Vec<GrepMatch>,
     stderr: &mut Vec<u8>,
-) -> Result<bool> {
+) -> Result<SearchOutcome> {
     let result = std::fs::read(path);
     let content = match result {
         Ok(content) => content,
         Err(e) => {
             writeln!(stderr, "Error reading {}: {}", path.display(), e)?;
-            return Ok(false);
+            return Ok(SearchOutcome::error());
         }
     };
 
@@ -379,7 +445,7 @@ fn search_file_json(
         config,
         matches,
     )?;
-    Ok(found)
+    Ok(SearchOutcome::matched(found))
 }
 
 /// Search stdin and return JSON matches
@@ -437,6 +503,10 @@ fn search_lines_json(
 
         if should_include {
             found = true;
+
+            if config.quiet {
+                return Ok(true);
+            }
 
             // Extract the match text
             let match_info = if !config.invert_match {
@@ -677,6 +747,7 @@ fn parse_args(args: &[String]) -> Result<GrepConfig> {
                      -C NUM                  Show NUM lines of context\n\
                      -A NUM, --after-context Show NUM lines after match\n\
                      -B NUM, --before-context Show NUM lines before match\n\
+                     -q, --quiet, --silent   Suppress stdout; use exit status for results\n\
                      --color                 Colorize output (default)\n\
                      --no-color              Don't colorize output\n\
                      --hidden                Search hidden files\n\

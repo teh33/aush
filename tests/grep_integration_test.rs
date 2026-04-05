@@ -1,7 +1,18 @@
+use std::env;
+use std::path::PathBuf;
+use std::process::Command;
+
 use rush::builtins::Builtins;
+use rush::executor::Output;
 use rush::runtime::Runtime;
 use std::fs;
 use tempfile::TempDir;
+
+fn rush_binary() -> PathBuf {
+    env::var("CARGO_BIN_EXE_rush")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("target/debug/rush"))
+}
 
 #[test]
 fn test_grep_basic_search() {
@@ -244,4 +255,181 @@ fn test_grep_json_no_match() {
     let json: serde_json::Value = serde_json::from_str(&output).expect("Valid JSON");
     let matches = json.as_array().expect("JSON array");
     assert_eq!(matches.len(), 0);
+}
+
+#[test]
+fn test_grep_quiet_file_match_suppresses_stdout() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("test.txt");
+    fs::write(&file_path, "hello world\nfoo bar\n").unwrap();
+
+    let mut runtime = Runtime::new();
+    runtime.set_cwd(tmp.path().to_path_buf());
+
+    let builtins = Builtins::new();
+    let args = vec![
+        "-q".to_string(),
+        "hello".to_string(),
+        file_path.to_string_lossy().to_string(),
+    ];
+
+    let result = builtins.execute("grep", args, &mut runtime).unwrap();
+    assert_eq!(result.exit_code, 0);
+    assert!(result.stdout().is_empty());
+    assert!(result.stderr.is_empty());
+}
+
+#[test]
+fn test_grep_quiet_file_no_match_suppresses_stdout() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("test.txt");
+    fs::write(&file_path, "hello world\nfoo bar\n").unwrap();
+
+    let mut runtime = Runtime::new();
+    runtime.set_cwd(tmp.path().to_path_buf());
+
+    let builtins = Builtins::new();
+    let args = vec![
+        "--quiet".to_string(),
+        "nope".to_string(),
+        file_path.to_string_lossy().to_string(),
+    ];
+
+    let result = builtins.execute("grep", args, &mut runtime).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stdout().is_empty());
+    assert!(result.stderr.is_empty());
+}
+
+#[test]
+fn test_grep_quiet_file_match_with_later_error_returns_zero() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("test.txt");
+    let missing_path = tmp.path().join("missing.txt");
+    fs::write(&file_path, "hello world\nfoo bar\n").unwrap();
+
+    let mut runtime = Runtime::new();
+    runtime.set_cwd(tmp.path().to_path_buf());
+
+    let builtins = Builtins::new();
+    let args = vec![
+        "--silent".to_string(),
+        "hello".to_string(),
+        file_path.to_string_lossy().to_string(),
+        missing_path.to_string_lossy().to_string(),
+    ];
+
+    let result = builtins.execute("grep", args, &mut runtime).unwrap();
+    assert_eq!(result.exit_code, 0);
+    assert!(result.stdout().is_empty());
+    assert!(result.stderr.contains(&format!(
+        "grep: {}: No such file or directory",
+        missing_path.display()
+    )));
+}
+
+#[test]
+fn test_grep_quiet_file_error_without_match_returns_two() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("test.txt");
+    let missing_path = tmp.path().join("missing.txt");
+    fs::write(&file_path, "hello world\nfoo bar\n").unwrap();
+
+    let mut runtime = Runtime::new();
+    runtime.set_cwd(tmp.path().to_path_buf());
+
+    let builtins = Builtins::new();
+    let args = vec![
+        "-q".to_string(),
+        "nope".to_string(),
+        file_path.to_string_lossy().to_string(),
+        missing_path.to_string_lossy().to_string(),
+    ];
+
+    let result = builtins.execute("grep", args, &mut runtime).unwrap();
+    assert_eq!(result.exit_code, 2);
+    assert!(result.stdout().is_empty());
+    assert!(result.stderr.contains(&format!(
+        "grep: {}: No such file or directory",
+        missing_path.display()
+    )));
+}
+
+#[test]
+fn test_grep_quiet_stdin_match_suppresses_stdout() {
+    let mut runtime = Runtime::new();
+    let builtins = Builtins::new();
+    let args = vec!["-q".to_string(), "hello".to_string()];
+
+    let result = builtins
+        .execute_with_stdin("grep", args, &mut runtime, Some(b"hello\nworld\n"))
+        .unwrap();
+
+    assert_eq!(result.exit_code, 0);
+    assert!(result.stdout().is_empty());
+    assert!(result.stderr.is_empty());
+}
+
+#[test]
+fn test_grep_quiet_stdin_no_match_suppresses_stdout() {
+    let mut runtime = Runtime::new();
+    let builtins = Builtins::new();
+    let args = vec!["--quiet".to_string(), "hello".to_string()];
+
+    let result = builtins
+        .execute_with_stdin("grep", args, &mut runtime, Some(b"goodbye\nworld\n"))
+        .unwrap();
+
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stdout().is_empty());
+    assert!(result.stderr.is_empty());
+}
+
+#[test]
+fn test_grep_quiet_json_suppresses_structured_output() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("test.txt");
+    fs::write(&file_path, "hello world\nfoo bar\n").unwrap();
+
+    let mut runtime = Runtime::new();
+    runtime.set_cwd(tmp.path().to_path_buf());
+
+    let builtins = Builtins::new();
+    let args = vec![
+        "--json".to_string(),
+        "-q".to_string(),
+        "hello".to_string(),
+        file_path.to_string_lossy().to_string(),
+    ];
+
+    let result = builtins.execute("grep", args, &mut runtime).unwrap();
+    assert_eq!(result.exit_code, 0);
+    match result.output {
+        Output::Text(ref text) => assert!(text.is_empty()),
+        other => panic!(
+            "expected quiet grep to suppress structured output, got {:?}",
+            other
+        ),
+    }
+}
+
+#[test]
+fn test_grep_quiet_cli_stdin_regression() {
+    let output = Command::new(rush_binary())
+        .arg("-c")
+        .arg("grep -q hello")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .and_then(|mut child| {
+            use std::io::Write;
+            child.stdin.as_mut().unwrap().write_all(b"hello\n")?;
+            child.wait_with_output()
+        })
+        .expect("failed to run rush");
+
+    assert_eq!(output.status.code(), Some(0));
+    assert!(output.stdout.is_empty());
+    assert!(output.stderr.is_empty());
 }

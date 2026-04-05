@@ -60,9 +60,9 @@ impl TailOptions {
             } else if let Some(rest) = arg.strip_prefix("-c") {
                 opts.mode = parse_byte_arg(rest)?;
             } else if arg == "-f" || arg == "--follow" {
-                // -f (follow) is not supported in-process; silently ignore and defer to external.
-                // The executor will fall back to the system tail if -f is needed.
-                // For now, we just skip the flag and behave like a normal tail.
+                return Err(anyhow!(
+                    "tail: -f/--follow is not supported by the builtin; use external tail for follow mode"
+                ));
             } else if arg.starts_with('-') && arg.len() > 1 {
                 // Numeric shorthand like -10 => last 10 lines
                 let rest = &arg[1..];
@@ -452,4 +452,43 @@ mod tests {
         assert_eq!(result.exit_code, 0);
         assert_eq!(result.stdout(), "");
     }
+
+    #[test]
+    fn test_builtin_tail_follow_flag_errors() {
+        let file = create_test_file("line 1\nline 2\n");
+        let path = file.path().to_str().unwrap().to_string();
+
+        let mut runtime = Runtime::new();
+        let result = builtin_tail(&["-f".to_string(), path], &mut runtime).unwrap();
+
+        assert_eq!(result.exit_code, 1);
+        assert!(result.stderr.contains("-f/--follow"));
+        assert_eq!(result.stdout(), "");
+    }
+
+    #[test]
+    fn test_builtin_tail_follow_long_flag_errors() {
+        let file = create_test_file("line 1\nline 2\n");
+        let path = file.path().to_str().unwrap().to_string();
+
+        let mut runtime = Runtime::new();
+        let result = builtin_tail(&["--follow".to_string(), path], &mut runtime).unwrap();
+
+        assert_eq!(result.exit_code, 1);
+        assert!(result.stderr.contains("-f/--follow"));
+        assert_eq!(result.stdout(), "");
+    }
+
+    #[test]
+    fn test_builtin_tail_with_stdin_follow_flag_errors() {
+        let data = make_lines(5);
+        let mut runtime = Runtime::new();
+        let result = builtin_tail_with_stdin(&["-f".to_string()], &mut runtime, data.as_bytes())
+            .unwrap();
+
+        assert_eq!(result.exit_code, 1);
+        assert!(result.stderr.contains("-f/--follow"));
+        assert_eq!(result.stdout(), "");
+    }
 }
+
