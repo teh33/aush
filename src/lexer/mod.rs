@@ -268,16 +268,52 @@ pub enum Token {
     CrLf,
 
     // Comments
-    #[regex(r"#[^\n]*", logos::skip)]
+    #[regex(r"#[^\n]*", logos::skip, priority = 50)]
     Comment,
 }
-
 /// Data for a synthesized here-document body token
 #[derive(Debug, Clone, PartialEq)]
 pub struct HereDocData {
     pub body: String,
     pub expand_vars: bool,
     pub strip_tabs: bool,
+}
+
+fn strip_comments(input: &str) -> String {
+    let mut output = String::with_capacity(input.len());
+    let mut chars = input.chars().peekable();
+    let mut in_single = false;
+    let mut in_double = false;
+
+    while let Some(ch) = chars.next() {
+        match ch {
+            '\'' if !in_double => {
+                in_single = !in_single;
+                output.push(ch);
+            }
+            '"' if !in_single => {
+                in_double = !in_double;
+                output.push(ch);
+            }
+            '\\' if in_double => {
+                output.push(ch);
+                if let Some(next) = chars.next() {
+                    output.push(next);
+                }
+            }
+            '#' if !in_single && !in_double => {
+                for next in chars.by_ref() {
+                    if next == '\n' {
+                        output.push('\n');
+                        break;
+                    }
+                }
+            }
+            _ => output.push(ch),
+        }
+    }
+
+    output
 }
 
 // Parse single-quoted strings literally until the next single quote.
@@ -587,8 +623,9 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn tokenize(input: &str) -> Result<Vec<Token>, LexerError> {
+        let input = strip_comments(input);
         let mut token_spans: Vec<(Token, std::ops::Range<usize>)> = Vec::new();
-        let mut lexer = Token::lexer(input);
+        let mut lexer = Token::lexer(&input);
 
         while let Some(token_result) = lexer.next() {
             match token_result {
@@ -625,7 +662,7 @@ impl<'a> Lexer<'a> {
         }
 
         // Post-process: resolve here-documents
-        let tokens = Self::resolve_heredocs(tokens, input);
+        let tokens = Self::resolve_heredocs(tokens, &input);
 
         Ok(tokens)
     }
@@ -1214,4 +1251,15 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_comment_with_unicode_text_is_skipped() {
+        let tokens = Lexer::tokenize("echo ok # simple – unicode comment text").unwrap();
+        assert_eq!(
+            tokens,
+            vec![
+                Token::Identifier("echo".to_string()),
+                Token::Identifier("ok".to_string()),
+            ]
+        );
+    }
 }

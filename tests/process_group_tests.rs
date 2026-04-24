@@ -17,7 +17,7 @@ echo $!
     fs::write(script_path, script).unwrap();
 
     // Run the script
-    let output = Command::new("./target/debug/rush")
+    let output = Command::new("./target/debug/aush")
         .arg(script_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -73,7 +73,7 @@ echo "test"
     fs::write(script_path, script).unwrap();
 
     // Run the script
-    let output = Command::new("./target/debug/rush")
+    let output = Command::new("./target/debug/aush")
         .arg(script_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -103,7 +103,7 @@ echo $!
     fs::write(script_path, script).unwrap();
 
     // Run the script
-    let output = Command::new("./target/debug/rush")
+    let output = Command::new("./target/debug/aush")
         .arg(script_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -158,7 +158,7 @@ fn test_process_group_isolation() {
     // We verify this by checking that the code compiles and uses the correct Unix APIs
 
     // Run a simple foreground command that would trigger process group setup
-    let output = Command::new("./target/debug/rush")
+    let output = Command::new("./target/debug/aush")
         .arg("-c")
         .arg("echo test")
         .stdout(Stdio::piped())
@@ -187,7 +187,7 @@ fn test_shell_process_group() {
     // Run rush and check that it puts itself in its own process group
     let script = "echo $$";
 
-    let output = Command::new("./target/debug/rush")
+    let output = Command::new("./target/debug/aush")
         .args(&["-c", script])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

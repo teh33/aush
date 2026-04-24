@@ -1,37 +1,40 @@
-# Homebrew Tap for Rush
+# Homebrew Tap for AUSH
 
-This directory contains the Homebrew formula for [Rush](https://github.com/opus-workshop/rush), a high-performance POSIX-compliant shell written in Rust.
+This directory contains the Homebrew formula for [AUSH](https://github.com/opus-workshop/aush), a high-performance POSIX-compliant shell written in Rust.
 
 ## Installation
 
 ```bash
 # Add the tap
-brew tap opus-workshop/rush https://github.com/opus-workshop/rush
+brew tap opus-workshop/aush https://github.com/opus-workshop/aush
 
-# Install Rush
-brew install rush
+# Install AUSH
+brew install aush
 ```
 
 ## Usage
 
-After installation, you can run Rush:
+The formula installs `aush` as the primary command. Release archives may also include a legacy `rush` executable during migration compatibility.
+
+
+After installation, you can run AUSH:
 
 ```bash
-rush                      # Start interactive shell
-rush -c "echo hello"      # Run a command
-rush script.sh            # Run a script
+aush                      # Start interactive shell
+aush -c "echo hello"      # Run a command
+aush script.sh            # Run a script
 ```
 
 ## Setting as Default Shell
 
-To use Rush as your default shell:
+To use AUSH as your default shell:
 
 ```bash
 # Add to allowed shells
-echo "$(brew --prefix)/bin/rush" | sudo tee -a /etc/shells
+echo "$(brew --prefix)/bin/aush" | sudo tee -a /etc/shells
 
 # Change your shell
-chsh -s "$(brew --prefix)/bin/rush"
+chsh -s "$(brew --prefix)/bin/aush"
 ```
 
 ## Daemon Mode
@@ -40,7 +43,7 @@ For ultra-fast startup (~0.4ms), use daemon mode:
 
 ```bash
 rushd start               # Start the daemon
-rush -c "ls"              # Commands use the daemon
+aush -c "ls"              # Commands use the daemon
 rushd stop                # Stop the daemon
 ```
 
@@ -48,12 +51,12 @@ rushd stop                # Stop the daemon
 
 ```bash
 brew update
-brew upgrade rush
+brew upgrade aush
 ```
 
 ## Uninstalling
 
 ```bash
-brew uninstall rush
-brew untap opus-workshop/rush
+brew uninstall aush
+brew untap opus-workshop/aush
 ```

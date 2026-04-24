@@ -88,7 +88,7 @@ pub enum BannerShow {
     /// Show banner every time
     #[default]
     Always,
-    /// Show banner only on first shell (no parent AUSH/Rush process)
+    /// Show banner only on first shell (no parent AUSH process, including legacy Rush)
     First,
     /// Never show banner
     Never,

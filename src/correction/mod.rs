@@ -36,41 +36,42 @@ impl SuggestionConfig {
     /// Create configuration from environment variables
     ///
     /// Supports:
-    /// - RUSH_SUGGEST_ENABLED: "0" or "false" to disable (default: enabled)
-    /// - RUSH_SUGGEST_THRESHOLD: minimum score 0-100 (default: 30)
-    /// - RUSH_SUGGEST_MAX: maximum suggestions (default: 5)
-    /// - RUSH_SUGGEST_HISTORY: "0" or "false" to disable history suggestions (default: enabled)
-    /// - RUSH_SUGGEST_CONTEXT: "0" or "false" to disable context-aware suggestions (default: enabled)
+    /// - AUSH_SUGGEST_ENABLED / RUSH_SUGGEST_ENABLED: "0" or "false" to disable (default: enabled)
+    /// - AUSH_SUGGEST_THRESHOLD / RUSH_SUGGEST_THRESHOLD: minimum score 0-100 (default: 30)
+    /// - AUSH_SUGGEST_MAX / RUSH_SUGGEST_MAX: maximum suggestions (default: 5)
+    /// - AUSH_SUGGEST_HISTORY / RUSH_SUGGEST_HISTORY: "0" or "false" to disable history suggestions (default: enabled)
+    /// - AUSH_SUGGEST_CONTEXT / RUSH_SUGGEST_CONTEXT: "0" or "false" to disable context-aware suggestions (default: enabled)
     pub fn from_env() -> Self {
         let mut config = Self::default();
 
-        // RUSH_SUGGEST_ENABLED
-        if let Ok(val) = env::var("RUSH_SUGGEST_ENABLED") {
+        // AUSH_SUGGEST_ENABLED / RUSH_SUGGEST_ENABLED
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_ENABLED", "RUSH_SUGGEST_ENABLED") {
             config.enabled = !matches!(val.to_lowercase().as_str(), "0" | "false" | "no" | "off");
         }
 
-        // RUSH_SUGGEST_THRESHOLD
-        if let Ok(val) = env::var("RUSH_SUGGEST_THRESHOLD") {
+        // AUSH_SUGGEST_THRESHOLD / RUSH_SUGGEST_THRESHOLD
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_THRESHOLD", "RUSH_SUGGEST_THRESHOLD")
+        {
             if let Ok(threshold) = val.parse::<i64>() {
                 config.min_threshold = threshold.clamp(0, 100);
             }
         }
 
-        // RUSH_SUGGEST_MAX
-        if let Ok(val) = env::var("RUSH_SUGGEST_MAX") {
+        // AUSH_SUGGEST_MAX / RUSH_SUGGEST_MAX
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_MAX", "RUSH_SUGGEST_MAX") {
             if let Ok(max) = val.parse::<usize>() {
                 config.max_suggestions = max.max(1);
             }
         }
 
-        // RUSH_SUGGEST_HISTORY
-        if let Ok(val) = env::var("RUSH_SUGGEST_HISTORY") {
+        // AUSH_SUGGEST_HISTORY / RUSH_SUGGEST_HISTORY
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_HISTORY", "RUSH_SUGGEST_HISTORY") {
             config.use_history =
                 !matches!(val.to_lowercase().as_str(), "0" | "false" | "no" | "off");
         }
 
-        // RUSH_SUGGEST_CONTEXT
-        if let Ok(val) = env::var("RUSH_SUGGEST_CONTEXT") {
+        // AUSH_SUGGEST_CONTEXT / RUSH_SUGGEST_CONTEXT
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_CONTEXT", "RUSH_SUGGEST_CONTEXT") {
             config.use_context =
                 !matches!(val.to_lowercase().as_str(), "0" | "false" | "no" | "off");
         }

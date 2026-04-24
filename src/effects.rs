@@ -178,7 +178,10 @@ mod tests {
         assert_eq!(CommandEffect::DeleteFile.id(), "delete_file");
         assert_eq!(CommandEffect::DeleteFile.label(), "Delete files");
         assert_eq!(CommandEffect::NetworkAccess.label(), "Access the network");
-        assert_eq!(CommandEffect::ModifyGitHistory.label(), "Modify Git history");
+        assert_eq!(
+            CommandEffect::ModifyGitHistory.label(),
+            "Modify Git history"
+        );
         assert_eq!(CommandEffect::DeleteFile.to_string(), "Delete files");
     }
 
@@ -193,10 +196,8 @@ mod tests {
 
     #[test]
     fn effect_summary_is_human_readable() {
-        let summary = render_effect_summary(&[
-            CommandEffect::DeleteFile,
-            CommandEffect::NetworkAccess,
-        ]);
+        let summary =
+            render_effect_summary(&[CommandEffect::DeleteFile, CommandEffect::NetworkAccess]);
 
         assert!(summary.contains("High risk"));
         assert!(summary.contains("Delete files"));

@@ -2,12 +2,15 @@
 
 set -euo pipefail
 
-RUSH_BIN="${1:-./target/release/rush}"
+AUSH_BIN="${1:-./target/release/aush}"
+if [[ ! -x "$AUSH_BIN" && -x ./target/release/rush ]]; then
+  AUSH_BIN=./target/release/rush
+fi
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-if [[ ! -x "$RUSH_BIN" ]]; then
-  echo "Error: Rush binary not found at $RUSH_BIN"
+if [[ ! -x "$AUSH_BIN" ]]; then
+  echo "Error: AUSH binary not found at $AUSH_BIN"
   echo "Run: cargo build --release"
   exit 1
 fi
@@ -46,14 +49,14 @@ skip_check() {
 }
 
 echo "AUSH Smoke Benchmark"
-echo "Binary: $RUSH_BIN"
+echo "Binary: $AUSH_BIN"
 echo
 
-run_check "startup smoke" "'$RUSH_BIN' --no-rc -c 'echo startup-ok' | grep -qx 'startup-ok'"
+run_check "startup smoke" "'$AUSH_BIN' --no-rc -c 'echo startup-ok' | grep -qx 'startup-ok'"
 run_check "non-interactive pipe" "cargo test -q --test non_tty_tests test_piped_input_single_command -- --exact"
 run_check "login/no-rc behavior" "cargo test -q --test login_shell_tests test_no_rc_flag -- --exact"
 run_check "signal interrupt behavior" "cargo test -q --test signal_handling_tests test_command_flag_with_signal -- --exact"
-run_check "core shell smoke suite" "tests/smoke_test.sh '$RUSH_BIN'"
+run_check "core shell smoke suite" "tests/smoke_test.sh '$AUSH_BIN'"
 run_check "persistent interactive benchmark" "bash ./benches/interactive_benchmark.sh"
 run_check "persistent session benchmark" "bash ./benches/session_benchmark.sh"
 

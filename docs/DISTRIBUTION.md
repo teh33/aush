@@ -1,10 +1,10 @@
-# Rush Distribution and Release Process
+# AUSH Distribution and Release Process
 
-This document describes how Rush is built, packaged, and distributed to users.
+This document describes how AUSH is built, packaged, and distributed to users.
 
 ## Overview
 
-Rush follows a modern CI/CD approach with:
+AUSH follows a modern CI/CD approach with:
 - **Automated builds** via GitHub Actions
 - **Cross-platform compilation** for macOS (Intel + ARM) and Linux
 - **Binary distribution** via GitHub Releases
@@ -70,10 +70,10 @@ When a release is triggered:
 Each release includes:
 
 ```
-rush-{platform}.tar.gz          # Main binary
-rush-{platform}-daemon.tar.gz   # Daemon binary (optional)
-rush-{platform}-full.tar.gz     # Both binaries
-rush-{platform}-SHA256SUMS.txt  # Checksums
+aush-{platform}.tar.gz          # Main binary; may also include legacy `rush` executable during migration
+aush-{platform}-daemon.tar.gz   # Daemon binary (optional)
+aush-{platform}-full.tar.gz     # AUSH plus daemon binary
+aush-{platform}-SHA256SUMS.txt  # Checksums
 SHA256SUMS.txt                  # All checksums combined
 ```
 
@@ -89,33 +89,39 @@ Typical sizes (uncompressed / compressed):
 - **macOS**: ~4.7MB / ~1.2MB
 - **Linux**: ~5.1MB / ~1.3MB
 
+## Compatibility During Rebrand
+
+Release archives use `aush-*` names and install `aush` as the primary executable. During migration, archives may also include a legacy `rush` executable so existing scripts continue to work while users update automation and login-shell settings. New documentation and packaging should prefer `aush`.
+
+The daemon helper remains `rushd` for this phase; rename it only in a separate compatibility-planned release.
+
 ## Homebrew Distribution
 
 ### Formula Location
 
-The Homebrew formula is stored in `/homebrew/Formula/rush.rb`:
+The Homebrew formula is stored in `/homebrew/Formula/aush.rb`:
 
 ```ruby
-class Rush < Formula
+class Aush < Formula
   desc "High-performance, POSIX-compliant shell written in Rust"
-  homepage "https://github.com/opus-workshop/rush"
+  homepage "https://github.com/opus-workshop/aush"
   version "0.1.0"
 
   # Detects platform and downloads correct binary
-  # Installs to $(brew --prefix)/bin/rush
+  # Installs to $(brew --prefix)/bin/aush
 end
 ```
 
 ### How Users Install via Homebrew
 
 ```bash
-brew tap opus-workshop/rush https://github.com/opus-workshop/rush
-brew install rush
+brew tap opus-workshop/aush https://github.com/opus-workshop/aush
+brew install aush
 ```
 
 This:
 1. Clones the tap repository
-2. Reads the formula from `/homebrew/Formula/rush.rb`
+2. Reads the formula from `/homebrew/Formula/aush.rb`
 3. Downloads the appropriate binary for their platform
 4. Verifies SHA256
 5. Installs to Homebrew's bin directory
@@ -128,9 +134,9 @@ The formula currently has placeholder SHA256 values that need to be updated for 
 1. **Manual update** (if needed):
    ```bash
    # Get actual checksums from GitHub release
-   curl https://github.com/opus-workshop/rush/releases/latest/download/SHA256SUMS.txt
+   curl https://github.com/opus-workshop/aush/releases/latest/download/SHA256SUMS.txt
 
-   # Update homebrew/Formula/rush.rb with actual values
+   # Update homebrew/Formula/aush.rb with actual values
    ```
 
 2. **Automated update** (ideal future state):
@@ -144,7 +150,7 @@ Users can download binaries directly from GitHub:
 
 ```bash
 # Latest release, automatic platform detection
-curl -s https://api.github.com/repos/opus-workshop/rush/releases/latest | \
+curl -s https://api.github.com/repos/opus-workshop/aush/releases/latest | \
   jq -r '.assets[] | select(.name | contains("linux-x86_64")) | .browser_download_url'
 ```
 
@@ -175,17 +181,17 @@ curl -s https://api.github.com/repos/opus-workshop/rush/releases/latest | \
 During build:
 ```bash
 # For each platform
-sha256sum rush-*.tar.gz > rush-{platform}-SHA256SUMS.txt
+sha256sum aush-*.tar.gz > aush-{platform}-SHA256SUMS.txt
 ```
 
 ### Aggregation
 
 All checksums combined into single `SHA256SUMS.txt`:
 ```
-abc123...  rush-linux-x86_64.tar.gz
-def456...  rush-linux-x86_64-musl.tar.gz
-ghi789...  rush-macos-x86_64.tar.gz
-jkl012...  rush-macos-aarch64.tar.gz
+abc123...  aush-linux-x86_64.tar.gz
+def456...  aush-linux-x86_64-musl.tar.gz
+ghi789...  aush-macos-x86_64.tar.gz
+jkl012...  aush-macos-aarch64.tar.gz
 ```
 
 ### User Verification
@@ -229,23 +235,23 @@ Before marking as complete, test on real machines:
 
 1. **macOS ARM (Apple Silicon)**:
    ```bash
-   curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-macos-aarch64.tar.gz
-   tar xzf rush-macos-aarch64.tar.gz
-   ./rush -c 'echo "Hello from Rush"'
+   curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-macos-aarch64.tar.gz
+   tar xzf aush-macos-aarch64.tar.gz
+   ./aush -c 'echo "Hello from AUSH"'
    ```
 
 2. **macOS Intel**:
    ```bash
-   curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-macos-x86_64.tar.gz
-   tar xzf rush-macos-x86_64.tar.gz
-   ./rush -c 'echo "Hello from Rush"'
+   curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-macos-x86_64.tar.gz
+   tar xzf aush-macos-x86_64.tar.gz
+   ./aush -c 'echo "Hello from AUSH"'
    ```
 
 3. **Linux x86_64**:
    ```bash
-   curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-linux-x86_64.tar.gz
-   tar xzf rush-linux-x86_64.tar.gz
-   ./rush -c 'echo "Hello from Rush"'
+   curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-linux-x86_64.tar.gz
+   tar xzf aush-linux-x86_64.tar.gz
+   ./aush -c 'echo "Hello from AUSH"'
    ```
 
 ## Troubleshooting Release Issues
@@ -253,7 +259,7 @@ Before marking as complete, test on real machines:
 ### Build Failures
 
 Check GitHub Actions logs:
-1. Go to https://github.com/opus-workshop/rush/actions
+1. Go to https://github.com/opus-workshop/aush/actions
 2. Select "Release" workflow
 3. Click failed job
 4. Review logs
@@ -273,10 +279,10 @@ If users report checksum mismatches:
 ### Binary Doesn't Run
 
 If downloaded binary won't execute:
-1. Verify file is executable: `chmod +x rush`
+1. Verify file is executable: `chmod +x aush`
 2. Check architecture matches: `uname -m`
-3. For macOS: Verify not quarantined: `xattr -d com.apple.quarantine ./rush`
-4. For Linux: Check glibc version: `./rush -c 'echo test'` (if musl, should work always)
+3. For macOS: Verify not quarantined: `xattr -d com.apple.quarantine ./aush`
+4. For Linux: Check glibc version: `./aush -c 'echo test'` (if musl, should work always)
 
 ## Performance Metrics
 
@@ -308,7 +314,7 @@ If downloaded binary won't execute:
 1. **Auto-update Homebrew formula** via GitHub Actions
 2. **Additional platforms**: Windows (WSL2), BSD, additional Linux architectures
 3. **Signed releases**: GPG signature verification
-4. **Docker images**: Official Rush Docker image
+4. **Docker images**: Official AUSH Docker image
 5. **Distribution mirrors**: CDN distribution for faster downloads
 6. **Version upgrade checks**: In-app update notifications
 
@@ -326,14 +332,14 @@ If downloaded binary won't execute:
 
 1. Always verify checksums before installation
 2. Download only from official GitHub releases
-3. Keep Rush updated for security patches
+3. Keep AUSH updated for security patches
 4. Report security issues privately
 
 ## Maintenance
 
 ### Version Numbering
 
-Rush uses semantic versioning (MAJOR.MINOR.PATCH):
+AUSH uses semantic versioning (MAJOR.MINOR.PATCH):
 - `v0.1.0` - First release
 - `v0.2.0` - Feature release
 - `v0.2.1` - Bug fix
@@ -350,10 +356,10 @@ Currently, only the latest version is actively supported. Users on older version
 
 ## Contact and Support
 
-- **Issues**: https://github.com/opus-workshop/rush/issues
-- **Discussions**: https://github.com/opus-workshop/rush/discussions
+- **Issues**: https://github.com/opus-workshop/aush/issues
+- **Discussions**: https://github.com/opus-workshop/aush/discussions
 - **Email**: See GitHub profile
 
 ## License
 
-This distribution process and all tooling is part of Rush, which is dual-licensed under MIT or Apache-2.0.
+This distribution process and all tooling is part of AUSH, which is dual-licensed under MIT or Apache-2.0.

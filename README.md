@@ -1,6 +1,6 @@
 # AUSH
 
-[![CI](https://github.com/opus-workshop/rush/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/opus-workshop/rush/actions/workflows/integration-tests.yml)
+[![CI](https://github.com/opus-workshop/aush/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/opus-workshop/aush/actions/workflows/integration-tests.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
 **Actually Usable Shell: the AI-native shell with structured pipelines.**
@@ -15,7 +15,7 @@ AUSH is a POSIX-compatible shell built in Rust with three things your current sh
 
 **AI agent built in** — prefix any query with `?` and AUSH sends it to the LLM, shows you the command, and asks to run it. Works with Ollama (local), OpenAI, or Anthropic. No wrapper scripts.
 
-**Lua extensions** — register custom builtins, prompt segments, completions, and shell hooks in `~/.aush/lua/`. Legacy `~/.rush/lua/` remains supported during the rename. No recompile.
+**Lua extensions** — register custom builtins, prompt segments, completions, and shell hooks in `~/.aush/lua/`. Legacy `~/.aush/lua/` remains supported during the rename. No recompile.
 
 Oh, and it's still a shell. Your existing scripts run unchanged.
 
@@ -52,14 +52,14 @@ rush.register_builtin("weather", {
 ### Cargo
 
 ```bash
-cargo install --git https://github.com/opus-workshop/rush
+cargo install --git https://github.com/opus-workshop/aush
 ```
 
 ### Build from source
 
 ```bash
-git clone https://github.com/opus-workshop/rush.git
-cd rush
+git clone https://github.com/opus-workshop/aush.git
+cd aush
 cargo install --path .
 ```
 
@@ -111,7 +111,7 @@ The `?` prefix sends your natural language query to the LLM with shell context (
 
 ## Lua extensions
 
-Scripts in `~/.aush/lua/` load at startup in alphabetical order. Legacy `~/.rush/lua/` is still supported during the migration.
+Scripts in `~/.aush/lua/` load at startup in alphabetical order. Legacy `~/.aush/lua/` is still supported during the migration.
 
 ```lua
 -- ~/.aush/lua/myconfig.lua
@@ -133,7 +133,7 @@ rush.register_prompt("git_branch", function()
 end)
 
 -- Shell hooks
-rush.on("precmd", function(exit_code, elapsed_ms)
+aush.on("precmd", function(exit_code, elapsed_ms)
     -- fires before every prompt draw
 end)
 
@@ -191,17 +191,17 @@ AUSH is optimized for AI assistants that make hundreds of shell calls per task.
 ```python
 import subprocess, json
 
-def rush(cmd: str):
+def aush(cmd: str):
     result = subprocess.run(
-        ["rush", "-c", cmd],
+        ["aush", "-c", cmd],
         capture_output=True, text=True,
         env={"AUSH_ERROR_FORMAT": "json"}
     )
     return json.loads(result.stdout)
 
 # Structured data, no text parsing
-todos  = rush("grep --json 'TODO|FIXME' src/**/*.rs")
-status = rush("git status --json")
+todos  = aush("grep --json 'TODO|FIXME' src/**/*.rs")
+status = aush("git status --json")
 staged = [f["path"] for f in status["staged"]]
 ```
 
@@ -211,7 +211,7 @@ For workloads with many rapid calls, the daemon mode cuts startup to **0.4ms**:
 
 ```bash
 aushd start          # keep AUSH warm in the background
-rush -c "ls"         # legacy binary remains supported during migration
+aush -c "ls"         # legacy binary remains supported during migration
 aushd stop
 ```
 
@@ -232,7 +232,7 @@ AUSH targets 90%+ POSIX.1-2017 compliance. Your scripts work.
 - **50+ builtins**: `cd`, `pwd`, `echo`, `export`, `source`, `eval`, `exec`, `test`, `[`, `printf`, `read`, `trap`, `alias`, `jobs`, `fg`, `bg`, `kill`, `wait`, and more
 
 ```bash
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 
 # This is valid POSIX sh — AUSH runs it fine
 for file in $(find . -name "*.rs"); do
@@ -263,10 +263,10 @@ For AI agent workloads (git status × 3, file search × 5, JSON ops × 10, HTTP 
 ## Architecture
 
 ```
-rush/
+aush/
 ├── src/
 │   ├── ai/           # LLM client, agent loop, provider adapters (Ollama/OpenAI/Anthropic)
-│   ├── lua/          # Lua 5.4 runtime (mlua), rush.* API, script loader
+│   ├── lua/          # Lua 5.4 runtime (mlua), aush.* API, script loader
 │   ├── lexer/        # Token stream (Logos)
 │   ├── parser/       # AST (nom)
 │   ├── executor/     # Command execution + structured_ops (where/select/sort/count)

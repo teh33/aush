@@ -21,14 +21,14 @@ fn is_daemon_running() -> bool {
 }
 
 fn start_daemon() {
-    let _ = Command::new("target/release/rushd")
+    let _ = Command::new("target/release/aushd")
         .arg("stop")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
     std::thread::sleep(Duration::from_millis(300));
 
-    let _ = Command::new("target/release/rushd")
+    let _ = Command::new("target/release/aushd")
         .arg("start")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -48,7 +48,7 @@ fn start_daemon() {
 }
 
 fn stop_daemon() {
-    let _ = Command::new("target/release/rushd")
+    let _ = Command::new("target/release/aushd")
         .arg("stop")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -196,11 +196,11 @@ fn bench_cold_startup(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("rush_c", name), &cmd, |b, cmd| {
             b.iter(|| {
                 black_box(
-                    Command::new("target/release/rush")
+                    Command::new("target/release/aush")
                         .arg("-c")
                         .arg(cmd)
                         .output()
-                        .expect("Failed to execute rush"),
+                        .expect("Failed to execute aush"),
                 );
             });
         });
@@ -220,7 +220,7 @@ fn bench_shell_comparison(c: &mut Criterion) {
     group.sample_size(50);
 
     let mut shells: Vec<(&str, String)> = vec![
-        ("rush", "target/release/rush".to_string()),
+        ("rush", "target/release/aush".to_string()),
         ("bash", "/bin/bash".to_string()),
     ];
 

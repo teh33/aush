@@ -11,10 +11,14 @@ NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-RUSH_BINARY="$PROJECT_ROOT/target/release/rush"
+AUSH_BINARY="$PROJECT_ROOT/target/release/aush"
+if [ ! -f "$AUSH_BINARY" ] && [ -f "$PROJECT_ROOT/target/release/rush" ]; then
+    AUSH_BINARY="$PROJECT_ROOT/target/release/rush"
+fi
+RUSH_BINARY="$AUSH_BINARY"
 
 if [ ! -f "$RUSH_BINARY" ]; then
-    echo -e "${RED}Error: rush binary not found at $RUSH_BINARY${NC}"
+    echo -e "${RED}Error: aush binary not found at $RUSH_BINARY${NC}"
     exit 1
 fi
 

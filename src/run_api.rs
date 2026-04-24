@@ -1,10 +1,9 @@
-/// One-shot programmatic API for executing shell commands via Rush.
+/// One-shot programmatic API for executing shell commands via AUSH.
 ///
-/// Designed for embedding Rush in agents, tools, or any Rust program that
+/// Designed for embedding AUSH in agents, tools, or any Rust program that
 /// needs to run shell commands and receive structured output — without managing
 /// a REPL, terminal, or persistent executor session.
 use std::collections::HashMap;
-use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -17,7 +16,7 @@ use crate::executor::Executor;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 
-/// Parse a `--max-output` / `RUSH_MAX_OUTPUT` value string into a byte count.
+/// Parse a `--max-output` / `AUSH_MAX_OUTPUT` / `RUSH_MAX_OUTPUT` value string into a byte count.
 ///
 /// Supported formats:
 /// - `50KB`, `50kb`, `50k`  → 50 * 1024 bytes
@@ -167,14 +166,14 @@ fn execute_inner(command: &str, options: &RunOptions) -> Result<RunResult> {
     // Activate agent mode so built-ins emit JSON automatically.
     if options.json_output {
         executor.runtime_mut().set_agent_mode(true);
+        executor.runtime_mut().set_env("AUSH_JSON", "1");
         executor.runtime_mut().set_env("RUSH_JSON", "1");
     }
 
     // Resolve effective max_output_bytes: RunOptions takes priority, then
-    // the RUSH_MAX_OUTPUT environment variable.
+    // AUSH_MAX_OUTPUT with RUSH_MAX_OUTPUT fallback.
     let max_output_bytes = options.max_output_bytes.or_else(|| {
-        env::var("RUSH_MAX_OUTPUT")
-            .ok()
+        crate::brand::env_var("AUSH_MAX_OUTPUT", "RUSH_MAX_OUTPUT")
             .and_then(|v| parse_max_output(&v))
     });
 

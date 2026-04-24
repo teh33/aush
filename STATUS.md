@@ -1,4 +1,4 @@
-# Rush Shell - Project Status
+# AUSH Shell - Project Status
 
 **Last Updated:** January 20, 2026
 
@@ -16,7 +16,7 @@ All Phase 3 objectives have been successfully implemented, tested, and documente
 - **Status:** 31 tests passing | 542 lines of code
 
 #### 2. Command History with Fuzzy Search
-- Persistent history storage (`~/.rush_history`)
+- Persistent history storage (`~/.aush_history`)
 - Fuzzy search with ranking (SkimMatcherV2)
 - Deduplication (no repeated commands)
 - Timestamp tracking
@@ -38,7 +38,7 @@ All Phase 3 objectives have been successfully implemented, tested, and documente
 
 #### 5. Undo File Operations
 - Track create/delete/modify/move
-- Automatic backups (`~/.rush_undo/`)
+- Automatic backups (`~/.aush_undo/`)
 - Undo stack (last 100 operations)
 - Safe file operations
 - **Status:** 7 tests passing | 312 lines of code
@@ -76,7 +76,7 @@ Variables: 7ms
 Pipelines: 124ms
 ```
 
-**Expected Rush Performance:**
+**Expected AUSH Performance:**
 - cat: 2-5x faster (memory-mapped I/O)
 - ls: 1.5-3x faster (parallel reads)
 - find: 2-4x faster (WalkBuilder)
@@ -109,7 +109,7 @@ Modules:
 - `QUICKSTART.md` - Complete user guide (425 lines)
 - `TESTING_GUIDE.md` - Testing and verification guide
 - `benchmarks/README.md` - Benchmark documentation
-- `benchmarks/manual-rush-test.md` - Manual performance testing
+- `benchmarks/manual-aush-test.md` - Manual performance testing
 
 **Technical Documentation:**
 - `docs/phase-3-completion-summary.md` - Complete feature specs
@@ -131,7 +131,7 @@ Modules:
 cargo build --release
 
 # 2. Run
-./target/release/rush
+./target/release/aush
 
 # 3. Try it
 pwd
@@ -152,7 +152,7 @@ See `TESTING_GUIDE.md` for complete testing instructions.
 ### Architecture
 
 ```
-rush/
+aush/
 ├── src/
 │   ├── lib.rs              # Library entry point
 │   ├── main.rs             # Binary entry point
@@ -196,7 +196,7 @@ rush/
 
 4. **TTY required** (Current)
    - Reedline needs interactive terminal
-   - Can't pipe commands to Rush
+   - Can't pipe commands to AUSH
 
 ### Performance Characteristics
 
@@ -263,7 +263,7 @@ rush/
 
 ## Current State: Production-Ready for Interactive Use
 
-Rush is now a fully functional, high-performance shell for interactive use. All Phase 3 features are complete, tested, and documented.
+AUSH is now a fully functional, high-performance shell for interactive use. All Phase 3 features are complete, tested, and documented.
 
 **Ready to use for:**
 - Daily interactive shell work
@@ -281,7 +281,7 @@ Rush is now a fully functional, high-performance shell for interactive use. All 
 
 ---
 
-**Start using Rush:** `./target/release/rush`
+**Start using AUSH:** `./target/release/aush`
 
 **Report issues:** Create an issue in the repository
 

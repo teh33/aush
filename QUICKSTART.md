@@ -6,15 +6,15 @@ Get up and running with AUSH (Actually Usable Shell) in under 5 minutes!
 
 ### 1. Build in Release Mode
 ```bash
-cd /Users/asher/knowledge/rush
+cd /Users/asher/knowledge/aush
 cargo build --release
 ```
 
-This will create the optimized binary at `target/release/rush`.
+This will create the optimized binary at `target/release/aush`.
 
 ### 2. Run AUSH
 ```bash
-./target/release/rush
+./target/release/aush
 ```
 
 You should see the AUSH prompt:
@@ -52,7 +52,7 @@ AUSH reimplements common commands with high performance:
 
 ```bash
 # Memory-mapped cat (blazing fast for large files)
-cat target/debug/rush  # Large binary, still instant!
+cat target/debug/aush  # Large binary, still instant!
 
 # Parallel ls (fast even with many files)
 ls -la target/release
@@ -210,7 +210,7 @@ Expected results on M2 Macbook Air:
 - `cd`, `pwd`, `echo`, `export` - Zero overhead
 
 ### 2. Command History
-- Persistent storage at `~/.aush_history`, with legacy `~/.rush_history` migration support planned
+- Persistent storage at `~/.aush_history`, with legacy `~/.aush_history` migration support planned
 - Fuzzy search with ranking
 - Deduplication (no repeated commands)
 - Timestamp tracking
@@ -295,7 +295,7 @@ undo       # Oops! Restore it
 
 ### History Settings
 
-Edit `~/.rush_history` file or configure in code:
+Edit `~/.aush_history` file or configure in code:
 - Max size: 10,000 entries (default)
 - Deduplication: Consecutive only (default) or all
 - Timestamps: Off (default) or on
@@ -303,9 +303,9 @@ Edit `~/.rush_history` file or configure in code:
 
 ### Undo Settings
 
-Configure in `~/.rush_undo`:
+Configure in `~/.aush_undo`:
 - Max operations: 100 (default)
-- Backup location: `~/.rush_undo/`
+- Backup location: `~/.aush_undo/`
 - Enable/disable: `undo enable` / `undo disable`
 
 ## Known Limitations
@@ -369,7 +369,7 @@ which ls  # Should show "builtin"
 ### History not saving
 ```bash
 # Check permissions:
-ls -la ~/.rush_history
+ls -la ~/.aush_history
 
 # Manually load:
 # (in code, happens automatically)
@@ -384,7 +384,7 @@ undo list
 undo enable
 
 # Check backup directory:
-ls -la ~/.rush_undo
+ls -la ~/.aush_undo
 ```
 
 ## Getting Help

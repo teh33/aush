@@ -1,8 +1,8 @@
-# Rush Architecture
+# AUSH Architecture
 
 ## Overview
 
-Rush is built as a modular shell with clear separation of concerns. Each component has a specific responsibility and communicates through well-defined interfaces.
+AUSH is built as a modular shell with clear separation of concerns. Each component has a specific responsibility and communicates through well-defined interfaces.
 
 ## Component Details
 
@@ -120,7 +120,7 @@ Each builtin is a pure function that takes arguments and runtime, returns a resu
 **Purpose**: Manage command history (TODO).
 
 **Planned Features**:
-- Persistent history file (~/.rush_history)
+- Persistent history file (~/.aush_history)
 - Fuzzy search (Ctrl+R)
 - History deduplication
 - Timestamp tracking
@@ -259,10 +259,10 @@ Each module has its own test suite:
 
 ```bash
 # Startup time
-hyperfine 'rush -c exit' 'bash -c exit' 'zsh -c exit'
+hyperfine 'aush -c exit' 'bash -c exit' 'zsh -c exit'
 
 # Built-in performance
-hyperfine 'rush -c "ls"' 'bash -c "ls"'
+hyperfine 'aush -c "ls"' 'bash -c "ls"'
 ```
 
 ## Future Architecture

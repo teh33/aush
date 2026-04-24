@@ -1,15 +1,19 @@
 #!/bin/bash
-# Interactive Shell Benchmark: Rush vs Zsh
+# Interactive Shell Benchmark: AUSH vs Zsh
 # Measures performance in a PERSISTENT shell session (like claude-code uses)
 
 set -e
 
-RUSH="./target/release/rush"
+AUSH="${AUSH:-./target/release/aush}"
+if [ ! -x "$AUSH" ] && [ -x ./target/release/rush ]; then
+    AUSH=./target/release/rush
+fi
+RUSH="$AUSH"
 ZSH="/bin/zsh"
 RUNS=50
 
 if [ ! -x "$RUSH" ]; then
-    echo "Error: Rush binary not found at $RUSH"
+    echo "Error: AUSH binary not found at $RUSH"
     echo "Run: cargo build --release"
     exit 1
 fi

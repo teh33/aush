@@ -1,6 +1,7 @@
 //! `funcsave` — persist a shell function definition to disk.
 //!
-//! Saves the named function to `~/.config/rush/functions/<name>.rush` so
+//! Saves the named function to `~/.config/aush/functions/<name>.rush`, falling
+//! back to existing legacy `~/.config/rush/functions`, so
 //! it is auto-loaded in future sessions (via the autoload_path mechanism).
 //!
 //! Usage:
@@ -26,9 +27,8 @@ pub fn builtin_funcsave(args: &[String], runtime: &mut Runtime) -> Result<Execut
         .ok_or_else(|| anyhow!("funcsave: unknown function: {}", name))?
         .clone();
 
-    let home =
-        dirs::home_dir().ok_or_else(|| anyhow!("funcsave: cannot determine home directory"))?;
-    let functions_dir = home.join(".config").join("rush").join("functions");
+    let functions_dir = crate::brand::migrated_xdg_config_file("functions")
+        .ok_or_else(|| anyhow!("funcsave: cannot determine home directory"))?;
     fs::create_dir_all(&functions_dir)
         .map_err(|e| anyhow!("funcsave: failed to create functions directory: {}", e))?;
 

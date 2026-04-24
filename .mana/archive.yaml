@@ -17,3 +17,21 @@ units:
   kind: task
   feature: false
   has_decisions: false
+- id: '26.5'
+  title: Record approval decisions in command receipts
+  status: closed
+  priority: 1
+  parent: '26'
+  labels:
+  - aush
+  - modern-shell
+  - receipts
+  - approval
+  updated_at: '2026-04-24T17:43:46.838641Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test approval_receipts --quiet && cargo check -q
+  created_at: '2026-04-24T17:38:00.340461Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false

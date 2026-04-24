@@ -1,8 +1,8 @@
-# Error Recovery in Rush Shell
+# Error Recovery in AUSH Shell
 
 ## Overview
 
-Rush shell implements comprehensive error recovery to ensure stability and reliability. The shell is designed to handle errors gracefully and continue operating even in the face of parse errors, execution errors, or unexpected panics.
+AUSH shell implements comprehensive error recovery to ensure stability and reliability. The shell is designed to handle errors gracefully and continue operating even in the face of parse errors, execution errors, or unexpected panics.
 
 ## Design Principles
 
@@ -30,11 +30,11 @@ The parser returns `Result<Vec<Statement>, Error>` and handles syntax errors gra
 
 **Example:**
 ```bash
-rush> if x {
+aush> if x {
 Error: Expected LeftBrace, found None
-rush> echo still_works
+aush> echo still_works
 still_works
-rush>
+aush>
 ```
 
 ### 2. Execution Error Recovery
@@ -56,14 +56,14 @@ The executor returns `Result<ExecutionResult, Error>` and handles runtime errors
 
 **Example:**
 ```bash
-rush> nonexistent_command
+aush> nonexistent_command
 Error: Command not found: 'nonexistent_command'
 
 Did you mean?
   existing_command (85%, builtin)
-rush> echo $?
+aush> echo $?
 1
-rush>
+aush>
 ```
 
 ### 3. Panic Recovery
@@ -105,12 +105,12 @@ match result {
 
 **Example:**
 ```bash
-rush> trigger_panic_somehow
+aush> trigger_panic_somehow
 Fatal error: attempted to divide by zero
 Shell recovered and is ready for next command.
-rush> echo still_alive
+aush> echo still_alive
 still_alive
-rush>
+aush>
 ```
 
 ## State Management
@@ -236,7 +236,7 @@ Interactive testing scenarios:
 1. **Check exit codes** - Use `$?` to verify command success
 2. **Use conditionals** - `&&` and `||` for error handling
 3. **Redirect stderr** - Capture error messages when needed
-4. **Read error messages** - Rush provides helpful error context
+4. **Read error messages** - AUSH provides helpful error context
 
 ## Implementation Details
 
@@ -258,7 +258,7 @@ pub fn execute_statement(&mut self, statement: Statement) -> Result<ExecutionRes
 
 ### Error Types
 
-Rush uses `anyhow::Result` for flexible error handling:
+AUSH uses `anyhow::Result` for flexible error handling:
 
 - Allows error context chaining
 - Preserves error sources
@@ -311,55 +311,55 @@ Future work could include:
 ### Example 1: Parse Error
 
 ```bash
-rush> let x =
+aush> let x =
 Error: Expected expression
-rush> let x = 42
-rush> echo $x
+aush> let x = 42
+aush> echo $x
 42
 ```
 
 ### Example 2: Command Not Found
 
 ```bash
-rush> xyz
+aush> xyz
 Error: Command not found: 'xyz'
-rush> echo $?
+aush> echo $?
 127
 ```
 
 ### Example 3: Pipeline Error
 
 ```bash
-rush> false | echo "runs anyway"
+aush> false | echo "runs anyway"
 runs anyway
-rush> echo $?
+aush> echo $?
 0
 ```
 
 ### Example 4: Subshell Error
 
 ```bash
-rush> echo before
+aush> echo before
 before
-rush> (false)
-rush> echo $?
+aush> (false)
+aush> echo $?
 1
-rush> echo after
+aush> echo after
 after
 ```
 
 ### Example 5: Conditional Error Handling
 
 ```bash
-rush> false && echo "won't print"
-rush> true || echo "won't print"
-rush> false || echo "will print"
+aush> false && echo "won't print"
+aush> true || echo "won't print"
+aush> false || echo "will print"
 will print
 ```
 
 ## Conclusion
 
-Rush shell's error recovery system ensures that the shell remains stable and usable even when errors occur. By using Result types throughout, catching panics in the interactive loop, and preserving shell state, Rush provides a robust and reliable shell experience.
+AUSH shell's error recovery system ensures that the shell remains stable and usable even when errors occur. By using Result types throughout, catching panics in the interactive loop, and preserving shell state, AUSH provides a robust and reliable shell experience.
 
 The multi-layered approach to error handling means that:
 - Common errors are handled gracefully with helpful messages
@@ -367,4 +367,4 @@ The multi-layered approach to error handling means that:
 - Even unexpected panics don't crash the shell
 - Users can continue their work uninterrupted
 
-This makes Rush suitable for both interactive use and scripting, where reliability is paramount.
+This makes AUSH suitable for both interactive use and scripting, where reliability is paramount.

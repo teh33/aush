@@ -1,22 +1,22 @@
-# Rush Performance Benchmarks
+# AUSH Performance Benchmarks
 
-This document describes the performance targets, benchmarking methodology, and how to run benchmarks for the Rush shell.
+This document describes the performance targets, benchmarking methodology, and how to run benchmarks for the AUSH shell.
 
 ## The "Actually Usable" Standard
 
 Raw speed is not enough. A shell can benchmark well and still fail as a daily driver.
 
-Rush therefore distinguishes between:
+AUSH therefore distinguishes between:
 - **performance benchmarks** — startup, memory, parser, builtins
 - **usability benchmarks** — interactive reliability, correctness under common workflows, and recovery behavior
 
-If Rush is ever published as **AUSH** (**Actually Usable Shell**), this second category is the bar that matters.
+If AUSH is ever published as **AUSH** (**Actually Usable Shell**), this second category is the bar that matters.
 
 ### Actually Usable categories
 
 | Category | What it means | Example evidence |
 |--------|--------|-----------|
-| **Startup** | Feels instant enough to not be annoying | `rush -c exit`, interactive launch latency |
+| **Startup** | Feels instant enough to not be annoying | `aush -c exit`, interactive launch latency |
 | **Interactive reliability** | Prompt, editing, signals, redraw, and session behavior are stable | prompt appears immediately, `Ctrl-C` recovers cleanly |
 | **Shell correctness** | Common shell constructs behave like users expect | loops, quoting, pipelines, redirects, substitutions |
 | **Daily-driver workflows** | Real repo/file/git tasks work smoothly in a persistent session | `pwd`, `ls`, `git status`, pipes, rc loading |
@@ -24,7 +24,7 @@ If Rush is ever published as **AUSH** (**Actually Usable Shell**), this second c
 
 ## Performance Targets
 
-Rush is designed to be fast and lightweight. Our key performance targets are:
+AUSH is designed to be fast and lightweight. Our key performance targets are:
 
 | Metric | Target | Rationale |
 |--------|--------|-----------|
@@ -36,7 +36,7 @@ Rush is designed to be fast and lightweight. Our key performance targets are:
 
 ## Benchmark Suite
 
-Rush includes two classes of benchmarks:
+AUSH includes two classes of benchmarks:
 
 ### 1. Performance Benchmarks
 
@@ -59,10 +59,10 @@ Located in `benches/`, these use the [Criterion](https://github.com/bheisler/cri
 
 ### 2. Usability Benchmarks
 
-These focus on whether Rush is usable as a daily shell, not just whether it is fast.
+These focus on whether AUSH is usable as a daily shell, not just whether it is fast.
 
 **Persistent-session benchmarks**:
-- `benches/interactive_benchmark.sh` — compare commands in a persistent Rush session vs Zsh
+- `benches/interactive_benchmark.sh` — compare commands in a persistent AUSH session vs Zsh
 - `benches/session_benchmark.sh` — separate startup cost from in-session command execution
 
 These are especially important for validating claims like **Actually Usable Shell** because they measure:
@@ -72,7 +72,7 @@ These are especially important for validating claims like **Actually Usable Shel
 
 ### 3. Hyperfine Real-World Benchmarks
 
-Located in `scripts/benchmark.sh`, these compare Rush against other shells (bash, zsh) in real-world scenarios using [hyperfine](https://github.com/sharkdp/hyperfine).
+Located in `scripts/benchmark.sh`, these compare AUSH against other shells (bash, zsh) in real-world scenarios using [hyperfine](https://github.com/sharkdp/hyperfine).
 
 ## Running Benchmarks
 
@@ -108,17 +108,17 @@ bash ./benches/interactive_benchmark.sh
 bash ./benches/session_benchmark.sh
 
 # Run the AUSH fast smoke benchmark
-bash ./benches/aush_smoke_fast.sh ./target/release/rush
+bash ./benches/aush_smoke_fast.sh ./target/release/aush
 
 # Run the full AUSH benchmark suite
-bash ./benches/aush_suite.sh ./target/release/rush
+bash ./benches/aush_suite.sh ./target/release/aush
 ```
 
 ### AUSH fast smoke benchmark
 ```bash
 make bench-aush-fast
 # or
-bash ./benches/aush_smoke_fast.sh ./target/release/rush
+bash ./benches/aush_smoke_fast.sh ./target/release/aush
 ```
 
 This fast gate is intended to finish quickly and covers:
@@ -132,7 +132,7 @@ This fast gate is intended to finish quickly and covers:
 ```bash
 make bench-aush
 # or
-bash ./benches/aush_suite.sh ./target/release/rush
+bash ./benches/aush_suite.sh ./target/release/aush
 ```
 
 This full suite runs:
@@ -177,7 +177,7 @@ Results include:
 Use this as a release/readiness gate in addition to the speed numbers.
 
 ### 1. Startup
-- `hyperfine --warmup 5 './target/release/rush -c exit'`
+- `hyperfine --warmup 5 './target/release/aush -c exit'`
 - interactive shell launches without blank prompt or redraw glitch
 - startup remains competitive enough that the shell feels instant in Ghostty/iTerm
 
@@ -201,8 +201,8 @@ Use this as a release/readiness gate in addition to the speed numbers.
 ### 4. Daily-driver workflows
 - run `bash ./benches/interactive_benchmark.sh`
 - run `bash ./benches/session_benchmark.sh`
-- run `bash ./benches/aush_smoke_fast.sh ./target/release/rush`
-- run `bash ./benches/aush_suite.sh ./target/release/rush`
+- run `bash ./benches/aush_smoke_fast.sh ./target/release/aush`
+- run `bash ./benches/aush_suite.sh ./target/release/aush`
 - manually validate in a real repo:
   - `pwd`
   - `ls`
@@ -277,10 +277,10 @@ Memory and cache analysis:
 sudo apt install valgrind
 
 # Memory profiling
-valgrind --tool=massif target/release/rush -c exit
+valgrind --tool=massif target/release/aush -c exit
 
 # Cache profiling
-valgrind --tool=cachegrind target/release/rush -c "echo test"
+valgrind --tool=cachegrind target/release/aush -c "echo test"
 ```
 
 ## Interpreting Results
@@ -305,7 +305,7 @@ Target: **< 10MB**
 
 Check peak resident set size:
 ```bash
-/usr/bin/time -l target/release/rush -c exit
+/usr/bin/time -l target/release/aush -c exit
 # Look for "maximum resident set size"
 ```
 
@@ -320,11 +320,11 @@ Target: **≥ GNU utilities**
 
 Example comparison:
 ```
-echo/rush_builtin   time: [1.234 μs 1.456 μs 1.678 μs]
+echo/aush_builtin   time: [1.234 μs 1.456 μs 1.678 μs]
 echo/gnu_baseline   time: [2.234 μs 2.456 μs 2.678 μs]
 ```
 
-Rush builtins should be faster or comparable to system commands because:
+AUSH builtins should be faster or comparable to system commands because:
 - No process fork overhead
 - No dynamic linking
 - Direct function calls
@@ -384,7 +384,7 @@ When adding new features, add corresponding benchmarks:
    ```bash
    hyperfine \
        --warmup 3 \
-       "$RUSH_BIN -c 'new command'" \
+       "$AUSH_BIN -c 'new command'" \
        "bash -c 'new command'"
    ```
 

@@ -4,12 +4,15 @@
 
 set -e
 
-RUSH="./target/release/rush"
+AUSH="${AUSH:-./target/release/aush}"
+if [ ! -x "$AUSH" ] && [ -x ./target/release/rush ]; then
+    AUSH=./target/release/rush
+fi
 ZSH="/bin/zsh"
 RUNS=10
 
-if [ ! -x "$RUSH" ]; then
-    echo "Error: Rush binary not found at $RUSH"
+if [ ! -x "$AUSH" ]; then
+    echo "Error: Rush binary not found at $AUSH"
     echo "Run: cargo build --release"
     exit 1
 fi
@@ -48,7 +51,7 @@ test_spawn_per_command() {
 }
 
 printf "  Rush (5 commands, spawn each): "
-rush_spawn_time=$(test_spawn_per_command "$RUSH")
+rush_spawn_time=$(test_spawn_per_command "$AUSH")
 printf "%8.2f ms total (%6.2f ms per command)\n" "$rush_spawn_time" "$(python3 -c "print($rush_spawn_time / 5)")"
 
 printf "  Zsh  (5 commands, spawn each): "
@@ -95,7 +98,7 @@ echo test > /dev/null"
 }
 
 printf "  Rush (5 commands, 1 session):  "
-rush_session_time=$(test_single_session "$RUSH")
+rush_session_time=$(test_single_session "$AUSH")
 printf "%8.2f ms total (%6.2f ms per command)\n" "$rush_session_time" "$(python3 -c "print($rush_session_time / 5)")"
 
 printf "  Zsh  (5 commands, 1 session):  "
@@ -120,7 +123,7 @@ echo ""
 rush_startup=$(python3 -c "print(($rush_spawn_time - $rush_session_time) / 5)")
 zsh_startup=$(python3 -c "print(($zsh_spawn_time - $zsh_session_time) / 5)")
 
-printf "  Rush shell startup overhead: %6.2f ms per spawn\n" "$rush_startup"
+printf "  AUSH shell startup overhead: %6.2f ms per spawn\n" "$rush_startup"
 printf "  Zsh  shell startup overhead: %6.2f ms per spawn\n" "$zsh_startup"
 printf "  Difference:                  %6.2f ms (%.1fx slower)\n" \
     "$(python3 -c "print($rush_startup - $zsh_startup)")" \

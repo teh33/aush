@@ -5,16 +5,20 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-RUSH_BINARY="${PROJECT_ROOT}/target/release/rush"
+AUSH_BINARY="${PROJECT_ROOT}/target/release/aush"
+if [[ ! -f "$AUSH_BINARY" && -f "${PROJECT_ROOT}/target/release/rush" ]]; then
+    AUSH_BINARY="${PROJECT_ROOT}/target/release/rush"
+fi
+RUSH_BINARY="$AUSH_BINARY"
 
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║          POSIX Compliance Test Suite for Rush Shell           ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
 
-# Check if rush binary exists
+# Check if aush binary exists
 if [[ ! -f "$RUSH_BINARY" ]]; then
-    echo "Warning: Rush binary not found at $RUSH_BINARY"
+    echo "Warning: AUSH binary not found at $RUSH_BINARY"
     echo "Building rush..."
     cd "$PROJECT_ROOT"
     cargo build --release || {
@@ -23,7 +27,7 @@ if [[ ! -f "$RUSH_BINARY" ]]; then
     }
 fi
 
-echo "Rush binary: $RUSH_BINARY"
+echo "AUSH binary: $RUSH_BINARY"
 echo ""
 
 # Export for tests

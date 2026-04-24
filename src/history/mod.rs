@@ -110,11 +110,13 @@ impl History {
         }
     }
 
-    /// Get the default history file path (~/.rush_history)
+    /// Get the default history file path (~/.aush_history, falling back to ~/.rush_history)
     pub fn default_history_file() -> PathBuf {
-        dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join(".rush_history")
+        let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
+        crate::brand::first_existing_or_primary(
+            home.join(".aush_history"),
+            [home.join(".rush_history")],
+        )
     }
 
     /// Load history from file

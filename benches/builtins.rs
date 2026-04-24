@@ -5,7 +5,7 @@ use std::process::Command;
 use std::time::Duration;
 
 /// Benchmark builtin commands vs their GNU equivalents
-/// This helps ensure Rush builtins are competitive with system commands
+/// This helps ensure AUSH builtins are competitive with system commands
 
 fn bench_echo_builtin(c: &mut Criterion) {
     let mut group = c.benchmark_group("echo");
@@ -23,10 +23,10 @@ fn bench_echo_builtin(c: &mut Criterion) {
         });
     });
 
-    // Benchmark system echo via Rush
+    // Benchmark system echo via AUSH
     group.bench_function("rush_system", |b| {
         b.iter(|| {
-            let output = Command::new("target/release/rush")
+            let output = Command::new("target/release/aush")
                 .arg("-c")
                 .arg("echo hello world")
                 .output()
@@ -65,10 +65,10 @@ fn bench_pwd_builtin(c: &mut Criterion) {
         });
     });
 
-    // Benchmark system pwd via Rush
+    // Benchmark system pwd via AUSH
     group.bench_function("rush_system", |b| {
         b.iter(|| {
-            let output = Command::new("target/release/rush")
+            let output = Command::new("target/release/aush")
                 .arg("-c")
                 .arg("pwd")
                 .output()

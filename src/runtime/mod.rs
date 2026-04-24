@@ -457,7 +457,7 @@ impl Runtime {
                     "Warning: Failed to initialize undo manager: {}. Using temp directory.",
                     e
                 );
-                let tmp_dir = std::env::temp_dir().join("rush-undo");
+                let tmp_dir = std::env::temp_dir().join("aush-undo");
                 UndoManager::with_undo_dir(tmp_dir).unwrap_or_else(|e2| {
                     eprintln!(
                         "Warning: Undo support disabled (temp fallback also failed: {})",

@@ -1,13 +1,115 @@
 //! Command, function, redirection, subshell, and background execution.
 
 use super::*;
+use crate::ai::tools::confirm;
+use crate::brand;
+use crate::command_metadata::{metadata_for_command, CommandMetadata};
+use crate::effects::RiskLevel;
+use crate::receipts::{append_default_receipt_jsonl, ApprovalDecision, CommandReceipt};
 use anyhow::{anyhow, Result};
 use nix::unistd::{getpid, setpgid};
 use std::io::IsTerminal;
 use std::os::unix::process::CommandExt;
 use std::process::Command as StdCommand;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
+
+fn format_command_preview(command_name: &str, args: &[String]) -> String {
+    if args.is_empty() {
+        command_name.to_string()
+    } else {
+        format!("{} {}", command_name, args.join(" "))
+    }
+}
+
+fn approval_prompt(command_name: &str, args: &[String], metadata: &CommandMetadata) -> String {
+    let rendered_command = format_command_preview(command_name, args);
+
+    format!(
+        "{}\n\nCommand: {}\nProceed?",
+        metadata.render_human_summary(),
+        rendered_command
+    )
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ApprovalMode {
+    Off,
+    High,
+    Medium,
+}
+
+impl ApprovalMode {
+    fn from_env() -> Self {
+        match brand::env_var("AUSH_APPROVAL_MODE", "RUSH_APPROVAL_MODE") {
+            Some(value) => parse_approval_mode(&value),
+            None => Self::High,
+        }
+    }
+
+    fn requires_confirmation(self, risk: RiskLevel) -> bool {
+        match self {
+            Self::Off => false,
+            Self::High => risk >= RiskLevel::High,
+            Self::Medium => risk >= RiskLevel::Medium,
+        }
+    }
+}
+
+fn parse_approval_mode(value: &str) -> ApprovalMode {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "off" | "never" | "false" | "0" => ApprovalMode::Off,
+        "medium" => ApprovalMode::Medium,
+        "high" | "on" | "true" | "1" | "" => ApprovalMode::High,
+        _ => ApprovalMode::High,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::command_metadata::metadata_for_command;
+
+    #[test]
+    fn approval_prompt_uses_human_labels() {
+        let metadata = metadata_for_command("rm").expect("rm metadata should exist");
+        let prompt = approval_prompt("rm", &["old.log".to_string()], metadata);
+
+        assert!(prompt.contains("Remove files or directories"));
+        assert!(prompt.contains("High risk"));
+        assert!(prompt.contains("Delete files"));
+        assert!(prompt.contains("Command: rm old.log"));
+        assert!(!prompt.contains("delete_file"));
+    }
+
+    #[test]
+    fn confirmation_only_applies_to_high_risk_interactive_commands() {
+        let executor = Executor::new_embedded();
+        let rm = metadata_for_command("rm").expect("rm metadata should exist");
+        let ls = metadata_for_command("ls").expect("ls metadata should exist");
+
+        assert!(!executor.should_confirm_effects(rm));
+        assert!(!executor.should_confirm_effects(ls));
+    }
+
+    #[test]
+    fn approval_mode_parser_supports_off_high_and_medium() {
+        assert_eq!(parse_approval_mode("off"), ApprovalMode::Off);
+        assert_eq!(parse_approval_mode("0"), ApprovalMode::Off);
+        assert_eq!(parse_approval_mode("medium"), ApprovalMode::Medium);
+        assert_eq!(parse_approval_mode("high"), ApprovalMode::High);
+        assert_eq!(parse_approval_mode("unexpected"), ApprovalMode::High);
+    }
+
+    #[test]
+    fn approval_mode_thresholds_match_risk_levels() {
+        assert!(!ApprovalMode::Off.requires_confirmation(RiskLevel::High));
+        assert!(!ApprovalMode::High.requires_confirmation(RiskLevel::Medium));
+        assert!(ApprovalMode::High.requires_confirmation(RiskLevel::High));
+        assert!(ApprovalMode::Medium.requires_confirmation(RiskLevel::Medium));
+        assert!(ApprovalMode::Medium.requires_confirmation(RiskLevel::High));
+    }
+}
 
 impl Executor {
     pub(crate) fn execute_command(&mut self, command: Command) -> Result<ExecutionResult> {
@@ -86,12 +188,20 @@ impl Executor {
             return result;
         }
 
-        if self.builtins.is_builtin(&command_name) {
-            let args = self.expand_and_resolve_arguments(&command_args)?;
-            if let Some(last) = args.last() {
-                self.runtime.set_last_arg(last.clone());
-            }
+        let args = self.expand_and_resolve_arguments(&command_args)?;
+        if let Some(last) = args.last() {
+            self.runtime.set_last_arg(last.clone());
+        }
 
+        match self.maybe_confirm_effects(&command_name, &args)? {
+            ApprovalDecision::Denied => {
+                self.restore_prefix_env(&saved_env);
+                return Ok(ExecutionResult::error(format!("Cancelled {}\n", command_name)));
+            }
+            ApprovalDecision::Approved | ApprovalDecision::NotRequired => {}
+        }
+
+        if self.builtins.is_builtin(&command_name) {
             let stdin_content = self.extract_stdin_content(&command.redirects)?;
             let piped_stdin = self.runtime.get_piped_stdin().map(|s| s.to_vec());
 
@@ -704,6 +814,77 @@ impl Executor {
             Statement::ConditionalAnd(cond) => Self::is_exec_command(&cond.right),
             Statement::ConditionalOr(cond) => Self::is_exec_command(&cond.right),
             _ => false,
+        }
+    }
+
+    fn should_confirm_effects(&self, metadata: &CommandMetadata) -> bool {
+        self.show_progress
+            && !self.runtime.agent_mode()
+            && ApprovalMode::from_env().requires_confirmation(metadata.risk)
+            && std::io::stdin().is_terminal()
+            && std::io::stdout().is_terminal()
+    }
+
+    fn maybe_confirm_effects(&self, command_name: &str, args: &[String]) -> Result<ApprovalDecision> {
+        let Some(metadata) = metadata_for_command(command_name) else {
+            return Ok(ApprovalDecision::NotRequired);
+        };
+
+        if !self.should_confirm_effects(metadata) {
+            return Ok(ApprovalDecision::NotRequired);
+        }
+
+        let prompt = approval_prompt(command_name, args, metadata);
+        let started_at = chrono::Utc::now();
+        let timer = Instant::now();
+        let approved = confirm(&prompt)?;
+        let finished_at = chrono::Utc::now();
+        let decision = if approved {
+            ApprovalDecision::Approved
+        } else {
+            ApprovalDecision::Denied
+        };
+
+        self.record_approval_receipt(
+            command_name,
+            args,
+            started_at,
+            finished_at,
+            timer.elapsed(),
+            decision,
+        );
+
+        Ok(decision)
+    }
+
+    fn record_approval_receipt(
+        &self,
+        command_name: &str,
+        args: &[String],
+        started_at: chrono::DateTime<chrono::Utc>,
+        finished_at: chrono::DateTime<chrono::Utc>,
+        elapsed: Duration,
+        approval: ApprovalDecision,
+    ) {
+        let exit_code = match approval {
+            ApprovalDecision::Denied => 1,
+            ApprovalDecision::Approved | ApprovalDecision::NotRequired => 0,
+        };
+        let receipt = CommandReceipt::new(
+            format_command_preview(command_name, args),
+            self.runtime.get_cwd().clone(),
+            started_at,
+            finished_at,
+            exit_code,
+        )
+        .with_approval(approval);
+
+        if let Err(error) = append_default_receipt_jsonl(&receipt) {
+            eprintln!(
+                "aush: warning: failed to write approval receipt after {} ms: {}",
+                elapsed.as_millis(),
+                error
+            );
         }
     }
 

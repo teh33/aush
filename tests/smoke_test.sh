@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Rush Shell Smoke Test Suite
+# AUSH Shell Smoke Test Suite
 #
-# Run: ./tests/smoke_test.sh [path-to-rush]
+# Run: ./tests/smoke_test.sh [path-to-aush]
 #
 # This tests fundamental shell functionality that ANY POSIX shell must support.
 # If these fail, the shell is not usable for real work.
@@ -10,7 +10,10 @@
 
 set -u
 
-RUSH="${1:-./target/release/rush}"
+AUSH="${1:-./target/release/aush}"
+if [[ ! -x "$AUSH" && -x ./target/release/rush ]]; then
+    AUSH=./target/release/rush
+fi
 PASS=0
 FAIL=0
 SKIP=0
@@ -37,7 +40,7 @@ test_case() {
 
     # Run with --no-rc to avoid config file issues
     local actual
-    actual=$("$RUSH" --no-rc -c "$cmd" 2>&1)
+    actual=$("$AUSH" --no-rc -c "$cmd" 2>&1)
     local exit_code=$?
 
     if [[ "$actual" == "$expected" ]]; then
@@ -59,7 +62,7 @@ test_succeeds() {
     local name="$1"
     local cmd="$2"
 
-    "$RUSH" --no-rc -c "$cmd" >/dev/null 2>&1
+    "$AUSH" --no-rc -c "$cmd" >/dev/null 2>&1
     local exit_code=$?
 
     if [[ $exit_code -eq 0 ]]; then
@@ -79,7 +82,7 @@ test_fails() {
     local name="$1"
     local cmd="$2"
 
-    "$RUSH" --no-rc -c "$cmd" >/dev/null 2>&1
+    "$AUSH" --no-rc -c "$cmd" >/dev/null 2>&1
     local exit_code=$?
 
     if [[ $exit_code -ne 0 ]]; then
@@ -101,7 +104,7 @@ test_contains() {
     local substring="$3"
 
     local actual
-    actual=$("$RUSH" --no-rc -c "$cmd" 2>&1)
+    actual=$("$AUSH" --no-rc -c "$cmd" 2>&1)
 
     if [[ "$actual" == *"$substring"* ]]; then
         echo -e "${GREEN}✓${NC} $name"
@@ -134,13 +137,13 @@ section() {
 # TEST SUITE BEGINS
 # ============================================================================
 
-echo "Rush Shell Smoke Test Suite"
-echo "Testing: $RUSH"
+echo "AUSH Shell Smoke Test Suite"
+echo "Testing: $AUSH"
 echo "Temp dir: $TMPDIR"
 
-# Check rush exists
-if [[ ! -x "$RUSH" ]]; then
-    echo -e "${RED}Error: $RUSH not found or not executable${NC}"
+# Check aush exists
+if [[ ! -x "$AUSH" ]]; then
+    echo -e "${RED}Error: $AUSH not found or not executable${NC}"
     echo "Build with: cargo build --release"
     exit 1
 fi

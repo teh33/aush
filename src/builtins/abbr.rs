@@ -5,7 +5,8 @@ use anyhow::{anyhow, Result};
 /// Implement the `abbr` builtin command.
 ///
 /// Abbreviations work like aliases but are stored persistently in
-/// `~/.config/rush/abbreviations` and are expanded before execution.
+/// `~/.config/aush/abbreviations` with fallback to existing legacy
+/// `~/.config/rush/abbreviations`, and are expanded before execution.
 ///
 /// Usage:
 ///   abbr                    — list all abbreviations

@@ -20,7 +20,7 @@ impl TableRenderer {
         // Detect if we're in a TTY for color support
         let use_colors = std::io::stdout().is_terminal()
             && std::env::var("NO_COLOR").is_err()
-            && std::env::var("RUSH_NO_COLOR").is_err();
+            && crate::brand::env_var("AUSH_NO_COLOR", "RUSH_NO_COLOR").is_none();
 
         // Get terminal width
         let max_width = terminal_size::terminal_size().map(|(w, _)| w.0 as usize);

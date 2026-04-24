@@ -3,10 +3,13 @@
 
 set -e
 
-RUSH="./target/release/rush"
+AUSH="${AUSH:-./target/release/aush}"
+if [ ! -x "$AUSH" ] && [ -x ./target/release/rush ]; then
+    AUSH=./target/release/rush
+fi
 RUNS=100
 
-if [ ! -x "$RUSH" ]; then
+if [ ! -x "$AUSH" ]; then
     echo "Error: Rush binary not found"
     exit 1
 fi
@@ -40,7 +43,7 @@ total = 0
 
 for i in range($RUNS):
     start = time.perf_counter()
-    subprocess.run(['$RUSH'], input=script, capture_output=True, text=True, timeout=10)
+    subprocess.run(['$AUSH'], input=script, capture_output=True, text=True, timeout=10)
     end = time.perf_counter()
     total += (end - start) * 1000
 
@@ -69,7 +72,7 @@ import time
 total = 0
 for i in range($RUNS):
     start = time.perf_counter()
-    subprocess.run(['$RUSH'], input='$cmd', capture_output=True, text=True, timeout=10)
+    subprocess.run(['$AUSH'], input='$cmd', capture_output=True, text=True, timeout=10)
     end = time.perf_counter()
     total += (end - start) * 1000
 
@@ -99,12 +102,12 @@ echo ""
 # Try to use system profiler
 if command -v perf &> /dev/null; then
     echo "Using perf (Linux):"
-    perf record -g --call-graph dwarf -- $RUSH -c "pwd; echo test; git status" > /dev/null 2>&1 || true
+    perf record -g --call-graph dwarf -- $AUSH -c "pwd; echo test; git status" > /dev/null 2>&1 || true
     perf report --stdio | head -50 || true
 elif command -v sample &> /dev/null; then
     echo "Using sample (macOS):"
-    echo "Run: sudo sample $RUSH 5 -file rush_profile.txt"
-    echo "Then execute: $RUSH -c 'pwd; echo test; git status' in another terminal"
+    echo "Run: sudo sample $AUSH 5 -file rush_profile.txt"
+    echo "Then execute: $AUSH -c 'pwd; echo test; git status' in another terminal"
 else
     echo "No profiler available. Install perf (Linux) or use Instruments (macOS)"
 fi

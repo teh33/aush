@@ -2,7 +2,7 @@ use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criteri
 use std::process::Command;
 use std::time::Duration;
 
-/// Benchmark the startup time of the Rush shell
+/// Benchmark the startup time of the AUSH shell
 /// Target: < 10ms from invocation to ready state
 fn bench_startup_time(c: &mut Criterion) {
     let mut group = c.benchmark_group("startup");
@@ -14,11 +14,11 @@ fn bench_startup_time(c: &mut Criterion) {
     // Benchmark cold startup with exit
     group.bench_function("cold_start_exit", |b| {
         b.iter(|| {
-            let output = Command::new("target/release/rush")
+            let output = Command::new("target/release/aush")
                 .arg("-c")
                 .arg("exit")
                 .output()
-                .expect("Failed to execute rush");
+                .expect("Failed to execute aush");
             black_box(output);
         });
     });
@@ -26,11 +26,11 @@ fn bench_startup_time(c: &mut Criterion) {
     // Benchmark startup with simple echo
     group.bench_function("start_echo_exit", |b| {
         b.iter(|| {
-            let output = Command::new("target/release/rush")
+            let output = Command::new("target/release/aush")
                 .arg("-c")
                 .arg("echo test")
                 .output()
-                .expect("Failed to execute rush");
+                .expect("Failed to execute aush");
             black_box(output);
         });
     });

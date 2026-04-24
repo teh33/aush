@@ -1,15 +1,15 @@
-# Rush Example Scripts
+# AUSH Example Scripts
 
-This directory contains practical example scripts demonstrating Rush's capabilities for AI agents and automation.
+This directory contains practical example scripts demonstrating AUSH's capabilities for AI agents and automation.
 
 ## Examples
 
-### 1. commit_message_generator.rush
+### 1. commit_message_generator.aush
 Generate intelligent commit messages from staged changes.
 
 **Usage:**
 ```bash
-./commit_message_generator.rush
+./commit_message_generator.aush
 ```
 
 **Features:**
@@ -20,12 +20,12 @@ Generate intelligent commit messages from staged changes.
 
 ---
 
-### 2. find_todos.rush
+### 2. find_todos.aush
 Find all TODO/FIXME comments in codebase.
 
 **Usage:**
 ```bash
-./find_todos.rush [directory]
+./find_todos.aush [directory]
 ```
 
 **Features:**
@@ -36,12 +36,12 @@ Find all TODO/FIXME comments in codebase.
 
 ---
 
-### 3. code_review_prep.rush
+### 3. code_review_prep.aush
 Prepare comprehensive code review summaries.
 
 **Usage:**
 ```bash
-./code_review_prep.rush [base_branch]
+./code_review_prep.aush [base_branch]
 ```
 
 **Features:**
@@ -52,12 +52,12 @@ Prepare comprehensive code review summaries.
 
 ---
 
-### 4. test_coverage_analyzer.rush
+### 4. test_coverage_analyzer.aush
 Analyze test coverage by finding files without tests.
 
 **Usage:**
 ```bash
-./test_coverage_analyzer.rush [src_dir] [test_dir]
+./test_coverage_analyzer.aush [src_dir] [test_dir]
 ```
 
 **Features:**
@@ -68,12 +68,12 @@ Analyze test coverage by finding files without tests.
 
 ---
 
-### 5. dead_code_finder.rush
+### 5. dead_code_finder.aush
 Find potentially unused code (functions/types not referenced).
 
 **Usage:**
 ```bash
-./dead_code_finder.rush [directory]
+./dead_code_finder.aush [directory]
 ```
 
 **Features:**
@@ -84,12 +84,12 @@ Find potentially unused code (functions/types not referenced).
 
 ---
 
-### 6. security_audit.rush
+### 6. security_audit.aush
 Basic security audit for common issues.
 
 **Usage:**
 ```bash
-./security_audit.rush [directory]
+./security_audit.aush [directory]
 ```
 
 **Features:**
@@ -101,28 +101,28 @@ Basic security audit for common issues.
 
 ---
 
-### 7. performance_profiler.rush
+### 7. performance_profiler.aush
 Profile git operations performance.
 
 **Usage:**
 ```bash
-./performance_profiler.rush
+./performance_profiler.aush
 ```
 
 **Features:**
 - Benchmarks git_status, git_log, git_diff
 - Shows average execution times
 - Provides repository statistics
-- Demonstrates Rush performance benefits
+- Demonstrates AUSH performance benefits
 
 ---
 
-### 8. branch_cleaner.rush
+### 8. branch_cleaner.aush
 Find and list branches that have been merged.
 
 **Usage:**
 ```bash
-./branch_cleaner.rush
+./branch_cleaner.aush
 ```
 
 **Features:**
@@ -133,12 +133,12 @@ Find and list branches that have been merged.
 
 ---
 
-### 9. changelog_generator.rush
+### 9. changelog_generator.aush
 Generate changelogs from git commits.
 
 **Usage:**
 ```bash
-./changelog_generator.rush [since_tag]
+./changelog_generator.aush [since_tag]
 ```
 
 **Features:**
@@ -149,12 +149,12 @@ Generate changelogs from git commits.
 
 ---
 
-### 10. dependency_check.rush
+### 10. dependency_check.aush
 Check for dependency updates (demonstrates API usage).
 
 **Usage:**
 ```bash
-./dependency_check.rush
+./dependency_check.aush
 ```
 
 **Features:**
@@ -165,12 +165,12 @@ Check for dependency updates (demonstrates API usage).
 
 ---
 
-### 11. file_stats.rush
+### 11. file_stats.aush
 Analyze file statistics in a directory.
 
 **Usage:**
 ```bash
-./file_stats.rush [directory]
+./file_stats.aush [directory]
 ```
 
 **Features:**
@@ -181,12 +181,12 @@ Analyze file statistics in a directory.
 
 ---
 
-### 12. git_author_stats.rush
+### 12. git_author_stats.aush
 Analyze git commit statistics by author.
 
 **Usage:**
 ```bash
-./git_author_stats.rush [commit_count]
+./git_author_stats.aush [commit_count]
 ```
 
 **Features:**
@@ -199,45 +199,45 @@ Analyze git commit statistics by author.
 
 ## Running Examples
 
-All examples are executable Rush scripts. Make them executable and run directly:
+All examples are executable AUSH scripts. Make them executable and run directly:
 
 ```bash
-chmod +x examples/*.rush
-./examples/commit_message_generator.rush
+chmod +x examples/*.aush
+./examples/commit_message_generator.aush
 ```
 
-Or run with Rush:
+Or run with AUSH:
 
 ```bash
-rush examples/commit_message_generator.rush
+aush examples/commit_message_generator.aush
 ```
 
 ## AI Agent Integration
 
 These examples demonstrate patterns useful for AI coding agents:
 
-1. **JSON Processing**: All examples use Rush's native JSON operations
+1. **JSON Processing**: All examples use AUSH's native JSON operations
 2. **Error Handling**: Proper error checking and reporting
-3. **Git Integration**: Leveraging Rush's fast git builtins
+3. **Git Integration**: Leveraging AUSH's fast git builtins
 4. **File Operations**: Efficient file searching and processing
 5. **HTTP Requests**: API integration with fetch command
 
 ## Learning Path
 
 **Beginners:** Start with:
-- file_stats.rush
-- find_todos.rush
-- git_author_stats.rush
+- file_stats.aush
+- find_todos.aush
+- git_author_stats.aush
 
 **Intermediate:** Progress to:
-- commit_message_generator.rush
-- code_review_prep.rush
-- changelog_generator.rush
+- commit_message_generator.aush
+- code_review_prep.aush
+- changelog_generator.aush
 
 **Advanced:** Try:
-- test_coverage_analyzer.rush
-- dead_code_finder.rush
-- security_audit.rush
+- test_coverage_analyzer.aush
+- dead_code_finder.aush
+- security_audit.aush
 
 ## Extending Examples
 
@@ -256,14 +256,14 @@ Found a bug or have an improvement? Examples welcome!
 1. Keep examples focused and practical
 2. Include usage documentation
 3. Test thoroughly
-4. Follow Rush best practices
+4. Follow AUSH best practices
 5. Add to this README
 
 ## Resources
 
 - [AI Agent Integration Guide](../docs/AI_AGENT_GUIDE.md)
 - [JSON Schema Reference](../docs/AI_AGENT_JSON_REFERENCE.md)
-- [Rush Documentation](../docs/)
+- [AUSH Documentation](../docs/)
 
 ---
 

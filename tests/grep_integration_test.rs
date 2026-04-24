@@ -9,9 +9,9 @@ use std::fs;
 use tempfile::TempDir;
 
 fn rush_binary() -> PathBuf {
-    env::var("CARGO_BIN_EXE_rush")
+    env::var("CARGO_BIN_EXE_aush")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from("target/debug/rush"))
+        .unwrap_or_else(|_| PathBuf::from("target/debug/aush"))
 }
 
 #[test]

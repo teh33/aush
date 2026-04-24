@@ -277,11 +277,128 @@ units:
   - refactor
   - shell
   - root-link
-  updated_at: '2026-04-24T07:53:41.093932Z'
+  updated_at: '2026-04-24T16:33:57.977234Z'
   has_verify: false
   created_at: '2026-04-24T07:53:27.991937Z'
   attempts: 0
   kind: epic
+  feature: false
+  has_decisions: true
+- id: '24.1'
+  title: Eliminate visible Rush branding from AUSH user-facing surfaces
+  status: closed
+  priority: 2
+  parent: '24'
+  labels:
+  - aush
+  - rebrand
+  - docs
+  - user-facing
+  updated_at: '2026-04-24T16:38:17.452896Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n '\bRush\b|\brush\b|RUSH' README.md QUICKSTART.md BENCHMARKS.md STATUS.md ARCHITECTURE.md docs/INSTALLATION.md docs/DISTRIBUTION.md docs/PERFORMANCE.md docs/benchmarking.md docs/error-recovery.md docs/login-shell-init.md examples/README.md src/main.rs src/banner/mod.rs src/config/banner.rs homebrew/README.md || true
+  created_at: '2026-04-24T16:32:37.403108Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.2'
+  title: Rename package/binary/distribution surfaces to AUSH with legacy invocation strategy
+  status: open
+  priority: 2
+  parent: '24'
+  labels:
+  - aush
+  - rebrand
+  - packaging
+  - distribution
+  - needs-decision
+  updated_at: '2026-04-24T17:00:43.983646Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && (cargo build -q --bins || cargo build --bins) && (test -x target/debug/aush || test -x target/debug/rush)
+  created_at: '2026-04-24T16:33:08.558351Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: true
+- id: '24.2.1'
+  title: Add AUSH binary while preserving Rush legacy invocation
+  status: closed
+  priority: 2
+  parent: '24.2'
+  labels:
+  - aush
+  - packaging
+  - binary
+  - compatibility
+  updated_at: '2026-04-24T17:09:31.921415Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build -q --bins && test -x target/debug/aush && test -x target/debug/rush && ./target/debug/aush --help >/tmp/aush-help.txt && ./target/debug/rush --help >/tmp/rush-help.txt
+  created_at: '2026-04-24T16:59:34.669480Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.2.2'
+  title: Update scripts tests and benchmarks to prefer AUSH with Rush fallback
+  status: closed
+  priority: 2
+  parent: '24.2'
+  labels:
+  - aush
+  - scripts
+  - tests
+  - benchmarks
+  - compatibility
+  updated_at: '2026-04-24T17:27:08.946805Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build -q --release --bins && bash tests/smoke_test.sh ./target/release/aush >/tmp/aush-smoke.log 2>&1 || (tail -n 40 /tmp/aush-smoke.log; exit 1)
+  created_at: '2026-04-24T17:00:00.501127Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.2.3'
+  title: Rename distribution and release surfaces to AUSH with migration guidance
+  status: in_progress
+  priority: 2
+  parent: '24.2'
+  labels:
+  - aush
+  - distribution
+  - homebrew
+  - ci
+  - release
+  - needs-decision
+  updated_at: '2026-04-24T17:38:42.765687Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build -q --bins && rg -n 'aush|AUSH' docs/INSTALLATION.md docs/DISTRIBUTION.md homebrew .github/workflows scripts
+  created_at: '2026-04-24T17:00:29.788573Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.3'
+  title: Complete AUSH-first runtime env and path compatibility migration
+  status: closed
+  priority: 2
+  parent: '24'
+  labels:
+  - aush
+  - runtime-compat
+  - env
+  - paths
+  updated_at: '2026-04-24T16:52:28.461651Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n 'env::var\("RUSH_|std::env::var\("RUSH_|\.config/rush|\.rush/|rush-undo|rush\.sock|pi-rush' src || true && cargo check -q
+  created_at: '2026-04-24T16:33:43.847949Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
   feature: false
   has_decisions: false
 - id: '25'
@@ -382,7 +499,7 @@ units:
   - compatibility
   - parser
   - shell-scripts
-  updated_at: '2026-04-24T14:50:12.724026Z'
+  updated_at: '2026-04-24T15:22:25.853553Z'
   has_verify: true
   verify: cd /Users/asher/rush && ./target/release/rush --no-rc benches/shellbench.sh >/tmp/shellbench-next.log 2>&1 || true && tail -n 20 /tmp/shellbench-next.log
   created_at: '2026-04-24T14:50:12.724026Z'
@@ -462,6 +579,40 @@ units:
   created_at: '2026-04-24T14:55:36.623047Z'
   attempts: 0
   kind: epic
+  feature: false
+  has_decisions: false
+- id: '26.4'
+  title: Add effect-aware approval gate for high-risk commands
+  status: in_progress
+  priority: 1
+  parent: '26'
+  labels:
+  - aush
+  - modern-shell
+  - effects
+  - approval
+  updated_at: '2026-04-24T17:16:50.791084Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test approval --quiet || cargo test --quiet approval || cargo check -q
+  created_at: '2026-04-24T16:46:35.436964Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '27'
+  title: 'bug: rush source builtin should execute sourced files in current executor context'
+  status: open
+  priority: 2
+  labels:
+  - bug
+  - source
+  - shell-compat
+  updated_at: '2026-04-24T16:16:26.203011Z'
+  has_verify: true
+  verify: cargo test source --quiet
+  created_at: '2026-04-24T16:15:10.537957Z'
+  attempts: 0
+  kind: task
   feature: false
   has_decisions: false
 - id: '.1'

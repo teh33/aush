@@ -1,6 +1,6 @@
-# Rush Performance Guide
+# AUSH Performance Guide
 
-This document describes Rush's performance characteristics, optimization techniques, and benchmarking results for AI agent workloads.
+This document describes AUSH's performance characteristics, optimization techniques, and benchmarking results for AI agent workloads.
 
 ## Table of Contents
 
@@ -13,7 +13,7 @@ This document describes Rush's performance characteristics, optimization techniq
 
 ## Overview
 
-Rush is designed to be **10x faster** than traditional bash+jq+curl workflows for AI agent operations. This is achieved through:
+AUSH is designed to be **10x faster** than traditional bash+jq+curl workflows for AI agent operations. This is achieved through:
 
 1. **Native implementations** of common operations (git, JSON, HTTP, file operations)
 2. **Optimized data structures** for efficient parsing and querying
@@ -25,7 +25,7 @@ Rush is designed to be **10x faster** than traditional bash+jq+curl workflows fo
 
 - **Fast by default**: Common AI agent operations should be <5ms
 - **Predictable performance**: No unexpected slowdowns
-- **Minimal overhead**: Rush's builtin system adds <100μs overhead vs native calls
+- **Minimal overhead**: AUSH's builtin system adds <100μs overhead vs native calls
 - **Memory efficient**: Streaming processing for large files
 
 ## Benchmark Results
@@ -37,7 +37,7 @@ These benchmarks simulate real-world AI agent workflows:
 #### 1. Git Status Check Loop (100x calls)
 ```
 Target: <500ms total (<5ms per call)
-Rush:   250ms (2.5ms per call) ✓
+AUSH:   250ms (2.5ms per call) ✓
 Bash:   2000ms (20ms per call)
 Speedup: 8.0x faster
 ```
@@ -50,7 +50,7 @@ Speedup: 8.0x faster
 #### 2. Find + Filter + JSON (1000 files)
 ```
 Target: <10ms
-Rush:   6ms ✓
+AUSH:   6ms ✓
 Bash:   95ms
 Speedup: 15.8x faster
 ```
@@ -63,7 +63,7 @@ Speedup: 15.8x faster
 #### 3. Git Log + Analysis (100 commits)
 ```
 Target: <50ms
-Rush:   32ms ✓
+AUSH:   32ms ✓
 Bash:   185ms
 Speedup: 5.8x faster
 ```
@@ -76,7 +76,7 @@ Speedup: 5.8x faster
 #### 4. JSON Query Operations
 ```
 Target: <1ms per query
-Rush:   0.4ms ✓
+AUSH:   0.4ms ✓
 Bash:   4.2ms
 Speedup: 10.5x faster
 ```
@@ -89,7 +89,7 @@ Speedup: 10.5x faster
 #### 5. Grep in Multiple Files (50 files)
 ```
 Target: <20ms
-Rush:   12ms ✓
+AUSH:   12ms ✓
 Bash:   45ms
 Speedup: 3.75x faster
 ```
@@ -102,7 +102,7 @@ Speedup: 3.75x faster
 #### 6. HTTP + JSON Processing
 ```
 Target: Network-bound (no significant overhead)
-Rush:   Network + 1.2ms ✓
+AUSH:   Network + 1.2ms ✓
 Bash:   Network + 8.5ms
 Additional overhead: 7x less
 ```
@@ -115,7 +115,7 @@ Additional overhead: 7x less
 #### 7. Complex Pipeline (50 files)
 ```
 Target: <100ms
-Rush:   65ms ✓
+AUSH:   65ms ✓
 Bash:   520ms
 Speedup: 8.0x faster
 ```
@@ -127,7 +127,7 @@ Speedup: 8.0x faster
 
 ### Comparison Summary
 
-| Benchmark | Rush (ms) | Bash (ms) | Speedup |
+| Benchmark | AUSH (ms) | Bash (ms) | Speedup |
 |-----------|-----------|-----------|---------|
 | Git status 100x | 250 | 2000 | **8.0x** |
 | Find 1000 files | 6 | 95 | **15.8x** |
@@ -138,7 +138,7 @@ Speedup: 8.0x faster
 | Complex pipeline | 65 | 520 | **8.0x** |
 | **Average** | - | - | **8.4x** |
 
-**Result: Rush is 8.4x faster than bash+jq on average for AI agent workloads ✓**
+**Result: AUSH is 8.4x faster than bash+jq on average for AI agent workloads ✓**
 
 ## Optimization Techniques
 
@@ -207,7 +207,7 @@ files.par_iter()
 
 ### 4. Builtin Command Overhead
 
-Rush's builtin system is designed for minimal overhead:
+AUSH's builtin system is designed for minimal overhead:
 
 | Operation | Overhead | Notes |
 |-----------|----------|-------|
@@ -279,7 +279,7 @@ find --json src/ -name "*.rs" | json_query '.[] | select(.mtime > threshold)'
 
 ### 4. Leverage Parallel Operations
 
-**Rush automatically parallelizes where safe:**
+**AUSH automatically parallelizes where safe:**
 
 ```bash
 # These operations run in parallel internally
@@ -302,7 +302,7 @@ while true; do
 done
 
 # Consider: Use file system watchers instead of polling
-# (future feature: rush watch command)
+# (future feature: aush watch command)
 ```
 
 ### 6. Use Daemon Mode (Future)
@@ -310,12 +310,12 @@ done
 **For best performance in long-running agents:**
 
 ```bash
-# Start rush daemon
-rushd start
+# Start aush daemon
+aushd start
 
 # Subsequent operations use warm cache
-rush -c "git_status --json"  # <1ms (cached repo)
-rush -c "find --json src/"   # <2ms (cached directory structure)
+aush -c "git_status --json"  # <1ms (cached repo)
+aush -c "find --json src/"   # <2ms (cached directory structure)
 ```
 
 ## Profiling and Debugging
@@ -344,20 +344,20 @@ open target/criterion/report/index.html
 #### CPU Profiling
 ```bash
 # Using perf (Linux)
-perf record -g ./target/release/rush -c "git_status --json"
+perf record -g ./target/release/aush -c "git_status --json"
 perf report
 
 # Using Instruments (macOS)
-instruments -t "Time Profiler" ./target/release/rush -c "git_status --json"
+instruments -t "Time Profiler" ./target/release/aush -c "git_status --json"
 ```
 
 #### Memory Profiling
 ```bash
 # Using heaptrack (Linux)
-heaptrack ./target/release/rush -c "find --json ."
+heaptrack ./target/release/aush -c "find --json ."
 
 # Using Instruments (macOS)
-instruments -t "Allocations" ./target/release/rush -c "find --json ."
+instruments -t "Allocations" ./target/release/aush -c "find --json ."
 ```
 
 #### Benchmarking Custom Workflows
@@ -389,7 +389,7 @@ harness = false
 
 ### Performance Regression Testing
 
-Rush uses Criterion.rs for continuous performance monitoring:
+AUSH uses Criterion.rs for continuous performance monitoring:
 
 ```bash
 # Establish baseline
@@ -488,7 +488,7 @@ Include in your PR description:
 
 ## Conclusion
 
-Rush achieves **8.4x average speedup** over bash+jq for AI agent workloads through native implementations, smart caching, and optimization of hot paths. For AI agents making hundreds or thousands of calls per session, this translates to significant wall-clock time savings and better user experience.
+AUSH achieves **8.4x average speedup** over bash+jq for AI agent workloads through native implementations, smart caching, and optimization of hot paths. For AI agents making hundreds or thousands of calls per session, this translates to significant wall-clock time savings and better user experience.
 
 **Key Takeaways:**
 - Use `--json` flags for structured output

@@ -1,16 +1,16 @@
-# Installing Rush
+# Installing AUSH
 
-Rush is a high-performance, POSIX-compliant shell written in Rust. This document covers all installation methods.
+AUSH is a high-performance, POSIX-compliant shell written in Rust. This document covers all installation methods.
 
 ## Quick Start
 
 ### macOS (Homebrew) - Recommended
 
-The easiest way to install Rush on macOS:
+The easiest way to install AUSH on macOS:
 
 ```bash
-brew tap opus-workshop/rush https://github.com/opus-workshop/rush
-brew install rush
+brew tap opus-workshop/aush https://github.com/opus-workshop/aush
+brew install aush
 ```
 
 ### Linux and macOS (Binary Download)
@@ -29,24 +29,24 @@ PLATFORM=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
 # macOS ARM (Apple Silicon)
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-macos-aarch64.tar.gz
-tar xzf rush-macos-aarch64.tar.gz
-sudo mv rush /usr/local/bin/
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-macos-aarch64.tar.gz
+tar xzf aush-macos-aarch64.tar.gz
+sudo mv aush /usr/local/bin/
 
 # macOS Intel
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-macos-x86_64.tar.gz
-tar xzf rush-macos-x86_64.tar.gz
-sudo mv rush /usr/local/bin/
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-macos-x86_64.tar.gz
+tar xzf aush-macos-x86_64.tar.gz
+sudo mv aush /usr/local/bin/
 
 # Linux x86_64
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-linux-x86_64.tar.gz
-tar xzf rush-linux-x86_64.tar.gz
-sudo mv rush /usr/local/bin/
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-linux-x86_64.tar.gz
+tar xzf aush-linux-x86_64.tar.gz
+sudo mv aush /usr/local/bin/
 
 # Linux x86_64 (static binary - more portable)
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-linux-x86_64-musl.tar.gz
-tar xzf rush-linux-x86_64-musl.tar.gz
-sudo mv rush /usr/local/bin/
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-linux-x86_64-musl.tar.gz
+tar xzf aush-linux-x86_64-musl.tar.gz
+sudo mv aush /usr/local/bin/
 ```
 
 #### Verify the Download
@@ -55,7 +55,7 @@ Each release includes SHA256 checksums for verification:
 
 ```bash
 # Download the checksum file
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/SHA256SUMS.txt
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/SHA256SUMS.txt
 
 # Verify on Linux
 sha256sum -c SHA256SUMS.txt --ignore-missing
@@ -69,13 +69,13 @@ shasum -a 256 -c SHA256SUMS.txt --ignore-missing
 If you have Rust installed:
 
 ```bash
-cargo install --git https://github.com/opus-workshop/rush
+cargo install --git https://github.com/opus-workshop/aush
 ```
 
 To install a specific version:
 
 ```bash
-cargo install --git https://github.com/opus-workshop/rush --tag v0.1.0
+cargo install --git https://github.com/opus-workshop/aush --tag v0.1.0
 ```
 
 ### Build from Source
@@ -83,10 +83,10 @@ cargo install --git https://github.com/opus-workshop/rush --tag v0.1.0
 Clone the repository and build:
 
 ```bash
-git clone https://github.com/opus-workshop/rush.git
-cd rush
+git clone https://github.com/opus-workshop/aush.git
+cd aush
 cargo build --release
-sudo cp target/release/rush /usr/local/bin/
+sudo cp target/release/aush /usr/local/bin/
 ```
 
 **Requirements:**
@@ -95,38 +95,51 @@ sudo cp target/release/rush /usr/local/bin/
 
 ## Setting as Default Shell
 
-After installing, you can make Rush your default shell:
+After installing, you can make AUSH your default shell:
 
 ### macOS (Homebrew)
 
 ```bash
-# Add Rush to allowed shells
-echo "$(brew --prefix)/bin/rush" | sudo tee -a /etc/shells
+# Add AUSH to allowed shells
+echo "$(brew --prefix)/bin/aush" | sudo tee -a /etc/shells
 
 # Change your shell
-chsh -s "$(brew --prefix)/bin/rush"
+chsh -s "$(brew --prefix)/bin/aush"
 ```
 
 ### Linux / macOS (Binary Install)
 
 ```bash
-# Add Rush to allowed shells
-echo "/usr/local/bin/rush" | sudo tee -a /etc/shells
+# Add AUSH to allowed shells
+echo "/usr/local/bin/aush" | sudo tee -a /etc/shells
 
 # Change your shell
-chsh -s /usr/local/bin/rush
+chsh -s /usr/local/bin/aush
 ```
+
+## Migrating from Rush
+
+AUSH releases keep a legacy `rush` executable during the migration. New scripts and login-shell configuration should use `aush`; existing scripts that call `rush` can continue to work while you update them.
+
+If you previously used Rush as your login shell, add the new AUSH path to `/etc/shells` and run `chsh` again:
+
+```bash
+echo "/usr/local/bin/aush" | sudo tee -a /etc/shells
+chsh -s /usr/local/bin/aush
+```
+
+AUSH reads new `AUSH_*` environment variables and `~/.aushrc` first, with legacy `RUSH_*` and `~/.rushrc` fallback for compatibility. The daemon helper binary is still named `rushd` in this migration phase.
 
 ## Daemon Mode (Optional)
 
-For ultra-fast startup times, use Rush's daemon mode:
+For ultra-fast startup times, use AUSH's daemon mode:
 
 ```bash
 # Start the daemon
 rushd start
 
 # Commands now connect to the daemon (much faster)
-rush -c "ls"      # ~0.4ms instead of ~4.9ms
+aush -c "ls"      # ~0.4ms instead of ~4.9ms
 
 # Stop the daemon
 rushd stop
@@ -144,7 +157,7 @@ This is ideal for:
 
 ```bash
 brew update
-brew upgrade rush
+brew upgrade aush
 ```
 
 ### Binary Downloads
@@ -154,7 +167,7 @@ Download and install the latest release using the instructions above.
 ### Cargo
 
 ```bash
-cargo install --git https://github.com/opus-workshop/rush --force
+cargo install --git https://github.com/opus-workshop/aush --force
 ```
 
 ## Uninstalling
@@ -162,20 +175,20 @@ cargo install --git https://github.com/opus-workshop/rush --force
 ### Homebrew
 
 ```bash
-brew uninstall rush
-brew untap opus-workshop/rush
+brew uninstall aush
+brew untap opus-workshop/aush
 ```
 
 ### Binary Install
 
 ```bash
-sudo rm /usr/local/bin/rush
+sudo rm /usr/local/bin/aush
 ```
 
 ### From Source
 
 ```bash
-sudo rm /usr/local/bin/rush
+sudo rm /usr/local/bin/aush
 ```
 
 ## Troubleshooting
@@ -194,25 +207,25 @@ If not, add it:
 export PATH="/usr/local/bin:$PATH"
 ```
 
-### Permission denied when running rush
+### Permission denied when running aush
 
 Make sure the binary is executable:
 
 ```bash
-chmod +x /usr/local/bin/rush
+chmod +x /usr/local/bin/aush
 ```
 
-### macOS: "rush cannot be opened because it is from an unidentified developer"
+### macOS: "aush cannot be opened because it is from an unidentified developer"
 
 This is a macOS security feature. You can bypass it with:
 
 ```bash
-xattr -d com.apple.quarantine /usr/local/bin/rush
+xattr -d com.apple.quarantine /usr/local/bin/aush
 ```
 
 Or via System Preferences:
 1. Go to System Preferences > Security & Privacy
-2. Click "Open Anyway" next to Rush
+2. Click "Open Anyway" next to AUSH
 
 ### Linux: "cannot execute binary file: Exec format error"
 
@@ -224,13 +237,13 @@ uname -m    # Should be x86_64
 uname -s    # Should be Linux
 
 # Download the appropriate binary
-# For x86_64: rush-linux-x86_64.tar.gz
-# For ARM: rush-linux-aarch64.tar.gz (if available)
+# For x86_64: aush-linux-x86_64.tar.gz
+# For ARM: aush-linux-aarch64.tar.gz (if available)
 ```
 
 ## Performance
 
-Rush binary sizes:
+AUSH binary sizes:
 
 | Platform | Size (uncompressed) | Size (compressed) |
 |----------|-------------------|-------------------|
@@ -268,10 +281,10 @@ All binaries are:
 
 ## Getting Help
 
-- **Documentation**: https://github.com/opus-workshop/rush
-- **Issues**: https://github.com/opus-workshop/rush/issues
-- **Discussions**: https://github.com/opus-workshop/rush/discussions
+- **Documentation**: https://github.com/opus-workshop/aush
+- **Issues**: https://github.com/opus-workshop/aush/issues
+- **Discussions**: https://github.com/opus-workshop/aush/discussions
 
 ## License
 
-Rush is dual-licensed under MIT or Apache-2.0 (your choice).
+AUSH is dual-licensed under MIT or Apache-2.0 (your choice).

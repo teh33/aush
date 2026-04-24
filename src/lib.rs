@@ -20,8 +20,8 @@ pub mod config;
 pub mod context;
 pub mod correction;
 pub mod daemon;
-pub mod error;
 pub mod effects;
+pub mod error;
 pub mod executor;
 #[cfg(feature = "git-builtins")]
 pub mod git;

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # benchmark.sh - Real-world performance comparison using hyperfine
-# This script compares Rush with other shells (bash, zsh) and system utilities
+# This script compares AUSH with other shells (bash, zsh) and system utilities
 
 set -euo pipefail
 
@@ -20,18 +20,21 @@ if ! command -v hyperfine &> /dev/null; then
     exit 1
 fi
 
-# Build Rush in release mode
-echo -e "${BLUE}Building Rush in release mode...${NC}"
+# Build AUSH in release mode
+echo -e "${BLUE}Building AUSH in release mode...${NC}"
 cargo build --release
 
-RUSH_BIN="./target/release/rush"
+AUSH_BIN="${AUSH_BIN:-./target/release/aush}"
+if [ ! -f "$AUSH_BIN" ] && [ -f ./target/release/rush ]; then
+    AUSH_BIN=./target/release/rush
+fi
 
-if [ ! -f "$RUSH_BIN" ]; then
-    echo -e "${RED}Error: Rush binary not found at $RUSH_BIN${NC}"
+if [ ! -f "$AUSH_BIN" ]; then
+    echo -e "${RED}Error: AUSH binary not found at $AUSH_BIN${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}Rush binary ready!${NC}\n"
+echo -e "${GREEN}AUSH binary ready!${NC}\n"
 
 # Create a temporary directory for test files
 TEMP_DIR=$(mktemp -d)
@@ -52,7 +55,7 @@ hyperfine \
     --warmup 5 \
     --min-runs 50 \
     --export-markdown results/startup_comparison.md \
-    "$RUSH_BIN -c exit" \
+    "$AUSH_BIN -c exit" \
     "bash -c exit" \
     "zsh -c exit" \
     2>/dev/null || true
@@ -64,7 +67,7 @@ echo -e "${BLUE}[2/7] Benchmarking Echo Command${NC}"
 hyperfine \
     --warmup 3 \
     --min-runs 30 \
-    "$RUSH_BIN -c 'echo hello world'" \
+    "$AUSH_BIN -c 'echo hello world'" \
     "bash -c 'echo hello world'" \
     "echo hello world"
 
@@ -75,7 +78,7 @@ echo -e "${BLUE}[3/7] Benchmarking PWD Command${NC}"
 hyperfine \
     --warmup 3 \
     --min-runs 30 \
-    "$RUSH_BIN -c 'pwd'" \
+    "$AUSH_BIN -c 'pwd'" \
     "bash -c 'pwd'" \
     "pwd"
 
@@ -86,7 +89,7 @@ echo -e "${BLUE}[4/7] Benchmarking CD Command${NC}"
 hyperfine \
     --warmup 3 \
     --min-runs 30 \
-    "$RUSH_BIN -c 'cd /tmp && pwd'" \
+    "$AUSH_BIN -c 'cd /tmp && pwd'" \
     "bash -c 'cd /tmp && pwd'"
 
 echo ""
@@ -96,7 +99,7 @@ echo -e "${BLUE}[5/7] Benchmarking Multiple Sequential Commands${NC}"
 hyperfine \
     --warmup 3 \
     --min-runs 20 \
-    "$RUSH_BIN -c 'pwd && echo test && pwd'" \
+    "$AUSH_BIN -c 'pwd && echo test && pwd'" \
     "bash -c 'pwd && echo test && pwd'"
 
 echo ""
@@ -106,7 +109,7 @@ echo -e "${BLUE}[6/7] Benchmarking Environment Variable Export${NC}"
 hyperfine \
     --warmup 3 \
     --min-runs 30 \
-    "$RUSH_BIN -c 'export TEST=value'" \
+    "$AUSH_BIN -c 'export TEST=value'" \
     "bash -c 'export TEST=value'"
 
 echo ""
@@ -127,8 +130,8 @@ echo ""
 echo -e "${YELLOW}=== Memory Usage Comparison ===${NC}"
 echo -e "${BLUE}Measuring peak memory usage...${NC}"
 
-echo -n "Rush: "
-/usr/bin/time -l $RUSH_BIN -c "pwd && echo test" 2>&1 | grep "maximum resident set size" | awk '{print $1 / 1024 / 1024 " MB"}' || echo "N/A"
+echo -n "AUSH: "
+/usr/bin/time -l $AUSH_BIN -c "pwd && echo test" 2>&1 | grep "maximum resident set size" | awk '{print $1 / 1024 / 1024 " MB"}' || echo "N/A"
 
 echo -n "Bash: "
 /usr/bin/time -l bash -c "pwd && echo test" 2>&1 | grep "maximum resident set size" | awk '{print $1 / 1024 / 1024 " MB"}' || echo "N/A"

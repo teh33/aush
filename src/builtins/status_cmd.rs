@@ -72,13 +72,13 @@ fn is_interactive() -> bool {
 
 /// Returns true when the shell was started as a login shell.
 /// Checks process argv[0] for a leading '-' (POSIX convention) or the
-/// RUSH_LOGIN environment variable.
+/// AUSH_LOGIN or legacy RUSH_LOGIN environment variable.
 fn is_login() -> bool {
     std::env::args()
         .next()
         .map(|a| a.starts_with('-'))
         .unwrap_or(false)
-        || std::env::var("RUSH_LOGIN").map(|v| v == "1").unwrap_or(false)
+        || crate::brand::env_flag("AUSH_LOGIN", "RUSH_LOGIN", "1")
 }
 
 #[cfg(test)]

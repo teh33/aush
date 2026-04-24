@@ -9,11 +9,13 @@ mod banner;
 mod benchmark;
 mod brand;
 mod builtins;
+mod command_metadata;
 mod compat;
 mod completion;
 mod context;
 mod correction;
 mod daemon;
+mod effects;
 mod error;
 mod executor;
 #[cfg(feature = "git-builtins")]
@@ -28,6 +30,7 @@ mod lua;
 mod output;
 mod parser;
 mod progress;
+mod receipts;
 mod run_api;
 mod runtime;
 mod signal;
@@ -213,7 +216,7 @@ fn main() -> Result<()> {
 
     // Check if invoked as login shell (argv[0] starts with -)
     if let Some(arg0) = args.first() {
-        if arg0.starts_with('-') || arg0.ends_with("/-rush") {
+        if arg0.starts_with('-') || arg0.ends_with("/-aush") || arg0.ends_with("/-rush") {
             is_login_shell = true;
         }
     }
@@ -588,7 +591,10 @@ fn run_interactive_with_init(
     // Interactive shell: source ~/.aushrc, falling back to ~/.rushrc (unless --no-rc)
     if !skip_rc {
         if let Some(home) = dirs::home_dir() {
-            let rc = brand::first_existing_or_primary(home.join(".aushrc"), [home.join(".rushrc")]);
+            let rc = brand::first_existing_or_primary(
+                home.join(".aushrc"),
+                [home.join(".rushrc"), home.join(".zshrc")],
+            );
             if let Err(e) = executor.source_file(&rc) {
                 eprintln!("Warning: Error sourcing {}: {}", rc.display(), e);
             }
@@ -1108,7 +1114,7 @@ fn execute_line(line: &str, executor: &mut Executor) -> Result<executor::Executi
     }
 }
 
-/// Fast path for `rush -c "command"` execution.
+/// Fast path for `aush -c "command"` execution.
 ///
 /// Skips all expensive initialization:
 /// - NO daemon client probe (saves 2-4ms from UnixStream::connect)
@@ -1226,7 +1232,7 @@ fn fast_execute_c(
             if let Some(exit_signal) = e.downcast_ref::<builtins::exit_builtin::ExitSignal>() {
                 std::process::exit(exit_signal.exit_code);
             }
-            eprintln!("rush: {}", e);
+            eprintln!("aush: {}", e);
             std::process::exit(1);
         }
     }
@@ -1289,9 +1295,9 @@ fn run_compatibility_check(script_path: &str, show_migrate: bool, apply_fix: boo
 
 /// Run --info command to show system stats
 ///
-/// - `rush --info` - show all stats
-/// - `rush --info <stat>` - show single stat value (for scripting)
-/// - `rush --info --json` - machine-readable output
+/// - `aush --info` - show all stats
+/// - `aush --info <stat>` - show single stat value (for scripting)
+/// - `aush --info --json` - machine-readable output
 fn run_info_command(stat_name: Option<String>, json_output: bool) -> ! {
     use stats::StatsCollector;
     use std::collections::HashMap;
@@ -1417,8 +1423,8 @@ fn run_info_command(stat_name: Option<String>, json_output: bool) -> ! {
 
         // Header - manually pad to account for invisible ANSI codes
         let version = env!("CARGO_PKG_VERSION");
-        let left_hdr = format!("{}rush{} v{}", bold, reset, version);
-        let left_visible = format!("rush v{}", version);
+        let left_hdr = format!("{}aush{} v{}", bold, reset, version);
+        let left_visible = format!("aush v{}", version);
         let left_pad = COL_W.saturating_sub(left_visible.len());
 
         let right_hdr = format!("{}Resources{}", bold, reset);

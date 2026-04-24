@@ -1,13 +1,14 @@
-//! Lua extension runtime for rush.
+//! Lua extension runtime for AUSH.
 //!
 //! Embeds a Lua 5.4 interpreter via the `mlua` crate and exposes the
-//! `rush.*` API to user scripts. Scripts live in `~/.rush/lua/` and are
-//! loaded at startup in lexicographic order.
+//! legacy-compatible `rush.*` API to user scripts. Scripts live in `~/.aush/lua/`
+//! with fallback to existing `~/.rush/lua/`, and are loaded at startup in
+//! lexicographic order.
 //!
 //! # Quick start
 //!
 //! ```lua
-//! -- ~/.rush/lua/myconfig.lua
+//! -- ~/.aush/lua/myconfig.lua
 //!
 //! rush.register_builtin("greet", {
 //!     description = "Say hello",
@@ -56,7 +57,7 @@ impl LuaRuntime {
         Ok(Self { lua })
     }
 
-    /// Load all `*.lua` files from `~/.rush/lua/` in lexicographic order.
+    /// Load all `*.lua` files from `~/.aush/lua/` with legacy `~/.rush/lua/` fallback.
     ///
     /// Missing directory is not an error. Files that fail are propagated.
     pub fn load_user_scripts(&self) -> Result<()> {
@@ -119,7 +120,7 @@ impl LuaRuntime {
         for pair in list.clone().pairs::<mlua::Integer, mlua::Function>() {
             let (_, func) = pair.map_err(|e| anyhow!("iterating hooks: {}", e))?;
             if let Err(e) = func.call::<()>(lua_args.clone()) {
-                eprintln!("rush: Lua hook '{}' error: {}", name, e);
+                eprintln!("aush: Lua hook '{}' error: {}", name, e);
             }
         }
 
@@ -200,12 +201,13 @@ impl LuaRuntime {
     }
 }
 
-/// Returns `~/.rush/lua/`.
+/// Returns `~/.aush/lua/`, falling back to existing `~/.rush/lua/`.
 fn user_lua_dir() -> PathBuf {
-    dirs::home_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join(".rush")
-        .join("lua")
+    let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
+    crate::brand::first_existing_or_primary(
+        home.join(".aush").join("lua"),
+        [home.join(".rush").join("lua")],
+    )
 }
 
 /// Initialise the Lua runtime, returning `None` on failure (non-fatal).
@@ -216,7 +218,7 @@ pub fn init_lua() -> Option<LuaRuntime> {
     match LuaRuntime::new() {
         Ok(rt) => Some(rt),
         Err(e) => {
-            eprintln!("rush: Lua runtime init failed: {}", e);
+            eprintln!("aush: Lua runtime init failed: {}", e);
             None
         }
     }

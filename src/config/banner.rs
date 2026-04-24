@@ -1,28 +1,29 @@
 //! Banner and custom stats configuration parsing
 //!
-//! This module handles parsing banner and custom stat configuration from .rushrc:
+//! This module handles parsing banner and custom stat configuration from .aushrc
+//! with legacy .rushrc compatibility:
 //!
 //! ## Banner Configuration
-//! - `RUSH_BANNER_STYLE` - block, line, minimal, none
-//! - `RUSH_BANNER_COLOR` - cyan, green, yellow, magenta, blue, white, none
-//! - `RUSH_BANNER_SHOW` - always, first, never
-//! - `RUSH_BANNER_STATS` - space-separated stat names to display
+//! - `AUSH_BANNER_STYLE` / `RUSH_BANNER_STYLE` - block, line, minimal, none
+//! - `AUSH_BANNER_COLOR` / `RUSH_BANNER_COLOR` - cyan, green, yellow, magenta, blue, white, none
+//! - `AUSH_BANNER_SHOW` / `RUSH_BANNER_SHOW` - always, first, never
+//! - `AUSH_BANNER_STATS` / `RUSH_BANNER_STATS` - space-separated stat names to display
 //!
 //! ## Custom Stats Configuration
-//! - `RUSH_STAT_<name>="command"` - Shell command to execute
-//! - `RUSH_STAT_<name>_INTERVAL=seconds` - Refresh interval (default 30s)
-//! - `RUSH_STAT_<name>_TIMEOUT=seconds` - Command timeout (default 2s)
+//! - `AUSH_STAT_<name>` / `RUSH_STAT_<name>` - Shell command to execute
+//! - `AUSH_STAT_<name>_INTERVAL` / `RUSH_STAT_<name>_INTERVAL` - Refresh interval (default 30s)
+//! - `AUSH_STAT_<name>_TIMEOUT` / `RUSH_STAT_<name>_TIMEOUT` - Command timeout (default 2s)
 
 pub use crate::daemon::config::{
     BannerConfig, BannerShow, BannerStyle, CustomStatConfig, DaemonConfig,
 };
 
-/// Parse banner configuration from a .rushrc content string
+/// Parse banner configuration from .aushrc or legacy .rushrc content
 pub fn parse_banner_config(content: &str) -> BannerConfig {
     DaemonConfig::parse(content).banner
 }
 
-/// Parse custom stats configuration from a .rushrc content string
+/// Parse custom stats from .aushrc or legacy .rushrc content
 pub fn parse_custom_stats(content: &str) -> Vec<CustomStatConfig> {
     DaemonConfig::parse(content).custom_stats
 }
@@ -287,7 +288,7 @@ RUSH_STAT_disk="df -h / | tail -1"
     #[test]
     fn test_full_config() {
         let content = r#"
-# Rush banner configuration
+# AUSH banner configuration
 RUSH_BANNER_STYLE="minimal"
 RUSH_BANNER_COLOR="green"
 RUSH_BANNER_SHOW="first"

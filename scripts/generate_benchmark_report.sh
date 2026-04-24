@@ -120,7 +120,7 @@ done
 # Verify results file exists
 if [ ! -f "$RESULTS_FILE" ]; then
     echo -e "${RED}Error: Results file not found: $RESULTS_FILE${NC}"
-    echo "Run benchmarks first with: cargo run --bin rush -- --benchmark quick"
+    echo "Run benchmarks first with: cargo run --bin aush -- --benchmark quick"
     exit 1
 fi
 

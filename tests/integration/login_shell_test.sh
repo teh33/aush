@@ -13,14 +13,18 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Determine rush binary path
+# Determine aush binary path
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-RUSH_BINARY="$PROJECT_ROOT/target/release/rush"
+AUSH_BINARY="$PROJECT_ROOT/target/release/aush"
+if [ ! -f "$AUSH_BINARY" ] && [ -f "$PROJECT_ROOT/target/release/rush" ]; then
+    AUSH_BINARY="$PROJECT_ROOT/target/release/rush"
+fi
+RUSH_BINARY="$AUSH_BINARY"
 
-# Check if rush binary exists
+# Check if aush binary exists
 if [ ! -f "$RUSH_BINARY" ]; then
-    echo -e "${RED}Error: rush binary not found at $RUSH_BINARY${NC}"
+    echo -e "${RED}Error: aush binary not found at $RUSH_BINARY${NC}"
     echo "Please build rush first: cargo build --release"
     exit 1
 fi
@@ -28,7 +32,7 @@ fi
 echo "======================================"
 echo "Rush Shell Integration Tests"
 echo "======================================"
-echo "Rush binary: $RUSH_BINARY"
+echo "AUSH binary: $RUSH_BINARY"
 echo ""
 
 # Test helper function

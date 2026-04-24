@@ -2,22 +2,25 @@
 
 set -euo pipefail
 
-RUSH_BIN="${1:-./target/release/rush}"
+AUSH_BIN="${1:-./target/release/aush}"
+if [[ ! -x "$AUSH_BIN" && -x ./target/release/rush ]]; then
+  AUSH_BIN=./target/release/rush
+fi
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-if [[ ! -x "$RUSH_BIN" ]]; then
-  echo "Error: Rush binary not found at $RUSH_BIN"
+if [[ ! -x "$AUSH_BIN" ]]; then
+  echo "Error: AUSH binary not found at $AUSH_BIN"
   echo "Run: cargo build --release"
   exit 1
 fi
 
 echo "AUSH Full Benchmark"
-echo "Binary: $RUSH_BIN"
+echo "Binary: $AUSH_BIN"
 echo
 
 echo "=== Fast smoke gate ==="
-bash ./benches/aush_smoke_fast.sh "$RUSH_BIN"
+bash ./benches/aush_smoke_fast.sh "$AUSH_BIN"
 
 echo "=== Persistent interactive benchmark ==="
 bash ./benches/interactive_benchmark.sh

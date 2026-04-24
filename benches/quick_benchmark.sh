@@ -4,12 +4,15 @@
 
 set -e
 
-RUSH="./target/release/rush"
+AUSH="${AUSH:-./target/release/aush}"
+if [ ! -x "$AUSH" ] && [ -x ./target/release/rush ]; then
+    AUSH=./target/release/rush
+fi
 ZSH="/bin/zsh"
 RUNS=20
 
-if [ ! -x "$RUSH" ]; then
-    echo "Error: Rush binary not found at $RUSH"
+if [ ! -x "$AUSH" ]; then
+    echo "Error: Rush binary not found at $AUSH"
     echo "Run: cargo build --release"
     exit 1
 fi
@@ -43,8 +46,8 @@ run_test() {
 
     printf "  %-35s" "$name:"
 
-    local rush_time=$(time_command "$RUSH" "$cmd")
-    printf " Rush: %7.2fms" "$rush_time"
+    local rush_time=$(time_command "$AUSH" "$cmd")
+    printf " AUSH: %7.2fms" "$rush_time"
 
     local zsh_time=$(time_command "$ZSH" "$cmd")
     printf "  Zsh: %7.2fms" "$zsh_time"

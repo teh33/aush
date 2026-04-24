@@ -1,14 +1,14 @@
-# Rush Shell - Build Targets
+# AUSH Shell - Build Targets
 #
 # Usage:
 #   make build       - Standard release build
 #   make pgo         - Profile-guided optimization build (10-20% faster)
 #   make bench-start - Benchmark startup time (requires hyperfine)
 #   make clean       - Clean build artifacts and PGO data
-#   make install     - Install rush to ~/.cargo/bin
+#   make install     - Install aush to ~/.cargo/bin
 
 CARGO := cargo
-PGO_DIR := /tmp/rush-pgo-data
+PGO_DIR := /tmp/aush-pgo-data
 
 # Find llvm-profdata from the Rust toolchain
 LLVM_PROFDATA := $(shell find $$(rustc --print sysroot) -name llvm-profdata 2>/dev/null | head -1)
@@ -21,7 +21,8 @@ build:
 	$(CARGO) build --release
 
 install: build
-	cp target/release/rush ~/.cargo/bin/rush
+	cp target/release/aush ~/.cargo/bin/aush
+	cp target/release/aush ~/.cargo/bin/rush
 
 clean:
 	$(CARGO) clean
@@ -31,7 +32,7 @@ clean:
 
 bench-start:
 	@command -v hyperfine >/dev/null 2>&1 || { echo "Error: hyperfine not found. Install with: cargo install hyperfine"; exit 1; }
-	hyperfine --warmup 5 --runs 30 './target/release/rush -c exit'
+	hyperfine --warmup 5 --runs 30 './target/release/aush -c exit'
 
 bench-usable: build
 	@echo "=== Actually Usable session benchmarks ==="
@@ -41,11 +42,11 @@ bench-usable: build
 
 bench-aush-fast: build
 	@echo "=== AUSH fast smoke benchmark ==="
-	bash ./benches/aush_smoke_fast.sh ./target/release/rush
+	bash ./benches/aush_smoke_fast.sh ./target/release/aush
 
 bench-aush: build
 	@echo "=== AUSH full benchmark suite ==="
-	bash ./benches/aush_suite.sh ./target/release/rush
+	bash ./benches/aush_suite.sh ./target/release/aush
 
 # --- PGO Build Pipeline ---
 #
@@ -65,11 +66,11 @@ pgo: pgo-check pgo-instrument pgo-collect pgo-merge pgo-build
 	@echo ""
 	@echo "============================================"
 	@echo "  PGO build complete!"
-	@echo "  Binary: target/release/rush"
+	@echo "  Binary: target/release/aush"
 	@echo "============================================"
 	@echo ""
 	@echo "Benchmark with:"
-	@echo "  hyperfine --warmup 5 --runs 30 './target/release/rush -c exit'"
+	@echo "  hyperfine --warmup 5 --runs 30 './target/release/aush -c exit'"
 
 pgo-check:
 ifeq ($(LLVM_PROFDATA),)
@@ -96,27 +97,27 @@ pgo-collect:
 	@echo "=== Step 2/4: Collecting profile data ==="
 	@echo "Running representative workloads..."
 	@# Basic startup/exit
-	./target/release/rush -c "exit"
-	./target/release/rush -c "true"
-	./target/release/rush -c "false" || true
+	./target/release/aush -c "exit"
+	./target/release/aush -c "true"
+	./target/release/aush -c "false" || true
 	@# Echo and output
-	./target/release/rush -c "echo hello"
-	./target/release/rush -c "echo hello world"
-	./target/release/rush -c "echo one two three four five"
+	./target/release/aush -c "echo hello"
+	./target/release/aush -c "echo hello world"
+	./target/release/aush -c "echo one two three four five"
 	@# Builtins
-	./target/release/rush -c "pwd"
-	./target/release/rush -c "echo $$HOME"
-	./target/release/rush -c "type echo"
+	./target/release/aush -c "pwd"
+	./target/release/aush -c "echo $$HOME"
+	./target/release/aush -c "type echo"
 	@# Pipelines
-	./target/release/rush -c "echo hello | cat"
-	./target/release/rush -c "echo test | cat | cat"
+	./target/release/aush -c "echo hello | cat"
+	./target/release/aush -c "echo test | cat | cat"
 	@# Variable expansion
-	./target/release/rush -c 'X=hello; echo $$X'
+	./target/release/aush -c 'X=hello; echo $$X'
 	@# Iteration for statistical significance (startup-heavy workloads)
 	@echo "Running 100 iterations of startup workloads..."
-	@for i in $$(seq 1 100); do ./target/release/rush -c "echo test"; done
-	@for i in $$(seq 1 100); do ./target/release/rush -c "exit"; done
-	@for i in $$(seq 1 50); do ./target/release/rush -c "echo hello | cat"; done
+	@for i in $$(seq 1 100); do ./target/release/aush -c "echo test"; done
+	@for i in $$(seq 1 100); do ./target/release/aush -c "exit"; done
+	@for i in $$(seq 1 50); do ./target/release/aush -c "echo hello | cat"; done
 	@echo "Profile data collected."
 
 pgo-merge:
@@ -136,11 +137,11 @@ pgo-build:
 bench-pgo: build
 	@echo "=== Baseline (standard release build) ==="
 	@command -v hyperfine >/dev/null 2>&1 || { echo "Error: hyperfine not found. Install with: cargo install hyperfine"; exit 1; }
-	@cp target/release/rush /tmp/rush-baseline
+	@cp target/release/aush /tmp/aush-baseline
 	@$(MAKE) pgo
 	@echo ""
 	@echo "=== Comparing baseline vs PGO ==="
 	hyperfine --warmup 5 --runs 30 \
-		'/tmp/rush-baseline -c exit' \
-		'./target/release/rush -c exit'
-	@rm -f /tmp/rush-baseline
+		'/tmp/aush-baseline -c exit' \
+		'./target/release/aush -c exit'
+	@rm -f /tmp/aush-baseline

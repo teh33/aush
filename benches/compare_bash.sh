@@ -12,11 +12,14 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Check for required tools
-command -v rush >/dev/null 2>&1 || { echo "Error: rush not found. Build with: cargo build --release"; exit 1; }
 command -v jq >/dev/null 2>&1 || { echo "Error: jq not found. Install with: brew install jq"; exit 1; }
 command -v git >/dev/null 2>&1 || { echo "Error: git not found"; exit 1; }
 
-RUSH_BIN="${RUSH_BIN:-./target/release/rush}"
+AUSH_BIN="${AUSH_BIN:-./target/release/aush}"
+if [ ! -x "$AUSH_BIN" ] && [ -x ./target/release/rush ]; then
+    AUSH_BIN=./target/release/rush
+fi
+RUSH_BIN="$AUSH_BIN"
 ITERATIONS="${ITERATIONS:-100}"
 
 # Setup test environment
@@ -25,7 +28,7 @@ trap "rm -rf $BENCH_DIR" EXIT
 
 echo -e "${BLUE}=== Rush vs Bash Performance Benchmark ===${NC}\n"
 echo "Benchmark directory: $BENCH_DIR"
-echo "Rush binary: $RUSH_BIN"
+echo "AUSH binary: $RUSH_BIN"
 echo "Iterations: $ITERATIONS"
 echo ""
 

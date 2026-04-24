@@ -13,6 +13,31 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+/// User approval state for effect-gated commands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ApprovalDecision {
+    NotRequired,
+    Approved,
+    Denied,
+}
+
+impl Default for ApprovalDecision {
+    fn default() -> Self {
+        Self::NotRequired
+    }
+}
+
+impl ApprovalDecision {
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::NotRequired => "Approval not required",
+            Self::Approved => "Approved",
+            Self::Denied => "Denied",
+        }
+    }
+}
+
 /// Serializable receipt for one command execution.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CommandReceipt {
@@ -34,6 +59,9 @@ pub struct CommandReceipt {
     pub effects: Vec<CommandEffect>,
     /// Declared risk from command metadata or conservative fallback.
     pub risk: RiskLevel,
+    /// Approval decision for effect-gated commands.
+    #[serde(default)]
+    pub approval: ApprovalDecision,
 }
 
 impl CommandReceipt {
@@ -66,6 +94,7 @@ impl CommandReceipt {
             exit_code,
             effects,
             risk,
+            approval: ApprovalDecision::NotRequired,
         }
     }
 
@@ -91,7 +120,14 @@ impl CommandReceipt {
             exit_code,
             effects,
             risk,
+            approval: ApprovalDecision::NotRequired,
         }
+    }
+
+    /// Return a copy of this receipt with an explicit approval decision.
+    pub fn with_approval(mut self, approval: ApprovalDecision) -> Self {
+        self.approval = approval;
+        self
     }
 
     /// Render a polished terminal receipt. Raw machine effect IDs are reserved
@@ -104,6 +140,7 @@ impl CommandReceipt {
         output.push_str(&format!("  Exit: {}\n", self.exit_code));
         output.push_str(&format!("  Duration: {} ms\n", self.duration_ms));
         output.push_str(&format!("  Risk: {}\n", self.risk.label()));
+        output.push_str(&format!("  Approval: {}\n", self.approval.label()));
         output.push_str(&render_effect_summary(&self.effects));
         output
     }
@@ -126,6 +163,18 @@ pub fn append_receipt_jsonl(path: impl AsRef<Path>, receipt: &CommandReceipt) ->
     let json = serde_json::to_string(receipt).context("Failed to serialize command receipt")?;
     writeln!(file, "{json}").context("Failed to append command receipt")?;
     Ok(())
+}
+
+/// Return the default command receipt ledger path for AUSH state.
+pub fn default_receipt_ledger_path() -> Option<PathBuf> {
+    crate::brand::xdg_config_file("receipts.jsonl")
+}
+
+/// Append a receipt to the default AUSH receipt ledger when a home directory is available.
+pub fn append_default_receipt_jsonl(receipt: &CommandReceipt) -> Result<()> {
+    let path =
+        default_receipt_ledger_path().context("Could not resolve default receipt ledger path")?;
+    append_receipt_jsonl(path, receipt)
 }
 
 /// Convenience wrapper for callers that prefer a free function.
@@ -151,7 +200,9 @@ fn duration_ms_between(started_at: DateTime<Utc>, finished_at: DateTime<Utc>) ->
 
 #[cfg(test)]
 mod tests {
-    use super::{append_receipt_jsonl, render_human_receipt, CommandReceipt};
+    use super::{
+        append_receipt_jsonl, render_human_receipt, ApprovalDecision, CommandReceipt,
+    };
     use crate::effects::{CommandEffect, RiskLevel};
     use chrono::{TimeZone, Utc};
     use tempfile::tempdir;
@@ -161,6 +212,67 @@ mod tests {
             Utc.with_ymd_and_hms(2026, 4, 24, 10, 0, 0).unwrap(),
             Utc.with_ymd_and_hms(2026, 4, 24, 10, 0, 1).unwrap(),
         )
+    }
+
+    #[test]
+    fn approval_receipts_serialize_decisions_as_machine_ids() {
+        let (started_at, finished_at) = fixed_times();
+        let receipt = CommandReceipt::with_effects(
+            "rm old.log",
+            "rm",
+            "/repo",
+            started_at,
+            finished_at,
+            1,
+            vec![CommandEffect::DeleteFile],
+            RiskLevel::High,
+        )
+        .with_approval(ApprovalDecision::Denied);
+
+        let json = serde_json::to_string(&receipt).unwrap();
+        assert!(json.contains("\"approval\":\"denied\""));
+
+        let decoded: CommandReceipt = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded.approval, ApprovalDecision::Denied);
+    }
+
+    #[test]
+    fn approval_receipts_render_decisions_as_human_labels() {
+        let (started_at, finished_at) = fixed_times();
+        let receipt = CommandReceipt::with_effects(
+            "rm old.log",
+            "rm",
+            "/repo",
+            started_at,
+            finished_at,
+            0,
+            vec![CommandEffect::DeleteFile],
+            RiskLevel::High,
+        )
+        .with_approval(ApprovalDecision::Approved);
+
+        let rendered = render_human_receipt(&receipt);
+        assert!(rendered.contains("Approval: Approved"));
+        assert!(rendered.contains("Delete files"));
+        assert!(!rendered.contains("approved"));
+    }
+
+    #[test]
+    fn approval_receipts_default_to_not_required_for_old_json() {
+        let json = r#"{
+            "command":"echo ok",
+            "command_name":"echo",
+            "cwd":"/repo",
+            "started_at":"2026-04-24T10:00:00Z",
+            "finished_at":"2026-04-24T10:00:01Z",
+            "duration_ms":1000,
+            "exit_code":0,
+            "effects":[],
+            "risk":"medium"
+        }"#;
+
+        let decoded: CommandReceipt = serde_json::from_str(json).unwrap();
+        assert_eq!(decoded.approval, ApprovalDecision::NotRequired);
     }
 
     #[test]
@@ -206,7 +318,13 @@ mod tests {
     #[test]
     fn append_receipt_jsonl_writes_deserializable_receipt() {
         let (started_at, finished_at) = fixed_times();
-        let receipt = CommandReceipt::new("fetch https://example.com", "/repo", started_at, finished_at, 0);
+        let receipt = CommandReceipt::new(
+            "fetch https://example.com",
+            "/repo",
+            started_at,
+            finished_at,
+            0,
+        );
         let dir = tempdir().unwrap();
         let ledger_path = dir.path().join("receipts").join("ledger.jsonl");
 
@@ -235,7 +353,8 @@ mod tests {
     #[test]
     fn receipts_unknown_commands_use_conservative_empty_metadata() {
         let (started_at, finished_at) = fixed_times();
-        let receipt = CommandReceipt::new("custom-tool --flag", "/repo", started_at, finished_at, 0);
+        let receipt =
+            CommandReceipt::new("custom-tool --flag", "/repo", started_at, finished_at, 0);
 
         assert_eq!(receipt.command_name, "custom-tool");
         assert_eq!(receipt.risk, RiskLevel::Medium);
