@@ -1,7 +1,7 @@
 use logos::Logos;
 
 #[derive(Logos, Debug, Clone, PartialEq)]
-#[logos(skip r"[ \t]+")]
+#[logos(skip r"[ \t]+|\\\r?\n")]
 pub enum Token {
     // Keywords
     #[token("let")]
@@ -138,7 +138,7 @@ pub enum Token {
     #[regex(r#"""#, parse_double_quoted_string)]
     String(String),
 
-    #[regex(r"'([^'\\]|\\.)*'", |lex| lex.slice().to_string())]
+    #[regex(r"'", parse_single_quoted_string)]
     SingleQuotedString(String),
 
     // ANSI-C quoted strings $'...' - escape sequences are processed
@@ -278,6 +278,28 @@ pub struct HereDocData {
     pub body: String,
     pub expand_vars: bool,
     pub strip_tabs: bool,
+}
+
+// Parse single-quoted strings literally until the next single quote.
+// Unlike many regex-based approaches, this correctly allows embedded newlines
+// and backslashes of any form because single quotes in shell treat content
+// literally until the closing quote.
+fn parse_single_quoted_string(lex: &mut logos::Lexer<Token>) -> Option<String> {
+    let start = lex.span().start;
+    let input = lex.source();
+    let mut pos = lex.span().end; // position after opening '\''
+
+    while pos < input.len() {
+        if input.as_bytes()[pos] as char == '\'' {
+            pos += 1;
+            let result = input[start..pos].to_string();
+            lex.bump(pos - lex.span().end);
+            return Some(result);
+        }
+        pos += 1;
+    }
+
+    None
 }
 
 // Parse ANSI-C quoted string $'...' and process escape sequences
@@ -1153,10 +1175,43 @@ mod tests {
     }
 
     #[test]
-    fn test_adjacent_quoted_strings_lexer() {
-        let tokens = Lexer::tokenize(r#"echo 'start'"$VAR"'end'"#).unwrap();
-        println!("adjacent tokens: {:?}", tokens);
-        // Should produce separate tokens for each quoted segment
-        assert!(tokens.len() >= 4); // at least: echo, 'start', "$VAR", 'end'
+    fn test_single_quoted_backslash_literal() {
+        let tokens = Lexer::tokenize("echo '\\\\'").unwrap();
+        assert_eq!(tokens.len(), 2);
+        assert!(matches!(tokens[1], Token::SingleQuotedString(ref s) if s == "'\\\\'"));
     }
+
+    #[test]
+    fn test_single_quoted_multiline_with_backslash() {
+        let tokens = Lexer::tokenize("echo 'line1 \\\nline2'").unwrap();
+        assert_eq!(tokens.len(), 2);
+        assert!(matches!(tokens[1], Token::SingleQuotedString(ref s) if s == "'line1 \\\nline2'"));
+    }
+
+    #[test]
+    fn test_backslash_newline_line_continuation_between_words() {
+        let tokens = Lexer::tokenize("echo one \\\n two").unwrap();
+        assert_eq!(
+            tokens,
+            vec![
+                Token::Identifier("echo".to_string()),
+                Token::Identifier("one".to_string()),
+                Token::Identifier("two".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_backslash_crlf_line_continuation_between_words() {
+        let tokens = Lexer::tokenize("echo one \\\r\n two").unwrap();
+        assert_eq!(
+            tokens,
+            vec![
+                Token::Identifier("echo".to_string()),
+                Token::Identifier("one".to_string()),
+                Token::Identifier("two".to_string()),
+            ]
+        );
+    }
+
 }

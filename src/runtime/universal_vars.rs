@@ -1,7 +1,8 @@
 //! Universal variables — shell variables that persist across all sessions.
 //!
 //! Inspired by fish shell's universal variables, these are stored in
-//! `~/.config/rush/universal_vars` and shared between all running shells.
+//! `~/.config/aush/universal_vars` with fallback to the legacy
+//! `~/.config/rush/universal_vars`, and shared between all running shells.
 //! They differ from regular shell variables in that changes are immediately
 //! visible to every concurrent session (future work: inotify/kqueue watching).
 //!
@@ -32,7 +33,8 @@ impl UniversalVar {
 
 /// Storage layer for universal variables.
 ///
-/// Reads and writes `~/.config/rush/universal_vars`. Loads eagerly at shell
+/// Reads and writes `~/.config/aush/universal_vars`, falling back to existing
+/// `~/.config/rush/universal_vars`. Loads eagerly at shell
 /// startup; individual writes flush the full file atomically via a temp-file
 /// rename to avoid corruption from concurrent writes.
 #[derive(Clone, Default)]
@@ -42,9 +44,10 @@ pub struct UniversalVarStore {
 }
 
 impl UniversalVarStore {
-    /// Create a store backed by the default path (`~/.config/rush/universal_vars`).
+    /// Create a store backed by the default path (`~/.config/aush/universal_vars`,
+    /// with fallback to existing `~/.config/rush/universal_vars`).
     pub fn new() -> Self {
-        let path = dirs::home_dir().map(|h| h.join(".config").join("rush").join("universal_vars"));
+        let path = crate::brand::migrated_xdg_config_file("universal_vars");
         let mut store = Self {
             vars: HashMap::new(),
             path,
@@ -102,7 +105,7 @@ impl UniversalVarStore {
             .collect();
         lines.sort();
         let contents = format!(
-            "# Rush universal variables — do not edit while rush is running\n{}\n",
+            "# AUSH universal variables — do not edit while aush is running\n{}\n",
             lines.join("\n")
         );
         // Atomic write via temp file

@@ -188,10 +188,10 @@ impl RushError {
 
 /// Check if errors should be output in JSON format
 ///
-/// Currently checks the RUSH_ERROR_FORMAT environment variable.
+/// Currently checks AUSH_ERROR_FORMAT with fallback to RUSH_ERROR_FORMAT.
 /// Returns true if it's set to "json", false otherwise.
 pub fn should_output_json_errors() -> bool {
-    std::env::var("RUSH_ERROR_FORMAT")
+    crate::brand::env_var("AUSH_ERROR_FORMAT", "RUSH_ERROR_FORMAT")
         .map(|v| v.to_lowercase() == "json")
         .unwrap_or(false)
 }

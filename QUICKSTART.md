@@ -1,8 +1,8 @@
-# Rush Shell - Quick Start Guide
+# AUSH - Quick Start Guide
 
-Get up and running with Rush in under 5 minutes!
+Get up and running with AUSH (Actually Usable Shell) in under 5 minutes!
 
-## Building Rush
+## Building AUSH
 
 ### 1. Build in Release Mode
 ```bash
@@ -12,14 +12,14 @@ cargo build --release
 
 This will create the optimized binary at `target/release/rush`.
 
-### 2. Run Rush
+### 2. Run AUSH
 ```bash
 ./target/release/rush
 ```
 
-You should see the Rush prompt:
+You should see the AUSH prompt:
 ```
-rush>
+aush>
 ```
 
 ## Try It Out!
@@ -46,9 +46,9 @@ export MY_VAR="hello"
 echo $MY_VAR
 ```
 
-### Fast Builtins (Rush's Superpower!)
+### Fast Builtins (AUSH's Superpower!)
 
-Rush reimplements common commands with high performance:
+AUSH reimplements common commands with high performance:
 
 ```bash
 # Memory-mapped cat (blazing fast for large files)
@@ -66,7 +66,7 @@ grep "TODO" src/**/*.rs
 
 ### Command History
 
-Rush has a powerful history system:
+AUSH has a powerful history system:
 
 ```bash
 # Add some commands to history
@@ -90,20 +90,20 @@ history clear
 
 ### User-Defined Functions
 
-Rush supports functions with parameters:
+AUSH supports functions with parameters:
 
 ```bash
 # Define a greeting function
 function greet(name) {
     echo "Hello, $name!"
-    echo "Welcome to Rush shell"
+    echo "Welcome to AUSH"
 }
 
 # Call it
 greet "World"
 # Output:
 # Hello, World!
-# Welcome to Rush shell
+# Welcome to AUSH
 
 # Functions with multiple statements
 function deploy(env) {
@@ -117,7 +117,7 @@ deploy "production"
 
 ### Tab Completion
 
-Rush has smart, context-aware tab completion:
+AUSH has smart, context-aware tab completion:
 
 ```bash
 # Command completion
@@ -140,7 +140,7 @@ ls -<TAB>        # Shows: -l, -a, -la, -h, etc.
 
 ### Undo File Operations
 
-Rush can undo file operations:
+AUSH can undo file operations:
 
 ```bash
 # Track operations (enabled by default)
@@ -163,17 +163,17 @@ undo enable
 undo clear
 ```
 
-## Test Rush's Performance
+## Test AUSH's Performance
 
 ### Quick Performance Test
 
-Run this in both zsh and Rush to feel the difference:
+Run this in both zsh and AUSH to feel the difference:
 
 ```bash
 # In zsh (traditional shell)
 time for i in {1..100}; do echo "test" > /dev/null; done
 
-# In Rush (optimized builtins)
+# In AUSH (optimized builtins)
 time for i in {1..100}; do echo "test" > /dev/null; done
 ```
 
@@ -191,7 +191,7 @@ cd benchmarks
 This will:
 1. Generate test data (large files, deep directories)
 2. Run 10 different performance tests
-3. Compare Rush vs zsh
+3. Compare AUSH vs zsh
 4. Show speedup metrics
 
 Expected results on M2 Macbook Air:
@@ -210,7 +210,7 @@ Expected results on M2 Macbook Air:
 - `cd`, `pwd`, `echo`, `export` - Zero overhead
 
 ### 2. Command History
-- Persistent storage at `~/.rush_history`
+- Persistent storage at `~/.aush_history`, with legacy `~/.rush_history` migration support planned
 - Fuzzy search with ranking
 - Deduplication (no repeated commands)
 - Timestamp tracking
@@ -244,7 +244,7 @@ Expected results on M2 Macbook Air:
 
 ### 1. Use Built-in Commands
 ```bash
-# Prefer Rush builtins (always faster)
+# Prefer AUSH builtins (always faster)
 ls           # ✓ Fast builtin
 cat file     # ✓ Fast builtin
 find . -name # ✓ Fast builtin
@@ -346,7 +346,7 @@ Current phase (Phase 3):
 
 ## Troubleshooting
 
-### Rush won't build
+### AUSH won't build
 ```bash
 # Update Rust
 rustup update
@@ -411,9 +411,9 @@ cargo test history
 cargo test completion
 ```
 
-## Enjoy Rush!
+## Enjoy AUSH!
 
-Rush is designed to be fast, safe, and powerful. Key advantages:
+AUSH is designed to be fast, safe, and powerful. Key advantages:
 
 ✅ **2-10x faster** than traditional shells for file operations
 ✅ **Safe by default** with undo capability

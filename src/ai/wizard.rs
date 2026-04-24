@@ -330,33 +330,36 @@ fn summarise_model(name: &str) -> String {
 
 /// Save config and print confirmation message.
 fn save_and_confirm(config: LlmConfig) -> Result<Option<LlmConfig>, String> {
-    // Set env vars for the current session
+    // Set env vars for the current session, preserving legacy Rush vars during migration.
+    std::env::set_var("AUSH_AI_PROVIDER", config.provider.to_string());
+    std::env::set_var("AUSH_AI_MODEL", &config.model);
     std::env::set_var("RUSH_AI_PROVIDER", config.provider.to_string());
     std::env::set_var("RUSH_AI_MODEL", &config.model);
     if let Some(ref key) = config.api_key {
+        std::env::set_var("AUSH_AI_API_KEY", key);
         std::env::set_var("RUSH_AI_API_KEY", key);
     }
 
-    // Append to ~/.rushrc for persistence
-    let rushrc = dirs::home_dir()
-        .map(|h| h.join(".rushrc"))
+    // Append to ~/.aushrc for persistence, or existing ~/.rushrc for compatibility.
+    let config_path = dirs::home_dir()
+        .map(|h| crate::brand::first_existing_or_primary(h.join(".aushrc"), [h.join(".rushrc")]))
         .ok_or_else(|| "Could not determine home directory".to_string())?;
 
-    let mut lines = String::from("\n# AI configuration (added by rush --setup-ai)\n");
-    lines.push_str(&format!("RUSH_AI_PROVIDER={}\n", config.provider));
-    lines.push_str(&format!("RUSH_AI_MODEL={}\n", config.model));
+    let mut lines = String::from("\n# AI configuration (added by aush --setup-ai)\n");
+    lines.push_str(&format!("AUSH_AI_PROVIDER={}\n", config.provider));
+    lines.push_str(&format!("AUSH_AI_MODEL={}\n", config.model));
     if let Some(ref key) = config.api_key {
-        lines.push_str(&format!("RUSH_AI_API_KEY={}\n", key));
+        lines.push_str(&format!("AUSH_AI_API_KEY={}\n", key));
     }
 
     use std::io::Write;
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open(&rushrc)
-        .map_err(|e| format!("Failed to open ~/.rushrc: {}", e))?;
+        .open(&config_path)
+        .map_err(|e| format!("Failed to open {}: {}", config_path.display(), e))?;
     file.write_all(lines.as_bytes())
-        .map_err(|e| format!("Failed to write ~/.rushrc: {}", e))?;
+        .map_err(|e| format!("Failed to write {}: {}", config_path.display(), e))?;
 
     println!();
     println!(
@@ -366,7 +369,7 @@ fn save_and_confirm(config: LlmConfig) -> Result<Option<LlmConfig>, String> {
     );
     println!(
         "Config appended to {}",
-        Color::DarkGray.paint(rushrc.display().to_string())
+        Color::DarkGray.paint(config_path.display().to_string())
     );
 
     Ok(Some(config))

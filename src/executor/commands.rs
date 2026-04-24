@@ -3,6 +3,7 @@
 use super::*;
 use anyhow::{anyhow, Result};
 use nix::unistd::{getpid, setpgid};
+use std::io::IsTerminal;
 use std::os::unix::process::CommandExt;
 use std::process::Command as StdCommand;
 use std::thread;
@@ -465,7 +466,7 @@ impl Executor {
             && !stdout_redirect
             && !stderr_redirect
             && command.redirects.is_empty()
-            && atty::is(atty::Stream::Stdout);
+            && std::io::stdout().is_terminal();
 
         if !stdout_redirect {
             if should_inherit_io {

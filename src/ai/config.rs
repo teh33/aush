@@ -1,12 +1,12 @@
 //! Configuration for the LLM client.
 //!
 //! All settings are read from environment variables, which are typically set
-//! in `~/.rushrc`:
+//! in `~/.aushrc` or legacy `~/.rushrc`:
 //!
 //! ```bash
-//! RUSH_AI_PROVIDER=ollama
-//! RUSH_AI_MODEL=qwen2.5-coder:7b
-//! RUSH_AI_AUTORUN=true
+//! AUSH_AI_PROVIDER=ollama
+//! AUSH_AI_MODEL=qwen2.5-coder:7b
+//! AUSH_AI_AUTORUN=true
 //! ```
 
 use std::fmt;
@@ -74,27 +74,28 @@ impl LlmConfig {
     /// Returns `Ok` with defaults for any unset variable.
     /// Returns `Err` only if a variable has an invalid value.
     pub fn load() -> Result<Self, String> {
-        let provider = match std::env::var("RUSH_AI_PROVIDER") {
-            Ok(val) => val.parse::<ProviderType>()?,
-            Err(_) => ProviderType::Ollama,
+        let provider = match crate::brand::env_var("AUSH_AI_PROVIDER", "RUSH_AI_PROVIDER") {
+            Some(val) => val.parse::<ProviderType>()?,
+            None => ProviderType::Ollama,
         };
 
-        let model =
-            std::env::var("RUSH_AI_MODEL").unwrap_or_else(|_| "qwen2.5-coder:7b".to_string());
+        let model = crate::brand::env_var("AUSH_AI_MODEL", "RUSH_AI_MODEL")
+            .unwrap_or_else(|| "qwen2.5-coder:7b".to_string());
 
-        let api_key = std::env::var("RUSH_AI_API_KEY")
-            .ok()
-            .or_else(|| match provider {
-                ProviderType::OpenAi => std::env::var("OPENAI_API_KEY").ok(),
-                ProviderType::Anthropic => std::env::var("ANTHROPIC_API_KEY").ok(),
-                ProviderType::Ollama => None,
-            });
+        let api_key =
+            crate::brand::env_var("AUSH_AI_API_KEY", "RUSH_AI_API_KEY").or_else(
+                || match provider {
+                    ProviderType::OpenAi => std::env::var("OPENAI_API_KEY").ok(),
+                    ProviderType::Anthropic => std::env::var("ANTHROPIC_API_KEY").ok(),
+                    ProviderType::Ollama => None,
+                },
+            );
 
-        let base_url = std::env::var("RUSH_AI_BASE_URL").ok();
+        let base_url = crate::brand::env_var("AUSH_AI_BASE_URL", "RUSH_AI_BASE_URL");
 
         let autorun = matches!(
-            std::env::var("RUSH_AI_AUTORUN").as_deref(),
-            Ok("1" | "true" | "yes")
+            crate::brand::env_var("AUSH_AI_AUTORUN", "RUSH_AI_AUTORUN").as_deref(),
+            Some("1" | "true" | "yes")
         );
 
         Ok(Self {
@@ -108,7 +109,7 @@ impl LlmConfig {
 
     /// Check if AI has been configured (provider env var is set).
     pub fn is_configured() -> bool {
-        std::env::var("RUSH_AI_PROVIDER").is_ok()
+        crate::brand::env_var("AUSH_AI_PROVIDER", "RUSH_AI_PROVIDER").is_some()
     }
 }
 

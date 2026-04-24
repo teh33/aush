@@ -32,6 +32,15 @@ use std::os::fd::{AsRawFd, RawFd};
 
 /// Maximum message size (10MB to prevent memory exhaustion)
 const MAX_MESSAGE_SIZE: u32 = 10 * 1024 * 1024;
+const MAX_WORKING_DIR_LEN: usize = 4096;
+const MAX_ENV_VARS: usize = 4096;
+const MAX_ENV_KEY_LEN: usize = 1024;
+const MAX_ENV_VALUE_LEN: usize = 64 * 1024;
+const MAX_ARGS: usize = 4096;
+const MAX_ARG_LEN: usize = 64 * 1024;
+const MAX_COMMAND_LEN: usize = 1024 * 1024;
+const MAX_STATS_REQUESTED: usize = 128;
+const MAX_STAT_NAME_LEN: usize = 256;
 
 /// Message ID counter type (unique per message for request/response correlation)
 pub type MessageId = u32;
@@ -66,8 +75,16 @@ pub struct SessionInit {
     pub env: HashMap<String, String>,
     /// Command-line arguments
     pub args: Vec<String>,
-    /// How to handle stdin: "inherit", "pipe", or "null"
-    pub stdin_mode: String,
+    /// How to handle stdin
+    pub stdin_mode: StdinMode,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum StdinMode {
+    Inherit,
+    Pipe,
+    Null,
 }
 
 /// Session initialization acknowledgment (Daemon → Client)
@@ -204,8 +221,97 @@ pub fn decode_message<R: Read>(reader: &mut R) -> io::Result<(Message, MessageId
     // Deserialize message
     let message: Message = bincode::deserialize(&payload)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    validate_message(&message)?;
 
     Ok((message, message_id))
+}
+
+fn validate_message(message: &Message) -> io::Result<()> {
+    match message {
+        Message::SessionInit(init) => validate_session_init(init),
+        Message::Execute(execute) => validate_execute(execute),
+        Message::StatsRequest(request) => validate_stats_request(request),
+        Message::ExecutionResult(result) => validate_execution_result(result),
+        Message::StatsResponse(response) => validate_stats_response(response),
+        Message::SessionInitAck(_) | Message::Signal(_) | Message::Shutdown(_) => Ok(()),
+    }
+}
+
+fn validate_session_init(init: &SessionInit) -> io::Result<()> {
+    validate_string_len("working_dir", &init.working_dir, MAX_WORKING_DIR_LEN)?;
+
+    if init.env.len() > MAX_ENV_VARS {
+        return invalid_data(format!(
+            "too many environment variables: {}",
+            init.env.len()
+        ));
+    }
+    for (key, value) in &init.env {
+        validate_string_len("environment key", key, MAX_ENV_KEY_LEN)?;
+        validate_string_len("environment value", value, MAX_ENV_VALUE_LEN)?;
+    }
+
+    validate_string_vec("arg", &init.args, MAX_ARGS, MAX_ARG_LEN)
+}
+
+fn validate_execute(execute: &Execute) -> io::Result<()> {
+    validate_string_len("command", &execute.command, MAX_COMMAND_LEN)
+}
+
+fn validate_stats_request(request: &StatsRequest) -> io::Result<()> {
+    validate_string_vec(
+        "stat",
+        &request.stats,
+        MAX_STATS_REQUESTED,
+        MAX_STAT_NAME_LEN,
+    )
+}
+
+fn validate_execution_result(result: &ExecutionResult) -> io::Result<()> {
+    if result.stdout_len != result.stdout.len() as u64 {
+        return invalid_data("stdout_len does not match stdout byte length");
+    }
+    if result.stderr_len != result.stderr.len() as u64 {
+        return invalid_data("stderr_len does not match stderr byte length");
+    }
+    Ok(())
+}
+
+fn validate_stats_response(response: &StatsResponse) -> io::Result<()> {
+    if response.builtin.len() > MAX_STATS_REQUESTED || response.custom.len() > MAX_STATS_REQUESTED {
+        return invalid_data("too many stats in response");
+    }
+    for (key, value) in response.builtin.iter().chain(response.custom.iter()) {
+        validate_string_len("stat key", key, MAX_STAT_NAME_LEN)?;
+        validate_string_len("stat value", value, MAX_ENV_VALUE_LEN)?;
+    }
+    Ok(())
+}
+
+fn validate_string_vec(
+    name: &str,
+    values: &[String],
+    max_count: usize,
+    max_len: usize,
+) -> io::Result<()> {
+    if values.len() > max_count {
+        return invalid_data(format!("too many {} values: {}", name, values.len()));
+    }
+    for value in values {
+        validate_string_len(name, value, max_len)?;
+    }
+    Ok(())
+}
+
+fn validate_string_len(name: &str, value: &str, max_len: usize) -> io::Result<()> {
+    if value.len() > max_len {
+        return invalid_data(format!("{} too long: {} bytes", name, value.len()));
+    }
+    Ok(())
+}
+
+fn invalid_data<T>(message: impl Into<String>) -> io::Result<T> {
+    Err(io::Error::new(io::ErrorKind::InvalidData, message.into()))
 }
 
 /// Write a message to a stream
@@ -449,7 +555,7 @@ mod tests {
             working_dir: "/tmp".to_string(),
             env,
             args: vec!["-c".to_string(), "echo test".to_string()],
-            stdin_mode: "inherit".to_string(),
+            stdin_mode: StdinMode::Inherit,
         });
 
         let message_id = 42;
@@ -501,8 +607,8 @@ mod tests {
     fn test_encode_decode_execution_result() {
         let message = Message::ExecutionResult(ExecutionResult {
             exit_code: 0,
-            stdout_len: 1024,
-            stderr_len: 0,
+            stdout_len: "stdout".len() as u64,
+            stderr_len: "stderr".len() as u64,
             stdout: "stdout".to_string(),
             stderr: "stderr".to_string(),
         });
@@ -643,7 +749,7 @@ mod tests {
             working_dir: "/tmp".to_string(),
             env: large_env,
             args: vec![],
-            stdin_mode: "inherit".to_string(),
+            stdin_mode: StdinMode::Inherit,
         });
 
         let result = encode_message(&message, 1);
@@ -654,8 +760,8 @@ mod tests {
     fn test_write_read_message() {
         let message = Message::ExecutionResult(ExecutionResult {
             exit_code: 0,
-            stdout_len: 512,
-            stderr_len: 0,
+            stdout_len: "stdout".len() as u64,
+            stderr_len: "stderr".len() as u64,
             stdout: "stdout".to_string(),
             stderr: "stderr".to_string(),
         });
@@ -682,7 +788,7 @@ mod tests {
                     working_dir: "/tmp".to_string(),
                     env: HashMap::new(),
                     args: vec![],
-                    stdin_mode: "inherit".to_string(),
+                    stdin_mode: StdinMode::Inherit,
                 }),
                 1,
             ),
@@ -696,8 +802,8 @@ mod tests {
             (
                 Message::ExecutionResult(ExecutionResult {
                     exit_code: 0,
-                    stdout_len: 5,
-                    stderr_len: 0,
+                    stdout_len: "stdout".len() as u64,
+                    stderr_len: "stderr".len() as u64,
                     stdout: "stdout".to_string(),
                     stderr: "stderr".to_string(),
                 }),

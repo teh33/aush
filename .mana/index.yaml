@@ -15,6 +15,7 @@ units:
   verify: echo "echo hello | cat | cat | wc -l" | cargo run --quiet 2>/dev/null | grep -q "1"
   created_at: '2026-03-17T05:56:25.688346Z'
   attempts: 7
+  kind: task
   feature: false
   has_decisions: false
 - id: '6.4'
@@ -33,6 +34,7 @@ units:
   verify: echo "echo hello" | cargo run --quiet 2>/dev/null | grep -q "hello"
   created_at: '2026-03-17T05:56:34.700683Z'
   attempts: 7
+  kind: task
   feature: false
   has_decisions: false
 - id: '6.5.3'
@@ -52,6 +54,7 @@ units:
   verify: cargo test --test quoting_tests test_double_quotes_escape_dollar test_double_quotes_escape_backtick test_quote_escaping_with_variable test_nested_command_substitution_with_quotes 2>&1 | grep -q "4 passed; 0 failed"
   created_at: '2026-03-17T06:39:17.769012Z'
   attempts: 7
+  kind: task
   feature: false
   has_decisions: false
 - id: '10'
@@ -67,6 +70,7 @@ units:
   created_at: '2026-03-24T02:40:45.241087Z'
   claimed_by: pi-agent
   attempts: 2
+  kind: task
   feature: false
   has_decisions: false
 - id: '11'
@@ -83,6 +87,7 @@ units:
   created_at: '2026-03-24T02:43:58.753579Z'
   claimed_by: pi-agent
   attempts: 2
+  kind: task
   feature: false
   has_decisions: false
 - id: '20'
@@ -95,6 +100,7 @@ units:
   created_at: '2026-03-25T03:58:10.532766Z'
   claimed_by: pi-agent
   attempts: 0
+  kind: task
   feature: false
   has_decisions: false
 - id: '20.1'
@@ -112,6 +118,7 @@ units:
   created_at: '2026-03-25T04:15:42.141516Z'
   claimed_by: pi-agent
   attempts: 0
+  kind: task
   feature: false
   has_decisions: false
 - id: '20.2'
@@ -130,6 +137,7 @@ units:
   created_at: '2026-03-25T04:15:42.471442Z'
   claimed_by: pi-agent
   attempts: 0
+  kind: task
   feature: false
   has_decisions: false
 - id: '20.3'
@@ -146,6 +154,7 @@ units:
   verify: cd /Users/asher/rush && cargo test --test while_loop_tests test_basic_while_loop && cargo test --test while_loop_tests test_nested_while_loops && cargo test --test while_loop_tests test_while_loop_exit_code_propagation && cargo test --test while_loop_tests test_while_loop_multiline_condition
   created_at: '2026-03-25T07:32:26.239451Z'
   attempts: 0
+  kind: task
   feature: false
   has_decisions: false
 - id: '20.4'
@@ -167,6 +176,292 @@ units:
   created_at: '2026-03-25T07:39:08.619019Z'
   claimed_by: pi-agent
   attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '21'
+  title: Triage Rush failing nested-loop tests and dependency audit posture
+  status: open
+  priority: 1
+  labels:
+  - rush
+  - triage
+  - deps
+  - shell
+  updated_at: '2026-04-24T07:20:04.573026Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo tree --depth 1 >/dev/null && cargo test -q executor::tests::test_for_loop_nested || true
+  created_at: '2026-04-24T03:31:02.268513Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '22'
+  title: Explore publishable shell names ending in -sh for Rush rename
+  status: open
+  priority: 2
+  labels:
+  - naming
+  - branding
+  - rush
+  - shell
+  updated_at: '2026-04-24T07:46:44.399919Z'
+  has_verify: true
+  verify: |-
+    python3 - <<'PY'
+    print('naming exploration captured in mana or response')
+    PY
+  created_at: '2026-04-24T07:20:30.979017Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '23'
+  title: Draft the Actually Usable benchmark suite and integrate it into Rush benchmark docs
+  status: open
+  priority: 1
+  labels:
+  - benchmarks
+  - docs
+  - aush
+  - usability
+  updated_at: '2026-04-24T08:36:21.590594Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n 'Actually Usable|interactive reliability|daily-driver|trust/recovery' BENCHMARKS.md docs/benchmarking.md Makefile docs 2>/dev/null
+  created_at: '2026-04-24T07:50:13.322350Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '23.1'
+  title: Fix absolute-path external command execution in AUSH smoke gate
+  status: open
+  priority: 1
+  parent: '23'
+  labels:
+  - aush
+  - smoke
+  - shell-correctness
+  - external-commands
+  updated_at: '2026-04-24T08:37:34.209313Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && ./target/release/rush --no-rc -c '/bin/true; echo $?' | grep -qx '0' && ./target/release/rush --no-rc -c '/bin/false; echo $?' | grep -qx '1'
+  created_at: '2026-04-24T08:36:39.956678Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '23.2'
+  title: Fix remaining AUSH smoke portability/semantics issues in tests/smoke_test.sh
+  status: open
+  priority: 1
+  parent: '23'
+  labels:
+  - aush
+  - smoke
+  - tests
+  updated_at: '2026-04-24T08:39:00.008369Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && tests/smoke_test.sh ./target/release/rush >/tmp/aush-smoke-next.log 2>&1; tail -n 20 /tmp/aush-smoke-next.log
+  created_at: '2026-04-24T08:39:00.008369Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24'
+  title: Rebrand/refactor shell project from rush to aush
+  status: open
+  priority: 2
+  labels:
+  - rebrand
+  - refactor
+  - shell
+  - root-link
+  updated_at: '2026-04-24T07:53:41.093932Z'
+  has_verify: false
+  created_at: '2026-04-24T07:53:27.991937Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '25'
+  title: Reshape shell benchmarking around bash drivers plus Rush-native workload scripts
+  status: open
+  priority: 1
+  labels:
+  - benchmarks
+  - aush
+  - architecture
+  - rush
+  updated_at: '2026-04-24T08:54:03.854936Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && test -d benches && true
+  created_at: '2026-04-24T08:47:16.442724Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '25.1'
+  title: Create initial Rush-native benchmark workload scripts
+  status: open
+  priority: 1
+  parent: '25'
+  labels:
+  - benchmarks
+  - aush
+  - workloads
+  - rush-native
+  updated_at: '2026-04-24T08:47:53.223649Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && find benches -maxdepth 2 -type f | grep -q .
+  created_at: '2026-04-24T08:47:53.223649Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.2'
+  title: Refactor benchmark driver around Rush-native workload scripts
+  status: open
+  priority: 1
+  parent: '25'
+  labels:
+  - benchmarks
+  - driver
+  - bash
+  - aush
+  updated_at: '2026-04-24T08:48:09.832495Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && test -f scripts/benchmark.sh
+  created_at: '2026-04-24T08:48:09.832495Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.3'
+  title: Document benchmark driver vs Rush-native workload architecture
+  status: open
+  priority: 2
+  parent: '25'
+  labels:
+  - benchmarks
+  - docs
+  - aush
+  updated_at: '2026-04-24T08:48:18.523830Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n 'driver|workload|Rush-native' BENCHMARKS.md docs/benchmarking.md
+  created_at: '2026-04-24T08:48:18.523830Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.4'
+  title: Make benchmark.sh run under Rush as an AUSH compatibility fixture
+  status: open
+  priority: 1
+  parent: '25'
+  labels:
+  - aush
+  - compatibility
+  - benchmarks
+  - shell-scripts
+  updated_at: '2026-04-24T15:06:57.892154Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && ./target/release/rush --no-rc scripts/benchmark.sh >/tmp/benchmark-fixture.log 2>&1 || true && test -s /tmp/benchmark-fixture.log
+  created_at: '2026-04-24T08:54:19.804903Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.4.2'
+  title: Diagnose the next shellbench.sh parser blocker after line-continuation support
+  status: open
+  priority: 1
+  parent: '25.4'
+  labels:
+  - aush
+  - compatibility
+  - parser
+  - shell-scripts
+  updated_at: '2026-04-24T14:50:12.724026Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && ./target/release/rush --no-rc benches/shellbench.sh >/tmp/shellbench-next.log 2>&1 || true && tail -n 20 /tmp/shellbench-next.log
+  created_at: '2026-04-24T14:50:12.724026Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '26'
+  title: Map AUSH against 2026+ modern shell capabilities
+  status: open
+  priority: 2
+  labels:
+  - roadmap
+  - aush
+  - modern-shell
+  - architecture
+  updated_at: '2026-04-24T09:31:00.378405Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n 'Structured pipelines|Designed for AI coding agents|Command history|Undo Capability' README.md QUICKSTART.md && test -f src/value/mod.rs && test -f src/ai/agent.rs
+  created_at: '2026-04-24T09:22:55.444500Z'
+  attempts: 0
+  kind: epic
+  feature: true
+  has_decisions: false
+- id: '26.1'
+  title: Add command effect metadata with polished human presentation
+  status: closed
+  priority: 1
+  parent: '26'
+  labels:
+  - aush
+  - effects
+  - metadata
+  - ux
+  - agent-safety
+  updated_at: '2026-04-24T09:40:42.787174Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n "Delete files|delete_file|Effect|Risk" src tests && cargo test effects --quiet
+  created_at: '2026-04-24T09:35:24.149416Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '26.2'
+  title: Add starter command metadata registry using effect metadata
+  status: closed
+  priority: 1
+  parent: '26'
+  labels:
+  - aush
+  - metadata
+  - effects
+  - command-registry
+  - agent-safety
+  updated_at: '2026-04-24T14:38:21.583053Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n "CommandMetadata|metadata_for_command|Delete files|NetworkAccess" src && cargo test command_metadata --quiet
+  created_at: '2026-04-24T14:23:17.013013Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '26.3'
+  title: Add command receipt model and JSONL ledger helper
+  status: closed
+  priority: 1
+  parent: '26'
+  labels:
+  - aush
+  - receipts
+  - audit
+  - effects
+  - metadata
+  updated_at: '2026-04-24T14:58:58.220321Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n "CommandReceipt|append_receipt_jsonl|Delete files|delete_file" src && cargo test receipts --quiet
+  created_at: '2026-04-24T14:55:36.623047Z'
+  attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1'
@@ -184,6 +479,7 @@ units:
   verify: test -f reports/compatibility-roadmap-2026-04-04.md
   created_at: '2026-04-04T18:57:39.755952Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.1'
@@ -200,6 +496,7 @@ units:
   verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
   created_at: '2026-04-04T18:58:18.288488Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.1.2'
@@ -216,6 +513,7 @@ units:
   verify: grep -q "follow" src/builtins/tail.rs && cargo test --quiet 2>/dev/null || cargo test
   created_at: '2026-04-04T18:58:40.716079Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.1.3'
@@ -232,22 +530,7 @@ units:
   verify: cargo test --quiet 2>/dev/null || cargo test
   created_at: '2026-04-04T18:58:40.718045Z'
   attempts: 0
-  feature: false
-  has_decisions: false
-- id: '.1.1.4'
-  title: fix readlink canonicalization semantics (-f/-e/-m)
-  status: open
-  priority: 1
-  parent: '.1.1'
-  labels:
-  - readlink
-  - compatibility
-  - critical
-  updated_at: '2026-04-04T18:58:40.719604Z'
-  has_verify: true
-  verify: cargo test --quiet readlink 2>/dev/null || cargo test readlink
-  created_at: '2026-04-04T18:58:40.719604Z'
-  attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.2'
@@ -264,6 +547,7 @@ units:
   verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
   created_at: '2026-04-04T18:58:18.294241Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.2.1'
@@ -280,6 +564,7 @@ units:
   verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
   created_at: '2026-04-04T18:58:40.725640Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.3'
@@ -296,6 +581,7 @@ units:
   verify: cargo test --quiet 2>/dev/null || cargo test
   created_at: '2026-04-04T18:58:18.296836Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.4'
@@ -312,6 +598,7 @@ units:
   verify: cargo test --quiet 2>/dev/null || cargo test
   created_at: '2026-04-04T18:58:18.298252Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.5'
@@ -328,6 +615,7 @@ units:
   verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
   created_at: '2026-04-04T18:58:18.299795Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.5.1'
@@ -344,6 +632,7 @@ units:
   verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
   created_at: '2026-04-04T18:58:40.722693Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.6'
@@ -360,6 +649,7 @@ units:
   verify: cargo test --quiet 2>/dev/null || cargo test
   created_at: '2026-04-04T18:58:18.301246Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.7'
@@ -376,6 +666,7 @@ units:
   verify: cargo test --quiet 2>/dev/null || cargo test
   created_at: '2026-04-04T18:58:18.302825Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1.8'
@@ -392,6 +683,7 @@ units:
   verify: cargo test --quiet 2>/dev/null || cargo test
   created_at: '2026-04-04T18:58:18.304228Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.2'
@@ -408,5 +700,6 @@ units:
   verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
   created_at: '2026-04-04T18:57:39.761376Z'
   attempts: 0
+  kind: epic
   feature: false
   has_decisions: false

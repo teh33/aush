@@ -1,9 +1,9 @@
-//! Rush daemon client implementation
+//! AUSH daemon client implementation
 //!
 //! Thin client logic for connecting to the daemon and executing commands.
 
 use crate::daemon::protocol::{
-    read_message, write_message, Message, SessionInit, StatsRequest, StatsResponse,
+    read_message, write_message, Message, SessionInit, StatsRequest, StatsResponse, StdinMode,
 };
 use crate::daemon::server::DaemonServer;
 use anyhow::{anyhow, Result};
@@ -13,7 +13,7 @@ use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
 use std::time::Duration;
 
-/// Client for connecting to the Rush daemon
+/// Client for connecting to the AUSH daemon
 pub struct DaemonClient {
     socket_path: PathBuf,
     stream: Option<UnixStream>,
@@ -71,7 +71,7 @@ impl DaemonClient {
             working_dir,
             env,
             args: args.to_vec(),
-            stdin_mode: "inherit".to_string(),
+            stdin_mode: StdinMode::Inherit,
         };
 
         let message = Message::SessionInit(session_init);
@@ -162,10 +162,13 @@ impl DaemonClient {
         let exe_dir = exe_path
             .parent()
             .ok_or_else(|| anyhow!("Cannot determine executable directory"))?;
-        let rushd_path = exe_dir.join("rushd");
+        let daemon_path = exe_dir.join("aushd");
+        let legacy_daemon_path = exe_dir.join("rushd");
+        let daemon_path =
+            crate::brand::first_existing_or_primary(daemon_path, [legacy_daemon_path]);
 
         // Start the daemon in the background
-        Command::new(&rushd_path)
+        Command::new(&daemon_path)
             .arg("start")
             .spawn()
             .map_err(|e| anyhow!("Failed to start daemon: {}", e))?;

@@ -26,6 +26,9 @@ NC='\033[0m' # No Color
 TMPDIR=$(mktemp -d)
 trap "rm -rf $TMPDIR" EXIT
 
+TRUE_BIN=$(command -v true || true)
+FALSE_BIN=$(command -v false || true)
+
 # Test runner
 test_case() {
     local name="$1"
@@ -357,8 +360,8 @@ section "17. EXIT CODES"
 
 test_case "exit 0" 'exit 0; echo no' ''
 test_case "command not found" 'nonexistent_cmd_12345 2>/dev/null; echo $?' '127'
-test_case "successful command" '/bin/true; echo $?' '0'
-test_case "failed command" '/bin/false; echo $?' '1'
+test_case "successful command" "$TRUE_BIN; echo $?" '0'
+test_case "failed command" "$FALSE_BIN; echo $?" '1'
 
 # ----------------------------------------------------------------------------
 section "18. HERE DOCUMENTS"
@@ -389,7 +392,11 @@ test_succeeds "cat builtin" "echo test | cat"
 # Git builtins (only if in git repo)
 if git rev-parse --git-dir >/dev/null 2>&1; then
     test_succeeds "git status builtin" "git status"
-    test_succeeds "git log builtin" "git log --oneline -1"
+    if git rev-parse HEAD >/dev/null 2>&1; then
+        test_succeeds "git log builtin" "git log --oneline -1"
+    else
+        test_skip "git log builtin" "repository has no commits yet"
+    fi
 fi
 
 # ============================================================================

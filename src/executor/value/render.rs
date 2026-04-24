@@ -1,6 +1,7 @@
 use super::{Table, Value};
 use nu_ansi_term::Color;
 use std::collections::HashMap;
+use std::io::IsTerminal;
 
 /// Parse a hex color (#rrggbb) from an env var into a nu_ansi_term Color.
 fn parse_env_color(var: &str) -> Option<Color> {
@@ -38,7 +39,7 @@ impl Default for TableRenderer {
 impl TableRenderer {
     pub fn new() -> Self {
         // Detect if we're in a TTY for color support
-        let use_colors = atty::is(atty::Stream::Stdout)
+        let use_colors = std::io::stdout().is_terminal()
             && std::env::var("NO_COLOR").is_err()
             && std::env::var("RUSH_NO_COLOR").is_err();
 

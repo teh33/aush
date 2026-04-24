@@ -13,7 +13,7 @@ PGO_DIR := /tmp/rush-pgo-data
 # Find llvm-profdata from the Rust toolchain
 LLVM_PROFDATA := $(shell find $$(rustc --print sysroot) -name llvm-profdata 2>/dev/null | head -1)
 
-.PHONY: build pgo pgo-check pgo-instrument pgo-collect pgo-merge pgo-build bench-start clean install
+.PHONY: build pgo pgo-check pgo-instrument pgo-collect pgo-merge pgo-build bench-start bench-usable bench-aush bench-aush-fast clean install
 
 # --- Standard Targets ---
 
@@ -32,6 +32,20 @@ clean:
 bench-start:
 	@command -v hyperfine >/dev/null 2>&1 || { echo "Error: hyperfine not found. Install with: cargo install hyperfine"; exit 1; }
 	hyperfine --warmup 5 --runs 30 './target/release/rush -c exit'
+
+bench-usable: build
+	@echo "=== Actually Usable session benchmarks ==="
+	bash ./benches/interactive_benchmark.sh
+	@echo ""
+	bash ./benches/session_benchmark.sh
+
+bench-aush-fast: build
+	@echo "=== AUSH fast smoke benchmark ==="
+	bash ./benches/aush_smoke_fast.sh ./target/release/rush
+
+bench-aush: build
+	@echo "=== AUSH full benchmark suite ==="
+	bash ./benches/aush_suite.sh ./target/release/rush
 
 # --- PGO Build Pipeline ---
 #

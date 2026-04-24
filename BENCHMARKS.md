@@ -2,6 +2,26 @@
 
 This document describes the performance targets, benchmarking methodology, and how to run benchmarks for the Rush shell.
 
+## The "Actually Usable" Standard
+
+Raw speed is not enough. A shell can benchmark well and still fail as a daily driver.
+
+Rush therefore distinguishes between:
+- **performance benchmarks** — startup, memory, parser, builtins
+- **usability benchmarks** — interactive reliability, correctness under common workflows, and recovery behavior
+
+If Rush is ever published as **AUSH** (**Actually Usable Shell**), this second category is the bar that matters.
+
+### Actually Usable categories
+
+| Category | What it means | Example evidence |
+|--------|--------|-----------|
+| **Startup** | Feels instant enough to not be annoying | `rush -c exit`, interactive launch latency |
+| **Interactive reliability** | Prompt, editing, signals, redraw, and session behavior are stable | prompt appears immediately, `Ctrl-C` recovers cleanly |
+| **Shell correctness** | Common shell constructs behave like users expect | loops, quoting, pipelines, redirects, substitutions |
+| **Daily-driver workflows** | Real repo/file/git tasks work smoothly in a persistent session | `pwd`, `ls`, `git status`, pipes, rc loading |
+| **Trust / recovery** | Failure modes do not wedge the shell or terminal | bad commands, interrupted commands, PTY loss |
+
 ## Performance Targets
 
 Rush is designed to be fast and lightweight. Our key performance targets are:
@@ -16,9 +36,9 @@ Rush is designed to be fast and lightweight. Our key performance targets are:
 
 ## Benchmark Suite
 
-Rush includes two types of benchmarks:
+Rush includes two classes of benchmarks:
 
-### 1. Criterion Microbenchmarks
+### 1. Performance Benchmarks
 
 Located in `benches/`, these use the [Criterion](https://github.com/bheisler/criterion.rs) framework for detailed statistical analysis.
 
@@ -37,7 +57,20 @@ Located in `benches/`, these use the [Criterion](https://github.com/bheisler/cri
 - Argument scaling tests
 - Initialization overhead
 
-### 2. Hyperfine Real-World Benchmarks
+### 2. Usability Benchmarks
+
+These focus on whether Rush is usable as a daily shell, not just whether it is fast.
+
+**Persistent-session benchmarks**:
+- `benches/interactive_benchmark.sh` — compare commands in a persistent Rush session vs Zsh
+- `benches/session_benchmark.sh` — separate startup cost from in-session command execution
+
+These are especially important for validating claims like **Actually Usable Shell** because they measure:
+- prompt/session startup amortization
+- repeated command execution in one shell session
+- practical workflows like `pwd`, `ls`, `git status`, `cat`, pipes, and substitution
+
+### 3. Hyperfine Real-World Benchmarks
 
 Located in `scripts/benchmark.sh`, these compare Rush against other shells (bash, zsh) in real-world scenarios using [hyperfine](https://github.com/sharkdp/hyperfine).
 
@@ -69,7 +102,43 @@ cargo bench
 
 # Run hyperfine real-world benchmarks
 ./scripts/benchmark.sh
+
+# Run usability/session benchmarks
+bash ./benches/interactive_benchmark.sh
+bash ./benches/session_benchmark.sh
+
+# Run the AUSH fast smoke benchmark
+bash ./benches/aush_smoke_fast.sh ./target/release/rush
+
+# Run the full AUSH benchmark suite
+bash ./benches/aush_suite.sh ./target/release/rush
 ```
+
+### AUSH fast smoke benchmark
+```bash
+make bench-aush-fast
+# or
+bash ./benches/aush_smoke_fast.sh ./target/release/rush
+```
+
+This fast gate is intended to finish quickly and covers:
+- startup smoke
+- non-interactive pipe behavior
+- login/no-rc behavior
+- signal interruption behavior
+- targeted core smoke coverage
+
+### AUSH full benchmark suite
+```bash
+make bench-aush
+# or
+bash ./benches/aush_suite.sh ./target/release/rush
+```
+
+This full suite runs:
+- the fast smoke gate
+- persistent interactive benchmark
+- persistent session benchmark
 
 ### Individual Benchmark Suites
 
@@ -80,6 +149,10 @@ cargo bench --bench startup
 
 # Builtin benchmarks only
 cargo bench --bench builtins
+
+# Usability/session benchmarks
+bash ./benches/interactive_benchmark.sh
+bash ./benches/session_benchmark.sh
 
 # Run specific benchmark function
 cargo bench --bench startup bench_lexer_init
@@ -98,6 +171,54 @@ Results include:
 - Performance regressions detection
 - Historical comparison charts
 - Detailed timing distributions
+
+## Actually Usable Checklist
+
+Use this as a release/readiness gate in addition to the speed numbers.
+
+### 1. Startup
+- `hyperfine --warmup 5 './target/release/rush -c exit'`
+- interactive shell launches without blank prompt or redraw glitch
+- startup remains competitive enough that the shell feels instant in Ghostty/iTerm
+
+### 2. Interactive reliability
+- prompt is visible immediately on first paint
+- `Ctrl-C` cancels input without wedging the session
+- `Ctrl-D` exits cleanly
+- multiline input behaves predictably
+- history/completion/search do not corrupt the prompt
+
+### 3. Shell correctness
+- lib test suite passes for parser/executor control flow
+- common user-facing constructs verified:
+  - quoting
+  - variable expansion
+  - command substitution
+  - loops / conditionals
+  - pipelines / redirects
+  - functions
+
+### 4. Daily-driver workflows
+- run `bash ./benches/interactive_benchmark.sh`
+- run `bash ./benches/session_benchmark.sh`
+- run `bash ./benches/aush_smoke_fast.sh ./target/release/rush`
+- run `bash ./benches/aush_suite.sh ./target/release/rush`
+- manually validate in a real repo:
+  - `pwd`
+  - `ls`
+  - `git status`
+  - `git branch`
+  - `cat README.md`
+  - `echo test | cat`
+  - rc/profile loading works in interactive/login mode
+
+### 5. Trust / recovery
+- invalid commands fail cleanly and return control to the prompt
+- interrupted commands restore terminal usability
+- PTY loss / closed terminal does not spin or wedge the process
+- config-file errors degrade gracefully with useful messages
+
+A shell is **actually usable** when it clears this checklist, not merely when it posts good microbenchmark numbers.
 
 ## Benchmark Configuration
 

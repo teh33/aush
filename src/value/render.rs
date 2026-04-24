@@ -1,6 +1,7 @@
 use super::{Table, Value};
 use nu_ansi_term::Color;
 use std::collections::HashMap;
+use std::io::IsTerminal;
 
 /// Table renderer with automatic column width adjustment and color support
 pub struct TableRenderer {
@@ -17,7 +18,7 @@ impl Default for TableRenderer {
 impl TableRenderer {
     pub fn new() -> Self {
         // Detect if we're in a TTY for color support
-        let use_colors = atty::is(atty::Stream::Stdout)
+        let use_colors = std::io::stdout().is_terminal()
             && std::env::var("NO_COLOR").is_err()
             && std::env::var("RUSH_NO_COLOR").is_err();
 

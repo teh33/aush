@@ -15,12 +15,12 @@ use std::sync::atomic::{AtomicU64, Ordering};
 static PROC_SUB_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 /// Maximum bytes captured from a command substitution before truncation.
-/// Configurable via RUSH_MAX_SUBST_OUTPUT env var. Default: 50MB.
+/// Configurable via AUSH_MAX_SUBST_OUTPUT with fallback to RUSH_MAX_SUBST_OUTPUT.
+/// Default: 50MB.
 const DEFAULT_MAX_SUBSTITUTION_OUTPUT: usize = 50 * 1024 * 1024;
 
 fn max_substitution_output() -> usize {
-    std::env::var("RUSH_MAX_SUBST_OUTPUT")
-        .ok()
+    crate::brand::env_var("AUSH_MAX_SUBST_OUTPUT", "RUSH_MAX_SUBST_OUTPUT")
         .and_then(|s| crate::run_api::parse_max_output(&s))
         .unwrap_or(DEFAULT_MAX_SUBSTITUTION_OUTPUT)
 }

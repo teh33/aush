@@ -58,9 +58,12 @@ impl PiClient {
     /// Connect to Pi daemon
     ///
     /// Tries socket paths in order:
-    /// 1. `$RUSH_PI_SOCKET` environment variable
-    /// 2. `~/.pi/rush.sock`
-    /// 3. `/tmp/pi-rush-$USER.sock`
+    /// 1. `$AUSH_PI_SOCKET` environment variable
+    /// 2. `$RUSH_PI_SOCKET` legacy environment variable
+    /// 3. `~/.pi/aush.sock`
+    /// 4. `~/.pi/rush.sock`
+    /// 5. `/tmp/pi-aush-$USER.sock`
+    /// 6. `/tmp/pi-rush-$USER.sock`
     ///
     /// # Errors
     ///
@@ -102,31 +105,38 @@ impl PiClient {
     /// Find the Pi daemon socket path
     ///
     /// Search order:
-    /// 1. `$RUSH_PI_SOCKET` environment variable
-    /// 2. `~/.pi/rush.sock`
-    /// 3. `/tmp/pi-rush-$USER.sock`
+    /// 1. `$AUSH_PI_SOCKET` environment variable
+    /// 2. `$RUSH_PI_SOCKET` legacy environment variable
+    /// 3. `~/.pi/aush.sock`
+    /// 4. `~/.pi/rush.sock`
+    /// 5. `/tmp/pi-aush-$USER.sock`
+    /// 6. `/tmp/pi-rush-$USER.sock`
     fn find_socket() -> Result<PathBuf, PiClientError> {
-        // 1. Check environment variable
-        if let Ok(path) = std::env::var("RUSH_PI_SOCKET") {
+        // 1. Check environment variables
+        if let Some(path) = crate::brand::env_var("AUSH_PI_SOCKET", "RUSH_PI_SOCKET") {
             let path = PathBuf::from(path);
             if path.exists() {
                 return Ok(path);
             }
         }
 
-        // 2. Check ~/.pi/rush.sock
+        // 2. Check ~/.pi/aush.sock, then legacy ~/.pi/rush.sock
         if let Some(home) = dirs::home_dir() {
-            let path = home.join(".pi").join("rush.sock");
-            if path.exists() {
-                return Ok(path);
+            for file_name in ["aush.sock", "rush.sock"] {
+                let path = home.join(".pi").join(file_name);
+                if path.exists() {
+                    return Ok(path);
+                }
             }
         }
 
-        // 3. Check /tmp/pi-rush-$USER.sock
+        // 3. Check /tmp/pi-aush-$USER.sock, then legacy /tmp/pi-rush-$USER.sock
         let username = whoami::username();
-        let path = PathBuf::from(format!("/tmp/pi-rush-{}.sock", username));
-        if path.exists() {
-            return Ok(path);
+        for prefix in ["pi-aush", "pi-rush"] {
+            let path = PathBuf::from(format!("/tmp/{}-{}.sock", prefix, username));
+            if path.exists() {
+                return Ok(path);
+            }
         }
 
         Err(PiClientError::NotRunning)

@@ -1,13 +1,13 @@
-//! Daemon configuration parsing from .rushrc
+//! Daemon configuration parsing from .aushrc or legacy .rushrc
 //!
 //! Parses banner settings and custom stat definitions:
-//! - RUSH_BANNER_STYLE (block, line, minimal, none)
-//! - RUSH_BANNER_COLOR (cyan, green, etc.)
-//! - RUSH_BANNER_SHOW (always, first, never)
-//! - RUSH_BANNER_STATS (space-separated stat names)
-//! - RUSH_STAT_<name>="command"
-//! - RUSH_STAT_<name>_INTERVAL=seconds
-//! - RUSH_STAT_<name>_TIMEOUT=seconds
+//! - AUSH_BANNER_STYLE / RUSH_BANNER_STYLE (block, line, minimal, none)
+//! - AUSH_BANNER_COLOR / RUSH_BANNER_COLOR (cyan, green, etc.)
+//! - AUSH_BANNER_SHOW / RUSH_BANNER_SHOW (always, first, never)
+//! - AUSH_BANNER_STATS / RUSH_BANNER_STATS (space-separated stat names)
+//! - AUSH_STAT_<name> / RUSH_STAT_<name>="command"
+//! - AUSH_STAT_<name>_INTERVAL / RUSH_STAT_<name>_INTERVAL=seconds
+//! - AUSH_STAT_<name>_TIMEOUT / RUSH_STAT_<name>_TIMEOUT=seconds
 
 use std::collections::HashMap;
 use std::fs;
@@ -56,7 +56,7 @@ impl BannerShow {
     }
 }
 
-/// Banner configuration from .rushrc
+/// Banner configuration from .aushrc or legacy .rushrc
 #[derive(Debug, Clone, Default)]
 pub struct BannerConfig {
     /// Display style (block, line, minimal, none)
@@ -69,10 +69,10 @@ pub struct BannerConfig {
     pub stats: Vec<String>,
 }
 
-/// Custom stat definition from .rushrc
+/// Custom stat definition from .aushrc or legacy .rushrc
 #[derive(Debug, Clone)]
 pub struct CustomStatConfig {
-    /// Stat name (from RUSH_STAT_<name>)
+    /// Stat name (from AUSH_STAT_<name> or RUSH_STAT_<name>)
     pub name: String,
     /// Shell command to execute
     pub command: String,
@@ -101,13 +101,19 @@ pub struct DaemonConfig {
 }
 
 impl DaemonConfig {
-    /// Parse configuration from .rushrc file
+    /// Parse configuration from .aushrc or legacy .rushrc file
     pub fn from_rushrc() -> Self {
-        let rushrc_path = Self::rushrc_path();
-        Self::from_file(&rushrc_path).unwrap_or_default()
+        let config_path = Self::config_path();
+        Self::from_file(&config_path).unwrap_or_default()
     }
 
-    /// Get the path to .rushrc
+    /// Get the path to .aushrc, falling back to existing .rushrc
+    pub fn config_path() -> PathBuf {
+        let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
+        crate::brand::first_existing_or_primary(home.join(".aushrc"), [home.join(".rushrc")])
+    }
+
+    /// Get the legacy path to .rushrc
     pub fn rushrc_path() -> PathBuf {
         dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
@@ -142,34 +148,37 @@ impl DaemonConfig {
                 let value = unquote(&value);
 
                 match key.as_str() {
-                    "RUSH_BANNER_STYLE" => {
+                    "AUSH_BANNER_STYLE" | "RUSH_BANNER_STYLE" => {
                         config.banner.style = BannerStyle::from_str(&value);
                     }
-                    "RUSH_BANNER_COLOR" => {
+                    "AUSH_BANNER_COLOR" | "RUSH_BANNER_COLOR" => {
                         config.banner.color = value;
                     }
-                    "RUSH_BANNER_SHOW" => {
+                    "AUSH_BANNER_SHOW" | "RUSH_BANNER_SHOW" => {
                         config.banner.show = BannerShow::from_str(&value);
                     }
-                    "RUSH_BANNER_STATS" => {
+                    "AUSH_BANNER_STATS" | "RUSH_BANNER_STATS" => {
                         config.banner.stats =
                             value.split_whitespace().map(|s| s.to_string()).collect();
                     }
-                    _ if key.starts_with("RUSH_STAT_") => {
-                        let suffix = &key["RUSH_STAT_".len()..];
+                    _ if key.starts_with("AUSH_STAT_") || key.starts_with("RUSH_STAT_") => {
+                        let suffix = key
+                            .strip_prefix("AUSH_STAT_")
+                            .or_else(|| key.strip_prefix("RUSH_STAT_"))
+                            .expect("stat prefix checked above");
 
                         if let Some(name) = suffix.strip_suffix("_INTERVAL") {
-                            // RUSH_STAT_<name>_INTERVAL
+                            // AUSH_STAT_<name>_INTERVAL / RUSH_STAT_<name>_INTERVAL
                             if let Ok(secs) = value.parse::<u64>() {
                                 stat_intervals.insert(name.to_lowercase(), secs);
                             }
                         } else if let Some(name) = suffix.strip_suffix("_TIMEOUT") {
-                            // RUSH_STAT_<name>_TIMEOUT
+                            // AUSH_STAT_<name>_TIMEOUT / RUSH_STAT_<name>_TIMEOUT
                             if let Ok(secs) = value.parse::<u64>() {
                                 stat_timeouts.insert(name.to_lowercase(), secs);
                             }
                         } else {
-                            // RUSH_STAT_<name>="command"
+                            // AUSH_STAT_<name> / RUSH_STAT_<name>="command"
                             let name = suffix.to_lowercase();
                             stat_commands.insert(name, value);
                         }

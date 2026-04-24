@@ -338,7 +338,7 @@ pub struct DaemonServer {
     reload_config: Arc<AtomicBool>,
     /// Optional worker pool (if None, uses fork-per-request)
     worker_pool: Option<WorkerPool>,
-    /// Current daemon configuration from .rushrc
+    /// Current daemon configuration from .aushrc or legacy .rushrc
     config: DaemonConfig,
     /// Cached system stats for fast retrieval
     stats_cache: Arc<Mutex<StatsCache>>,
@@ -347,7 +347,7 @@ pub struct DaemonServer {
 impl DaemonServer {
     /// Create a new daemon server
     pub fn new(socket_path: PathBuf) -> Result<Self> {
-        // Load initial configuration from .rushrc
+        // Load initial configuration from .aushrc or legacy .rushrc
         let config = DaemonConfig::from_rushrc();
         eprintln!(
             "Loaded config: {} custom stats defined",
@@ -389,7 +389,8 @@ impl DaemonServer {
     fn create_daemon_dir() -> Result<PathBuf> {
         let home = dirs::home_dir().ok_or_else(|| anyhow!("Could not determine home directory"))?;
 
-        let daemon_dir = home.join(".rush");
+        let daemon_dir =
+            crate::brand::first_existing_or_primary(home.join(".aush"), [home.join(".rush")]);
 
         if !daemon_dir.exists() {
             fs::create_dir(&daemon_dir)?;
@@ -418,7 +419,7 @@ impl DaemonServer {
         // Write PID file
         self.write_pid_file()?;
 
-        println!("Rush daemon started on {}", self.socket_path.display());
+        println!("AUSH daemon started on {}", self.socket_path.display());
 
         // Enter accept loop
         self.accept_loop()?;
@@ -467,12 +468,12 @@ impl DaemonServer {
         Ok(())
     }
 
-    /// Reload configuration from .rushrc
+    /// Reload configuration from .aushrc or legacy .rushrc
     ///
-    /// Called when SIGHUP is received or via `rushd reload` command.
+    /// Called when SIGHUP is received or via `aushd reload`/`rushd reload` command.
     /// Updates custom stat entries: adds new, removes deleted, updates changed.
     pub fn reload_configuration(&mut self) {
-        eprintln!("Reloading configuration from .rushrc...");
+        eprintln!("Reloading configuration from .aushrc/.rushrc...");
 
         let old_config = std::mem::take(&mut self.config);
         self.config = DaemonConfig::from_rushrc();

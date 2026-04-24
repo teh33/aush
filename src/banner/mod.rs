@@ -1,4 +1,4 @@
-//! Rush banner system with configurable stats display
+//! AUSH banner system with configurable stats display
 //!
 //! Displays an ASCII art banner at shell startup with optional system stats.
 //! Stats are fetched from the daemon cache for near-zero latency.
@@ -88,7 +88,7 @@ pub enum BannerShow {
     /// Show banner every time
     #[default]
     Always,
-    /// Show banner only on first shell (no parent rush process)
+    /// Show banner only on first shell (no parent AUSH/Rush process)
     First,
     /// Never show banner
     Never,
@@ -105,7 +105,7 @@ impl BannerShow {
     }
 }
 
-/// Banner configuration loaded from .rushrc
+/// Banner configuration loaded from .aushrc or legacy .rushrc
 #[derive(Debug, Clone)]
 pub struct BannerConfig {
     /// Display style
@@ -130,21 +130,21 @@ impl Default for BannerConfig {
 }
 
 impl BannerConfig {
-    /// Load banner config from environment variables (set by sourcing .rushrc)
+    /// Load banner config from environment variables (set by sourcing .aushrc or .rushrc)
     pub fn from_env() -> Self {
-        let style = env::var("RUSH_BANNER_STYLE")
+        let style = crate::brand::env_var("AUSH_BANNER_STYLE", "RUSH_BANNER_STYLE")
             .map(|s| BannerStyle::from_str(&s))
             .unwrap_or_default();
 
-        let color = env::var("RUSH_BANNER_COLOR")
+        let color = crate::brand::env_var("AUSH_BANNER_COLOR", "RUSH_BANNER_COLOR")
             .map(|s| BannerColor::from_str(&s))
             .unwrap_or_default();
 
-        let show = env::var("RUSH_BANNER_SHOW")
+        let show = crate::brand::env_var("AUSH_BANNER_SHOW", "RUSH_BANNER_SHOW")
             .map(|s| BannerShow::from_str(&s))
             .unwrap_or_default();
 
-        let stats = env::var("RUSH_BANNER_STATS")
+        let stats = crate::brand::env_var("AUSH_BANNER_STATS", "RUSH_BANNER_STATS")
             .map(|s| s.split_whitespace().map(|s| s.to_string()).collect())
             .unwrap_or_default();
 
@@ -162,9 +162,8 @@ impl BannerConfig {
             BannerShow::Always => true,
             BannerShow::Never => false,
             BannerShow::First => {
-                // Check if parent process is rush (nested shell)
-                // Look for RUSH_LEVEL environment variable
-                env::var("RUSH_LEVEL")
+                // Look for shell nesting environment variables.
+                crate::brand::env_var("AUSH_LEVEL", "RUSH_LEVEL")
                     .map(|v| v.parse::<i32>().unwrap_or(0) == 0)
                     .unwrap_or(true)
             }
@@ -198,7 +197,7 @@ pub fn display_banner(config: &BannerConfig, stats: Option<&StatsData>) {
             eprintln!("{} ▀   ▀▀▀ ▀▀▀ ▀ ▀{}", color, reset);
         }
         BannerStyle::Line => {
-            eprintln!("{}rush{} v{}", color, reset, version);
+            eprintln!("{}aush{} v{}", color, reset, version);
         }
         BannerStyle::Minimal => {
             eprintln!("v{}", version);
@@ -260,14 +259,15 @@ fn display_stats(config: &BannerConfig, stats: &StatsData) {
     }
 }
 
-/// Increment the RUSH_LEVEL environment variable for nested shell detection
-pub fn increment_rush_level() {
-    let level = env::var("RUSH_LEVEL")
-        .ok()
+/// Increment shell nesting environment variables for nested shell detection
+pub fn increment_shell_level() {
+    let level = crate::brand::env_var("AUSH_LEVEL", "RUSH_LEVEL")
         .and_then(|v| v.parse::<i32>().ok())
         .unwrap_or(0);
+    let next_level = (level + 1).to_string();
 
-    env::set_var("RUSH_LEVEL", (level + 1).to_string());
+    env::set_var("AUSH_LEVEL", &next_level);
+    env::set_var("RUSH_LEVEL", next_level);
 }
 
 #[cfg(test)]

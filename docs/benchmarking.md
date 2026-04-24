@@ -4,6 +4,12 @@
 
 Rush has multiple benchmarking approaches, each measuring different aspects of performance.
 
+Rush now distinguishes between:
+- **performance benchmarks** — startup cost, builtin speed, script throughput
+- **usability benchmarks** — whether the shell is actually pleasant and reliable as a daily driver
+
+This second class matters if the project leans into the working name **AUSH**: **Actually Usable Shell**.
+
 ## **TL;DR: Rush is 3.39x faster than Zsh** 🚀
 
 When measuring **real-world script execution** (startup happens once), Rush significantly outperforms Zsh due to built-in commands and zero-copy pipelines.
@@ -80,11 +86,58 @@ cargo bench --bench shell_comparison
 cd benchmarks && bash ./criterion-vs-zsh.sh
 ```
 
-### 4. Legacy Scripts (Not Recommended)
+### 4. Usability / Session Benchmarks
+
+**Best for:** Testing whether Rush is actually usable as a persistent shell session, not just fast in one-off invocations
+
+```bash
+bash ./benches/interactive_benchmark.sh
+bash ./benches/session_benchmark.sh
+bash ./benches/aush_smoke_fast.sh ./target/release/rush
+bash ./benches/aush_suite.sh ./target/release/rush
+```
+
+**What they do:**
+- compare Rush and Zsh inside a persistent session
+- separate shell startup overhead from in-session command execution
+- exercise practical commands like `pwd`, `ls`, `git status`, `cat`, pipes, and substitution
+
+**Key insight:** A shell can lose trivial `-c` startup comparisons and still be the better daily-driver shell. These benchmarks help measure that.
+
+### 5. Legacy Scripts (Not Recommended)
 
 - `compare.sh` - Doesn't actually benchmark Rush (pre -c flag)
 - `compare-v2.sh` - Combines shell and Criterion, but less clear
 - `compare-fixed.sh` - Works but superseded by `compare-fair.sh`
+
+## Actually Usable Checklist
+
+Use this alongside the performance numbers.
+
+### Startup
+- `hyperfine --warmup 5 './target/release/rush -c exit'`
+- no blank first prompt / redraw regression in a real terminal
+
+### Interactive reliability
+- `Ctrl-C` and `Ctrl-D` behave cleanly
+- prompt redraw/history/completion do not corrupt the session
+
+### Shell correctness
+- parser/executor lib tests pass
+- loops, quoting, pipelines, redirects, substitution, and functions behave as expected
+
+### Daily-driver workflows
+- `bash ./benches/interactive_benchmark.sh`
+- `bash ./benches/session_benchmark.sh`
+- manual repo workflow smoke test: `pwd`, `ls`, `git status`, `git branch`, `cat README.md`, `echo test | cat`
+
+### Trust / recovery
+- bad commands return control to the prompt
+- terminal stays usable after interrupts and abnormal session endings
+- `bash ./benches/aush_smoke_fast.sh ./target/release/rush`
+- `bash ./benches/aush_suite.sh ./target/release/rush`
+
+A shell is actually usable when it clears this checklist, not just when it wins microbenchmarks.
 
 ## Viewing Results
 

@@ -92,7 +92,7 @@ impl Runtime {
             last_arg: String::new(),
             dir_stack: Vec::new(),
             piped_stdin: None,
-            agent_mode: std::env::var("RUSH_AGENT_MODE").as_deref() == Ok("1"),
+            agent_mode: crate::brand::env_flag("AUSH_AGENT_MODE", "RUSH_AGENT_MODE", "1"),
         };
 
         // Initialize $? to 0

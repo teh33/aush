@@ -1,11 +1,11 @@
-# Rush
+# AUSH
 
 [![CI](https://github.com/opus-workshop/rush/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/opus-workshop/rush/actions/workflows/integration-tests.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-**The AI-native shell with structured pipelines.**
+**Actually Usable Shell: the AI-native shell with structured pipelines.**
 
-Rush is a POSIX-compatible shell built in Rust with three things your current shell doesn't have: a real AI agent at the prompt, typed structured pipelines, and Lua extensions for anything else.
+AUSH is a POSIX-compatible shell built in Rust with three things your current shell doesn't have: a real AI agent at the prompt, typed structured pipelines, and Lua extensions for anything else.
 
 ---
 
@@ -13,9 +13,9 @@ Rush is a POSIX-compatible shell built in Rust with three things your current sh
 
 **Structured pipelines** — builtins produce typed data, not text. Pipe into `| where`, `| select`, `| sort`, `| count` without touching `awk` or `jq`.
 
-**AI agent built in** — prefix any query with `?` and Rush sends it to the LLM, shows you the command, and asks to run it. Works with Ollama (local), OpenAI, or Anthropic. No wrapper scripts.
+**AI agent built in** — prefix any query with `?` and AUSH sends it to the LLM, shows you the command, and asks to run it. Works with Ollama (local), OpenAI, or Anthropic. No wrapper scripts.
 
-**Lua extensions** — register custom builtins, prompt segments, completions, and shell hooks in `~/.rush/lua/`. No recompile.
+**Lua extensions** — register custom builtins, prompt segments, completions, and shell hooks in `~/.aush/lua/`. Legacy `~/.rush/lua/` remains supported during the rename. No recompile.
 
 Oh, and it's still a shell. Your existing scripts run unchanged.
 
@@ -34,7 +34,7 @@ git status --json | where status == "modified" | select path
 grep --json 'TODO' src/**/*.rs | count
 
 # Register a custom builtin in Lua
-# ~/.rush/lua/weather.lua
+# ~/.aush/lua/weather.lua
 rush.register_builtin("weather", {
     description = "Current weather",
     run = function(args)
@@ -69,10 +69,10 @@ cargo install --path .
 
 ## AI setup
 
-On first `?` use, Rush runs an interactive wizard. Or set it up manually:
+On first `?` use, AUSH runs an interactive wizard. Or set it up manually:
 
 ```toml
-# ~/.rush/ai.toml
+# ~/.aush/ai.toml
 provider = "ollama"           # ollama | openai | anthropic
 model = "qwen2.5-coder:7b"
 ```
@@ -80,7 +80,7 @@ model = "qwen2.5-coder:7b"
 **Ollama** (local, private — recommended):
 ```bash
 ollama pull qwen2.5-coder:7b
-# That's it. Rush finds Ollama at localhost:11434 automatically.
+# That's it. AUSH finds Ollama at localhost:11434 automatically.
 ```
 
 **OpenAI:**
@@ -99,7 +99,7 @@ model = "claude-3-5-sonnet-20241022"
 
 ### How the agent works
 
-The `?` prefix sends your natural language query to the LLM with shell context (cwd, project type, recent history). The model returns a command with an explanation. Rush shows you both and asks to run, edit, or cancel. Destructive commands always require explicit confirmation.
+The `?` prefix sends your natural language query to the LLM with shell context (cwd, project type, recent history). The model returns a command with an explanation. AUSH shows you both and asks to run, edit, or cancel. Destructive commands always require explicit confirmation.
 
 ```bash
 ? find files over 100MB and list them by size
@@ -111,10 +111,10 @@ The `?` prefix sends your natural language query to the LLM with shell context (
 
 ## Lua extensions
 
-Scripts in `~/.rush/lua/` load at startup in alphabetical order.
+Scripts in `~/.aush/lua/` load at startup in alphabetical order. Legacy `~/.rush/lua/` is still supported during the migration.
 
 ```lua
--- ~/.rush/lua/myconfig.lua
+-- ~/.aush/lua/myconfig.lua
 
 -- Custom builtin
 rush.register_builtin("greet", {
@@ -149,7 +149,7 @@ The full API surface: `rush.exec()`, `rush.exec_structured()`, `rush.json_parse(
 
 ## Structured pipelines
 
-All Rush builtins emit typed `Value` objects — not text. The pipeline operators work on that data directly.
+All AUSH builtins emit typed `Value` objects — not text. The pipeline operators work on that data directly.
 
 ```bash
 # Filter: keep rows where field matches value
@@ -186,7 +186,7 @@ Text output from external commands is coerced into a single-column table (`{line
 
 ## Designed for AI coding agents
 
-Rush is optimized for AI assistants that make hundreds of shell calls per task.
+AUSH is optimized for AI assistants that make hundreds of shell calls per task.
 
 ```python
 import subprocess, json
@@ -195,7 +195,7 @@ def rush(cmd: str):
     result = subprocess.run(
         ["rush", "-c", cmd],
         capture_output=True, text=True,
-        env={"RUSH_ERROR_FORMAT": "json"}
+        env={"AUSH_ERROR_FORMAT": "json"}
     )
     return json.loads(result.stdout)
 
@@ -210,9 +210,9 @@ Errors come back as typed JSON (`CommandNotFound`, `GitError`, `NetworkError`, e
 For workloads with many rapid calls, the daemon mode cuts startup to **0.4ms**:
 
 ```bash
-rushd start          # keep Rush warm in the background
-rush -c "ls"         # 0.4ms instead of 4.9ms cold start
-rushd stop
+aushd start          # keep AUSH warm in the background
+rush -c "ls"         # legacy binary remains supported during migration
+aushd stop
 ```
 
 See [docs/AI_AGENT_GUIDE.md](docs/AI_AGENT_GUIDE.md) for the full integration guide including JSON schemas, error types, and Python/batch examples.
@@ -221,7 +221,7 @@ See [docs/AI_AGENT_GUIDE.md](docs/AI_AGENT_GUIDE.md) for the full integration gu
 
 ## POSIX compatibility
 
-Rush targets 90%+ POSIX.1-2017 compliance. Your scripts work.
+AUSH targets 90%+ POSIX.1-2017 compliance. Your scripts work.
 
 - **Control flow**: `if`/`elif`/`else`, `while`, `until`, `for`, `case`, functions
 - **Job control**: background jobs, `fg`/`bg`, job specs (`%1`, `%+`, `%-`), process groups
@@ -234,7 +234,7 @@ Rush targets 90%+ POSIX.1-2017 compliance. Your scripts work.
 ```bash
 #!/usr/bin/env rush
 
-# This is valid POSIX sh — rush runs it fine
+# This is valid POSIX sh — AUSH runs it fine
 for file in $(find . -name "*.rs"); do
     if grep -q "TODO" "$file"; then
         echo "Found TODO in: $file"
@@ -246,9 +246,9 @@ done
 
 ## Performance
 
-Rush builtins skip fork/exec entirely. Commands are native Rust, not subprocess calls.
+AUSH builtins skip fork/exec entirely. Commands are native Rust, not subprocess calls.
 
-| Operation | Bash/Zsh | Rush | Speedup |
+| Operation | Bash/Zsh | AUSH | Speedup |
 |-----------|----------|------|---------|
 | `ls` (1000 files) | 12–15ms | **0.1ms** | 120x |
 | `grep` pattern | 42–45ms | **0.2ms** | 212x |
@@ -256,7 +256,7 @@ Rush builtins skip fork/exec entirely. Commands are native Rust, not subprocess 
 | Cold startup | 2.5–12ms | **4.9ms** | — |
 | Daemon startup | — | **0.4ms** | — |
 
-For AI agent workloads (git status × 3, file search × 5, JSON ops × 10, HTTP × 2): roughly **2–5s in Rush vs 10–20s in bash + external tools**.
+For AI agent workloads (git status × 3, file search × 5, JSON ops × 10, HTTP × 2): roughly **2–5s in AUSH vs 10–20s in bash + external tools**.
 
 ---
 

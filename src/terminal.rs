@@ -138,14 +138,14 @@ pub fn set_terminal_title(title: &str) {
     let _ = err.flush();
 }
 
-/// Set the terminal title to `rush: <cwd>` with home-directory shortening.
+/// Set the terminal title to `aush: <cwd>` with home-directory shortening.
 pub fn set_terminal_title_to_cwd() {
     let title = match std::env::current_dir() {
         Ok(cwd) => {
             let shortened = shorten_home(&cwd);
-            format!("rush: {}", shortened)
+            format!("aush: {}", shortened)
         }
-        Err(_) => "rush".to_string(),
+        Err(_) => "aush".to_string(),
     };
     set_terminal_title(&title);
 }

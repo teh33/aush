@@ -7,6 +7,7 @@ mod ai;
 mod arithmetic;
 mod banner;
 mod benchmark;
+mod brand;
 mod builtins;
 mod compat;
 mod completion;
@@ -47,7 +48,7 @@ use signal::SignalHandler;
 use std::borrow::Cow;
 use std::env;
 use std::fs;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, IsTerminal};
 use std::sync::{Arc, RwLock};
 
 fn main() -> Result<()> {
@@ -182,7 +183,7 @@ fn main() -> Result<()> {
     // Take control of the terminal if we're interactive
     // This is critical for login shells - without it, reading from stdin
     // will cause SIGTTIN and the shell will hang
-    if atty::is(atty::Stream::Stdin) {
+    if std::io::stdin().is_terminal() {
         unsafe {
             // Shells must ignore SIGTTIN/SIGTTOU so they never stop when
             // doing terminal control operations. Keep these ignored permanently.
@@ -403,8 +404,8 @@ impl RushPrompt {
     }
 
     fn get_prompt_indicator(&self) -> String {
-        // If RUSH_PROMPT is set, expand its tokens. Otherwise use the default.
-        if let Ok(fmt) = env::var("RUSH_PROMPT") {
+        // If AUSH_PROMPT or legacy RUSH_PROMPT is set, expand its tokens. Otherwise use the default.
+        if let Some(fmt) = brand::env_var("AUSH_PROMPT", "RUSH_PROMPT") {
             return self.expand_prompt(&fmt);
         }
 
@@ -525,7 +526,7 @@ impl Prompt for RushPrompt {
     }
 
     fn render_prompt_right(&self) -> Cow<'_, str> {
-        if let Ok(fmt) = env::var("RUSH_PROMPT_RIGHT") {
+        if let Some(fmt) = brand::env_var("AUSH_PROMPT_RIGHT", "RUSH_PROMPT_RIGHT") {
             Cow::Owned(self.expand_prompt(&fmt))
         } else {
             Cow::Borrowed("")
@@ -572,28 +573,31 @@ fn run_interactive_with_init(
 
     // Source profile files based on login shell and flags
     if is_login && !skip_rc {
-        // Login shell: source ~/.rush_profile
+        // Login shell: source ~/.aush_profile, falling back to ~/.rush_profile
         if let Some(home) = dirs::home_dir() {
-            let profile = home.join(".rush_profile");
+            let profile = brand::first_existing_or_primary(
+                home.join(".aush_profile"),
+                [home.join(".rush_profile")],
+            );
             if let Err(e) = executor.source_file(&profile) {
-                eprintln!("Warning: Error sourcing ~/.rush_profile: {}", e);
+                eprintln!("Warning: Error sourcing {}: {}", profile.display(), e);
             }
         }
     }
 
-    // Interactive shell: source ~/.rushrc (unless --no-rc)
+    // Interactive shell: source ~/.aushrc, falling back to ~/.rushrc (unless --no-rc)
     if !skip_rc {
         if let Some(home) = dirs::home_dir() {
-            let rushrc = home.join(".rushrc");
-            if let Err(e) = executor.source_file(&rushrc) {
-                eprintln!("Warning: Error sourcing ~/.rushrc: {}", e);
+            let rc = brand::first_existing_or_primary(home.join(".aushrc"), [home.join(".rushrc")]);
+            if let Err(e) = executor.source_file(&rc) {
+                eprintln!("Warning: Error sourcing {}: {}", rc.display(), e);
             }
         }
     }
 
-    // Now run interactive mode, passing the executor so .rushrc
+    // Now run interactive mode, passing the executor so rc
     // settings (aliases, functions, variables) are preserved.
-    if atty::is(atty::Stream::Stdin) {
+    if std::io::stdin().is_terminal() {
         run_interactive_with_reedline(signal_handler, executor)
     } else {
         run_non_interactive(signal_handler, executor)
@@ -710,14 +714,11 @@ fn run_interactive_with_reedline(
     signal_handler: SignalHandler,
     mut executor: Executor,
 ) -> Result<()> {
-    // Report CWD immediately so Ghostty/iTerm2 can open new tabs here
-    terminal::emit_osc7_cwd();
-
-    // Load banner configuration from environment (set by .rushrc)
+    // Load banner configuration from environment (set by .aushrc or legacy .rushrc)
     let banner_config = banner::BannerConfig::from_env();
 
-    // Increment RUSH_LEVEL for nested shell detection
-    banner::increment_rush_level();
+    // Increment shell nesting level for nested shell detection
+    banner::increment_shell_level();
 
     // Fetch stats from daemon if configured and daemon is running
     let stats_data = if !banner_config.stats.is_empty() {
@@ -742,8 +743,7 @@ fn run_interactive_with_reedline(
 
     // Bell threshold for long-running commands (default 10s, 0 = disabled)
     let bell_threshold = std::time::Duration::from_secs(
-        env::var("RUSH_BELL_THRESHOLD")
-            .ok()
+        brand::env_var("AUSH_BELL_THRESHOLD", "RUSH_BELL_THRESHOLD")
             .and_then(|s| s.parse().ok())
             .unwrap_or(10),
     );
@@ -847,7 +847,7 @@ fn run_interactive_with_reedline(
                 // PTY is dead — exit cleanly
                 let _ = std::io::Write::write_all(
                     &mut std::io::stderr(),
-                    b"rush: terminal lost, exiting\n",
+                    b"aush: terminal lost, exiting\n",
                 );
                 break;
             }
@@ -1046,44 +1046,46 @@ fn run_non_interactive(signal_handler: SignalHandler, mut executor: Executor) ->
 
 fn print_help() {
     println!(
-        "Rush v{} - A Modern Shell in Rust",
+        "AUSH v{} - Actually Usable Shell",
         env!("CARGO_PKG_VERSION")
     );
     println!();
     println!("Usage:");
-    println!("  rush                Start interactive shell");
-    println!("  rush --login        Start as login shell (sources ~/.rush_profile)");
-    println!("  rush --no-rc        Skip sourcing config files");
-    println!("  rush --no-config    Skip sourcing config files (alias for --no-rc)");
-    println!("  rush <script.rush>  Execute a Rush script file");
-    println!("  rush -c <command>   Execute command and exit");
-    println!("  rush --check <script.sh>             Check bash script compatibility");
-    println!("  rush --profile -c <command>          Profile execution timing");
-    println!("  rush --profile --json -c <command>   Profile as JSON for tooling");
-    println!("  rush --benchmark <mode>              Run benchmarks (quick, full, compare)");
-    println!("  rush --info                          Show system stats");
-    println!("  rush --info <stat>                   Show single stat value (for scripting)");
-    println!("  rush --info --json                   Show stats as JSON");
-    println!("  rush -h, --help                      Show this help message");
+    println!("  aush                Start interactive shell");
+    println!(
+        "  aush --login        Start as login shell (sources ~/.aush_profile or ~/.rush_profile)"
+    );
+    println!("  aush --no-rc        Skip sourcing config files");
+    println!("  aush --no-config    Skip sourcing config files (alias for --no-rc)");
+    println!("  aush <script.aush>  Execute an AUSH script file");
+    println!("  aush -c <command>   Execute command and exit");
+    println!("  aush --check <script.sh>             Check bash script compatibility");
+    println!("  aush --profile -c <command>          Profile execution timing");
+    println!("  aush --profile --json -c <command>   Profile as JSON for tooling");
+    println!("  aush --benchmark <mode>              Run benchmarks (quick, full, compare)");
+    println!("  aush --info                          Show system stats");
+    println!("  aush --info <stat>                   Show single stat value (for scripting)");
+    println!("  aush --info --json                   Show stats as JSON");
+    println!("  aush -h, --help                      Show this help message");
     println!();
     println!("Examples:");
-    println!("  rush script.rush");
-    println!("  rush script.rush arg1 arg2");
-    println!("  rush -c \"echo hello\"");
-    println!("  rush -c \"ls -la\"");
-    println!("  rush -c \"cat file.txt | grep pattern\"");
-    println!("  rush --check my_script.sh            # Analyze bash script compatibility");
-    println!("  rush --profile -c \"echo hello\"      # Profile with timing breakdown");
-    println!("  rush --profile --json -c \"echo hello\" | jq  # Profile as JSON, parse with jq");
-    println!("  rush --login                         # Start login shell");
-    println!("  rush --benchmark quick               # Run quick benchmark");
-    println!("  rush --benchmark full                # Run comprehensive benchmark");
-    println!("  rush --info memory                   # Get single stat value");
-    println!("  rush --info --json                   # Get all stats as JSON");
+    println!("  aush script.aush");
+    println!("  aush script.aush arg1 arg2");
+    println!("  aush -c \"echo hello\"");
+    println!("  aush -c \"ls -la\"");
+    println!("  aush -c \"cat file.txt | grep pattern\"");
+    println!("  aush --check my_script.sh            # Analyze bash script compatibility");
+    println!("  aush --profile -c \"echo hello\"      # Profile with timing breakdown");
+    println!("  aush --profile --json -c \"echo hello\" | jq  # Profile as JSON, parse with jq");
+    println!("  aush --login                         # Start login shell");
+    println!("  aush --benchmark quick               # Run quick benchmark");
+    println!("  aush --benchmark full                # Run comprehensive benchmark");
+    println!("  aush --info memory                   # Get single stat value");
+    println!("  aush --info --json                   # Get all stats as JSON");
     println!();
     println!("Config Files:");
-    println!("  ~/.rush_profile     Sourced on login shells");
-    println!("  ~/.rushrc           Sourced on interactive shells");
+    println!("  ~/.aush_profile     Sourced on login shells, with ~/.rush_profile fallback");
+    println!("  ~/.aushrc           Sourced on interactive shells, with ~/.rushrc fallback");
 }
 
 fn execute_line(line: &str, executor: &mut Executor) -> Result<executor::ExecutionResult> {
@@ -1126,19 +1128,18 @@ fn fast_execute_c(
         libc::signal(libc::SIGPIPE, libc::SIG_DFL);
     }
 
-    // Resolve max output bytes: --max-output flag takes priority, then RUSH_MAX_OUTPUT env var.
+    // Resolve max output bytes: --max-output flag takes priority, then AUSH_MAX_OUTPUT/RUSH_MAX_OUTPUT env vars.
     let max_output_bytes: Option<usize> = max_output
         .and_then(|s| run_api::parse_max_output(s))
         .or_else(|| {
-            env::var("RUSH_MAX_OUTPUT")
-                .ok()
+            brand::env_var("AUSH_MAX_OUTPUT", "RUSH_MAX_OUTPUT")
                 .and_then(|v| run_api::parse_max_output(&v))
         });
 
     let tokens = match Lexer::tokenize(cmd) {
         Ok(t) => t,
         Err(e) => {
-            eprintln!("rush: {}", e);
+            eprintln!("aush: {}", e);
             std::process::exit(2);
         }
     };
@@ -1147,7 +1148,7 @@ fn fast_execute_c(
     let statements = match parser.parse() {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("rush: {}", e);
+            eprintln!("aush: {}", e);
             std::process::exit(2);
         }
     };

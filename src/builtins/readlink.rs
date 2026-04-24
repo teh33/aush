@@ -486,6 +486,39 @@ mod tests {
     }
 
     #[test]
+    fn test_readlink_modes_distinguish_missing_symlink_target() {
+        let tmp = TempDir::new().unwrap();
+        let mut rt = make_runtime(&tmp);
+        std::os::unix::fs::symlink("missing/nested.txt", tmp.path().join("link")).unwrap();
+
+        let canonicalized_missing =
+            builtin_readlink(&["-m".to_string(), "link".to_string()], &mut rt).unwrap();
+        assert_eq!(
+            canonicalized_missing.exit_code, 0,
+            "stderr: {}",
+            canonicalized_missing.stderr
+        );
+        assert_eq!(
+            canonicalized_missing.stdout().trim(),
+            tmp.path()
+                .canonicalize()
+                .unwrap()
+                .join("missing/nested.txt")
+                .to_string_lossy()
+        );
+
+        let canonicalized_f =
+            builtin_readlink(&["-f".to_string(), "link".to_string()], &mut rt).unwrap();
+        assert_eq!(canonicalized_f.exit_code, 1);
+        assert!(canonicalized_f.stderr.contains("readlink:"));
+
+        let canonicalized_e =
+            builtin_readlink(&["-e".to_string(), "link".to_string()], &mut rt).unwrap();
+        assert_eq!(canonicalized_e.exit_code, 1);
+        assert!(canonicalized_e.stderr.contains("readlink:"));
+    }
+
+    #[test]
     fn test_readlink_no_args_errors() {
         let tmp = TempDir::new().unwrap();
         let mut rt = make_runtime(&tmp);

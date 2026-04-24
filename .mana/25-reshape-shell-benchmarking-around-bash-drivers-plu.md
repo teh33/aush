@@ -1,0 +1,65 @@
+---
+id: '25'
+title: Reshape shell benchmarking around bash drivers plus Rush-native workload scripts
+slug: reshape-shell-benchmarking-around-bash-drivers-plu
+status: open
+priority: 1
+created_at: '2026-04-24T08:47:16.442724Z'
+updated_at: '2026-04-24T08:54:03.854936Z'
+notes: |-
+  ---
+  2026-04-24T08:54:03.854929+00:00
+  Refined plan after user clarified the standard for AUSH:
+
+  Principle:
+  - Rush should be able to run plausible real-world benchmark scripts written by competent shell users, even if those scripts were first authored with Bash in mind.
+  - Therefore scripts like `scripts/benchmark.sh` are not just benchmark drivers; they are compatibility fixtures and should be treated as product-readiness targets.
+
+  Two-track execution plan:
+  1. Compatibility track
+     - Preserve existing benchmark scripts as fixtures Rush should eventually run.
+     - Catalog exact blockers encountered when running them under Rush (currently confirmed: backslash line-continuation parsing; likely also `&>` redirection, brace expansion, and other Bashisms).
+     - Fix the blockers one by one, starting with the narrowest/highest-leverage syntax/semantics gaps.
+  2. Benchmark-architecture track
+     - Still improve the benchmark architecture over time by separating orchestration/driver scripts from shell workloads.
+     - But do not let that replace the compatibility goal; the real scripts remain valid acceptance targets.
+
+  Implication for current work:
+  - Treat `scripts/benchmark.sh` as a compatibility benchmark fixture now.
+  - If `shellbench.sh` is provided, ingest it the same way and build a combined punch list of blockers.
+  - Prioritize compatibility fixes before broad benchmark-driver refactoring.
+labels:
+- benchmarks
+- aush
+- architecture
+- rush
+verify: cd /Users/asher/rush && test -d benches && true
+kind: epic
+---
+
+Context:
+- Existing benchmark scripts like `scripts/benchmark.sh` were generated from generic prompts and currently assume Bash semantics.
+- Evidence: `./target/release/rush --no-rc scripts/benchmark.sh` fails with `Invalid token ... '\'`, showing the script is not valid Rush syntax.
+- Likely Bashisms in the current benchmark driver include backslash line continuations, `&>` redirection, brace expansion, and other Bash-specific conveniences.
+- For AUSH / Actually Usable Shell, benchmark credibility improves if the shell workloads themselves run natively in Rush rather than only being orchestrated by Bash.
+
+Goal:
+- Split benchmark architecture into:
+  1. driver scripts that may run under Bash and orchestrate tools like hyperfine
+  2. Rush-native workload scripts that represent actual shell capability/performance workloads and must run successfully in Rush
+- Keep the benchmark system honest: Bash may coordinate, but Rush must execute the benchmark payloads it is being evaluated on.
+
+Desired outputs:
+- A set of Rush-native benchmark workload scripts for representative tasks
+- A Bash driver (or drivers) that compare Rush against Bash/Zsh using those workloads
+- Documentation clarifying this distinction and how to run the suite
+
+Constraints:
+- Prefer small, composable workload scripts over one giant Bash-centric benchmark file
+- Treat shell compatibility and performance as separate measurable dimensions
+- Keep project-local unless a broader cross-project benchmark framework emerges
+
+Verification:
+- At least one Rush-native workload script runs under Rush
+- Driver script references workload scripts rather than embedding Bash-only shell syntax
+- Docs explain driver-vs-workload architecture
