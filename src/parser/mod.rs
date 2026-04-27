@@ -746,6 +746,13 @@ impl Parser {
             Some(Token::Identifier(s)) | Some(Token::Path(s)) | Some(Token::GlobPattern(s)) => {
                 s.clone()
             }
+            Some(Token::String(s)) => {
+                let unquoted = Self::strip_outer_quotes(s, '"');
+                Self::process_double_quote_escapes(&unquoted)
+            }
+            Some(Token::SingleQuotedString(s)) => Self::strip_outer_quotes(s, '\''),
+            Some(Token::Variable(s)) | Some(Token::SpecialVariable(s)) => s.clone(),
+            Some(Token::BracedVariable(s)) => format!("${{{}}}", s),
             Some(Token::LeftBracket) => "[".to_string(),
             Some(Token::Colon) => ":".to_string(),
             Some(Token::Dot) => ".".to_string(),

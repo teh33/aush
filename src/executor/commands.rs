@@ -159,11 +159,14 @@ impl Executor {
             self.runtime.set_env(key, &expanded_value);
         }
 
+        let raw_command_name = self.expand_command_name(&command.name)?;
+        let command_args = self.expand_command_name_args(&command.name, command.args.clone());
+
         let (command_name, command_args) =
-            if let Some(alias_value) = self.runtime.get_alias(&command.name) {
+            if let Some(alias_value) = self.runtime.get_alias(&raw_command_name) {
                 let parts: Vec<&str> = alias_value.split_whitespace().collect();
                 if parts.is_empty() {
-                    return Err(anyhow!("Empty alias expansion for '{}'", command.name));
+                    return Err(anyhow!("Empty alias expansion for '{}'", raw_command_name));
                 }
 
                 let new_name = parts[0].to_string();
@@ -171,11 +174,11 @@ impl Executor {
                 for part in parts.iter().skip(1) {
                     new_args.push(Argument::Literal(part.to_string()));
                 }
-                new_args.extend(command.args.clone());
+                new_args.extend(command_args);
 
                 (new_name, new_args)
             } else {
-                (command.name.clone(), command.args.clone())
+                (raw_command_name, command_args)
             };
 
         if self.runtime.get_function(&command_name).is_some() {
@@ -392,6 +395,35 @@ impl Executor {
         }
 
         Ok(result)
+    }
+
+    fn expand_command_name(&self, name: &str) -> Result<String> {
+        if name == "$@" || name == "${@}" {
+            return Ok(self
+                .runtime
+                .get_positional_params()
+                .first()
+                .cloned()
+                .unwrap_or_default());
+        }
+
+        self.expand_string_value(name)
+    }
+
+    fn expand_command_name_args(&self, name: &str, args: Vec<Argument>) -> Vec<Argument> {
+        if name == "$@" || name == "${@}" {
+            return self
+                .runtime
+                .get_positional_params()
+                .iter()
+                .skip(1)
+                .cloned()
+                .map(Argument::Literal)
+                .chain(args)
+                .collect();
+        }
+
+        args
     }
 
     pub(crate) fn execute_user_function(

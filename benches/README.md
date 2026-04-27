@@ -74,7 +74,10 @@ Current local results:
 - executed POSIX 2024 pass rate: 146/149 = 98.0%;
 - total POSIX 2024 coverage pass rate if ignored tests are counted as pending: 146/180 = 81.1%;
 - `posix_compliance_tests`: 8 passed, 0 failed, 2 ignored;
-- ShellSpec/Bats: optional harness; no score on machines where ShellSpec/Bats are unavailable.
+- ShellSpec direct run from `tests/posix/shellspec`: 142 examples executed before aborting on a spec syntax issue; 110 pass, 16 fail, 16 warnings;
+- Bats: installed locally, but the repository currently has 0 Bats test files under `tests/posix/bats/`.
+
+Ignored Rust POSIX tests are explicit pending coverage, not hidden passes. They currently cover known gaps such as case bracket/fallthrough behavior, dynamic file descriptors, `read -d`, `cd -e`, break/continue, `exec` of builtins, exit/return propagation, `set -u`, EXIT traps, bracket test syntax, background jobs, here-strings, quoting edge cases, arithmetic ternary/increment, and wait/trap behavior.
 
 Use the executed pass rate to track regressions in implemented POSIX behavior. Use the total-with-ignored number to track how much of the planned POSIX surface is covered and passing. Do not describe either number as formal POSIX certification.
 

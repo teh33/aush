@@ -231,7 +231,9 @@ cargo test --test posix_compliance_tests --quiet
 8 passed / 0 failed / 2 ignored
 ```
 
-The ShellSpec/Bats harness under `tests/posix/` is optional; on machines without ShellSpec/Bats installed it reports no external harness score.
+The ShellSpec/Bats harness under `tests/posix/` is optional. With ShellSpec installed, the current direct ShellSpec run executes 142 examples before aborting on a spec syntax issue: **110 pass / 16 fail / 16 warnings**. Bats is installed locally, but the repository currently has **0 Bats test files** under `tests/posix/bats/`.
+
+The ignored Rust tests are explicit pending coverage for known gaps such as case bracket/fallthrough behavior, dynamic file descriptors, `read -d`, `cd -e`, break/continue semantics, `exec` of builtins, exit/return propagation, `set -u`, EXIT traps, bracket test syntax, background jobs, here-strings, quoting edge cases, arithmetic ternary/increment, and wait/trap behavior.
 
 ## Benchmarks and smoke tests
 
