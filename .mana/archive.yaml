@@ -94,20 +94,19 @@ units:
   feature: false
   has_decisions: false
 - id: '24.6.3'
-  title: Fix local and shift builtin error reporting release blocker
+  title: Fix glob expansion release blocker
   status: closed
   priority: 1
   parent: '24.6'
   labels:
   - bug
   - release-blocker
-  - functions
-  - builtins
+  - glob
   - aush
-  updated_at: '2026-04-27T06:28:35.998117Z'
+  updated_at: '2026-04-27T06:45:29.973206Z'
   has_verify: true
-  verify: cd /Users/asher/rush && cargo test --test function_calling_test test_local_error_outside_function && cargo test --test function_calling_test test_shift_error_when_no_params && cargo test --test function_calling_test test_shift_error_when_count_exceeds_params && cargo test --test function_calling_test
-  created_at: '2026-04-27T06:21:24.807444Z'
+  verify: cd /Users/asher/rush && cargo test --test glob_expansion_tests && cargo test --test error_recovery_tests && cargo test --test function_calling_test && cargo test --test command_tests && cargo test --test exec_builtin_tests
+  created_at: '2026-04-27T06:31:02.518022Z'
   claimed_by: imp
   attempts: 0
   kind: task

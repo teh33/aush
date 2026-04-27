@@ -1420,9 +1420,8 @@ impl Executor {
                             Ok(matches) => {
                                 expanded_args.extend(matches);
                             }
-                            Err(_) => {
-                                // No matches - return literal (POSIX behavior)
-                                expanded_args.push(field.to_string());
+                            Err(error) => {
+                                return Err(error);
                             }
                         }
                     } else {
@@ -1437,9 +1436,8 @@ impl Executor {
                         Ok(matches) => {
                             expanded_args.extend(matches);
                         }
-                        Err(_) => {
-                            // No matches - return literal (POSIX behavior)
-                            expanded_args.push(resolved);
+                        Err(error) => {
+                            return Err(error);
                         }
                     }
                 } else {

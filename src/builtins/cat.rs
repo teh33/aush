@@ -50,7 +50,7 @@ impl CatOptions {
     }
 }
 
-pub fn builtin_cat(args: &[String], _runtime: &mut Runtime) -> Result<ExecutionResult> {
+pub fn builtin_cat(args: &[String], runtime: &mut Runtime) -> Result<ExecutionResult> {
     let opts = match CatOptions::parse(args) {
         Ok(opts) => opts,
         Err(e) => {
@@ -82,7 +82,13 @@ pub fn builtin_cat(args: &[String], _runtime: &mut Runtime) -> Result<ExecutionR
             }
         } else {
             // Read from file
-            if let Err(e) = read_file(file_path, &mut output, &mut line_number, opts.number_lines) {
+            if let Err(e) = read_file(
+                file_path,
+                runtime.get_cwd(),
+                &mut output,
+                &mut line_number,
+                opts.number_lines,
+            ) {
                 stderr_output.push_str(&e.to_string());
                 stderr_output.push('\n');
                 exit_code = 1;
@@ -101,7 +107,7 @@ pub fn builtin_cat(args: &[String], _runtime: &mut Runtime) -> Result<ExecutionR
 /// Execute cat with provided stdin data (for pipelines)
 pub fn builtin_cat_with_stdin(
     args: &[String],
-    _runtime: &mut Runtime,
+    runtime: &mut Runtime,
     stdin_data: &[u8],
 ) -> Result<ExecutionResult> {
     let opts = CatOptions::parse(args)?;
@@ -115,7 +121,13 @@ pub fn builtin_cat_with_stdin(
     } else {
         // Read from specified files
         for file_path in &opts.files {
-            read_file(file_path, &mut output, &mut line_number, opts.number_lines)?;
+            read_file(
+                file_path,
+                runtime.get_cwd(),
+                &mut output,
+                &mut line_number,
+                opts.number_lines,
+            )?;
         }
     }
 
@@ -125,11 +137,12 @@ pub fn builtin_cat_with_stdin(
 /// Read a file using either memory-mapped I/O or buffered reading
 fn read_file(
     path: &str,
+    cwd: &Path,
     output: &mut String,
     line_number: &mut usize,
     number_lines: bool,
 ) -> Result<()> {
-    let file_path = Path::new(path);
+    let file_path = resolve_path(path, cwd);
 
     if !file_path.exists() {
         return Err(anyhow!("cat: {}: No such file or directory", path));
@@ -157,6 +170,15 @@ fn read_file(
     }
 
     Ok(())
+}
+
+fn resolve_path(path: &str, cwd: &Path) -> std::path::PathBuf {
+    let file_path = Path::new(path);
+    if file_path.is_absolute() {
+        file_path.to_path_buf()
+    } else {
+        cwd.join(file_path)
+    }
 }
 
 /// Read a small file with optional line numbering (handles both text and binary)
