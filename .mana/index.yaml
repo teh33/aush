@@ -378,11 +378,48 @@ units:
   - aush
   - release
   - verify
-  updated_at: '2026-04-27T04:37:14.255390Z'
+  updated_at: '2026-04-27T05:34:22.846178Z'
   has_verify: true
   verify: cd /Users/asher/rush && cargo test && cargo build --release --bins && tests/smoke_test.sh ./target/release/aush
   created_at: '2026-04-27T03:37:56.861412Z'
   claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.6.1'
+  title: Diagnose AUSH release gate hang with timed sub-gates
+  status: in_progress
+  priority: 1
+  parent: '24.6'
+  labels:
+  - aush
+  - release
+  - diagnosis
+  - hang
+  updated_at: '2026-04-27T05:34:06.689226Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && test -f /tmp/aush-release-gate-diagnosis.md && rg -n 'cargo test|cargo build --release --bins|smoke_test|archive|cargo package|cargo publish' /tmp/aush-release-gate-diagnosis.md
+  created_at: '2026-04-27T05:23:26.026617Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.6.2'
+  title: Fix command substitution assignment release blocker
+  status: open
+  priority: 1
+  parent: '24.6'
+  labels:
+  - bug
+  - release-blocker
+  - command-substitution
+  - aush
+  updated_at: '2026-04-27T05:34:14.132196Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test command_substitution_tests test_command_substitution_in_assignment && cargo test --test command_substitution_tests
+  created_at: '2026-04-27T05:34:14.132196Z'
   attempts: 0
   kind: task
   feature: false
@@ -434,7 +471,7 @@ units:
   - aush
   - architecture
   - rush
-  updated_at: '2026-04-27T04:38:07.653553Z'
+  updated_at: '2026-04-27T05:19:24.370849Z'
   has_verify: true
   verify: cd /Users/asher/rush && test -d benches && true
   created_at: '2026-04-24T08:47:16.442724Z'
@@ -533,7 +570,7 @@ units:
   has_decisions: false
 - id: '25.5.1'
   title: Support compound for-loop commands on the left side of pipelines
-  status: open
+  status: in_progress
   priority: 1
   parent: '25.5'
   labels:
@@ -542,11 +579,12 @@ units:
   - pipeline
   - posix
   - agentic-compatibility
-  updated_at: '2026-04-27T05:01:27.224836Z'
+  updated_at: '2026-04-27T05:26:42.902608Z'
   has_verify: true
   verify: cd /Users/asher/rush && cargo test --test pipeline_tests --test loop_control_tests && tmp=$(mktemp -d); mkdir -p $tmp/src; touch $tmp/src/main.rs $tmp/src/lib.rs; (cd $tmp && ./target/release/aush --no-rc -c 'for f in src/*.rs; do echo "$f"; done | grep lib | sort' | grep -qx 'src/lib.rs')
   created_at: '2026-04-27T05:01:27.224836Z'
-  attempts: 0
+  claimed_by: imp
+  attempts: 1
   kind: task
   feature: false
   has_decisions: false

@@ -5,7 +5,7 @@ slug: reshape-shell-benchmarking-around-bash-drivers-plu
 status: open
 priority: 1
 created_at: '2026-04-24T08:47:16.442724Z'
-updated_at: '2026-04-27T04:38:07.653553Z'
+updated_at: '2026-04-27T05:19:24.370849Z'
 notes: |-
   ---
   2026-04-24T08:54:03.854929+00:00
@@ -36,6 +36,14 @@ notes: |-
   ---
   2026-04-27T04:38:07.653549+00:00
   Implemented first benchmark-suite structure pass: benches/aush_suite.sh now accepts compat/perf-report/perf-regress/full; added benches/agentic_compat.sh and benches/workloads/agentic_core.sh; added Makefile targets bench-aush-compat, bench-aush-report, bench-aush-regress; updated BENCHMARKS.md. Verification: shell syntax passed. Running compat gate with existing ./target/release/aush fails at existing smoke failures: tests/smoke_test.sh reports 5 failures (command-not-found stderr behavior, true; echo sequence expected mismatch, git log builtin, etc.). This is useful: compat is now a real release gate and currently blocks.
+
+  ---
+  2026-04-27T05:17:08.852913+00:00
+  Continuing benchmark work: perf-report currently cannot complete because `benches/workloads/agentic_core.sh` exits non-zero under bash and AUSH. Root causes: workload uses `set -e` with a `grep -q` miss inside a loop, and AUSH has trouble with the command substitution in `ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)`. Next step is to make the shared report workload boring/portable and then re-run `perf-report` before doing speed work.
+
+  ---
+  2026-04-27T05:19:24.370831+00:00
+  Fixed `benches/workloads/agentic_core.sh` so it exits 0 and produces identical output under bash, zsh -f, and AUSH. Avoided unsupported/problematic forms for now: here-doc script generation, `find src -name`, `sort | wc` behavior discrepancy, and `grep -q` miss under set -e. Re-ran perf-report successfully. Results on 2026-04-26 local machine: startup AUSH 5.3ms, bash 1.5ms, zsh -f 2.6ms; agentic_core AUSH 24.0ms, bash 19.7ms, zsh -f 26.1ms; session benchmark single persistent session AUSH 39.87ms total / 7.97ms per command vs zsh 41.63ms / 8.33ms, AUSH 1.04x faster in-session. Startup remains primary speed gap.
 labels:
 - benchmarks
 - aush

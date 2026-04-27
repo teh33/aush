@@ -19,6 +19,29 @@ fn create_test_file(path: &str, content: &str) {
 }
 
 #[test]
+fn test_for_loop_left_side_pipeline() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src = tmp.path().join("src");
+    fs::create_dir(&src).expect("create src");
+    fs::write(src.join("main.rs"), "").expect("write main");
+    fs::write(src.join("lib.rs"), "").expect("write lib");
+
+    let aush = std::env::current_dir()
+        .expect("current dir")
+        .join("target/release/aush");
+    let output = Command::new(aush)
+        .arg("--no-rc")
+        .arg("-c")
+        .arg("for f in src/*.rs; do echo \"$f\"; done | /usr/bin/grep lib | /usr/bin/sort")
+        .current_dir(tmp.path())
+        .output()
+        .expect("Failed to execute aush");
+
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(String::from_utf8_lossy(&output.stdout), "src/lib.rs\n");
+}
+
+#[test]
 fn test_two_stage_pipeline() {
     create_test_file("/tmp/aush_test_pipe.txt", "hello\nworld\nrust\n");
 

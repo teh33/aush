@@ -207,8 +207,9 @@ pub enum Token {
     #[regex(r"`", parse_backtick_substitution)]
     BacktickSubstitution(String),
 
-    // Braced variables - must come before Special and Regular variables
-    #[regex(r"\$\{[^}]+\}", |lex| lex.slice().to_string())]
+    // Braced variables - must come before Identifier/Path so operators like
+    // ${VAR#prefix} and ${VAR%suffix} are not split into partial words/comments.
+    #[regex(r"\$\{[^}\n]+\}", |lex| lex.slice().to_string(), priority = 20)]
     BracedVariable(String),
 
     // Special variables ($?, $!, $$, $#, $@, $*, $0-9, $-, $_)
@@ -302,6 +303,11 @@ fn strip_comments(input: &str) -> String {
                 }
             }
             '#' if !in_single && !in_double => {
+                if output.ends_with("${") || output.contains("${") && !output.rsplit('$').next().unwrap_or("").contains('}') {
+                    output.push(ch);
+                    continue;
+                }
+
                 for next in chars.by_ref() {
                     if next == '\n' {
                         output.push('\n');

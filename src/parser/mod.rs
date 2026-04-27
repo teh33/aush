@@ -79,12 +79,11 @@ impl Parser {
             Some(Token::Let) => self.parse_assignment(),
             Some(Token::Fn) => self.parse_function_def(),
             Some(Token::Function) => self.parse_bash_function_def(),
-            Some(Token::If) => self.parse_if_statement(),
-            Some(Token::For) => self.parse_for_loop(),
-            Some(Token::While) => self.parse_while_loop(),
-            Some(Token::Until) => self.parse_until_loop(),
             Some(Token::Match) => self.parse_match_expression(),
             Some(Token::Case) => self.parse_case_statement(),
+            Some(Token::For | Token::While | Token::Until | Token::If | Token::LeftBrace) => {
+                self.parse_command_or_pipeline()
+            }
             Some(Token::LeftParen) => {
                 // Route through parse_command_or_pipeline so subshells
                 // can participate in pipelines: (echo hello) | (cat)
@@ -404,23 +403,6 @@ impl Parser {
                 let value = self.parse_op_value()?;
                 Ok(Some(StructuredOp::Where { field, op, value }))
             }
-            "sort" => {
-                self.advance(); // consume "sort"
-                let mut reverse = false;
-                if matches!(self.peek(), Some(Token::ShortFlag(f)) if f == "-r")
-                    || matches!(self.peek(), Some(Token::LongFlag(f)) if f == "--reverse")
-                {
-                    self.advance();
-                    reverse = true;
-                }
-                let field = match self.peek() {
-                    Some(Token::Identifier(_)) => {
-                        Some(self.expect_identifier("sort: expected field name")?)
-                    }
-                    _ => None,
-                };
-                Ok(Some(StructuredOp::Sort { field, reverse }))
-            }
             "select" => {
                 self.advance(); // consume "select"
                 let mut fields = Vec::new();
@@ -445,16 +427,6 @@ impl Parser {
                 self.advance();
                 let n = self.parse_optional_count(1)?;
                 Ok(Some(StructuredOp::Last(n)))
-            }
-            "uniq" => {
-                self.advance();
-                let field = match self.peek() {
-                    Some(Token::Identifier(_)) => {
-                        Some(self.expect_identifier("uniq: expected field name")?)
-                    }
-                    _ => None,
-                };
-                Ok(Some(StructuredOp::Uniq { field }))
             }
             _ => Ok(None),
         }
