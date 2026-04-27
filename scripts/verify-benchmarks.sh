@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}Rush Benchmark Verification${NC}\n"
+echo -e "${BLUE}AUSH Benchmark Verification${NC}\n"
 
 # Check 1: Cargo.toml configuration
 echo -n "Checking Cargo.toml benchmark targets... "

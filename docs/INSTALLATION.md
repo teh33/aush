@@ -128,7 +128,7 @@ echo "/usr/local/bin/aush" | sudo tee -a /etc/shells
 chsh -s /usr/local/bin/aush
 ```
 
-AUSH reads new `AUSH_*` environment variables and `~/.aushrc` first, with legacy `RUSH_*` and `~/.rushrc` fallback for compatibility. The daemon helper binary is still named `rushd` in this migration phase.
+AUSH reads new `AUSH_*` environment variables and `~/.aushrc` first, with legacy `RUSH_*` and `~/.rushrc` fallback for compatibility. Release archives also include a legacy `rush` executable during this migration phase. The daemon helper binary is still named `rushd` and is installed when present in the selected package.
 
 ## Daemon Mode (Optional)
 
@@ -183,12 +183,14 @@ brew untap opus-workshop/aush
 
 ```bash
 sudo rm /usr/local/bin/aush
+sudo rm /usr/local/bin/rush  # optional legacy compatibility executable, if installed
 ```
 
 ### From Source
 
 ```bash
 sudo rm /usr/local/bin/aush
+sudo rm /usr/local/bin/rush  # optional legacy compatibility executable, if installed
 ```
 
 ## Troubleshooting

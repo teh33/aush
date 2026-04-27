@@ -3,11 +3,11 @@ name = "rush"
 version = "0.1.0"
 edition = "2021"
 default-run = "aush"
-authors = ["Rush Contributors"]
-description = "A modern Unix shell written in Rust"
+authors = ["AUSH Contributors"]
+description = "Actually Usable Shell — a modern Unix shell written in Rust"
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/kfcafe/rush"
-repository = "https://github.com/kfcafe/rush"
+homepage = "https://github.com/opus-workshop/aush"
+repository = "https://github.com/opus-workshop/aush"
 keywords = ["shell", "posix", "terminal", "rust", "cli"]
 categories = ["command-line-utilities"]
 

@@ -14,7 +14,7 @@ brew install aush
 
 ## Usage
 
-The formula installs `aush` as the primary command. Release archives may also include a legacy `rush` executable during migration compatibility.
+The formula installs `aush` as the primary command. Release archives also include a legacy `rush` executable during migration compatibility, and the formula installs it when present.
 
 
 After installation, you can run AUSH:
@@ -42,7 +42,7 @@ chsh -s "$(brew --prefix)/bin/aush"
 For ultra-fast startup (~0.4ms), use daemon mode:
 
 ```bash
-rushd start               # Start the daemon
+rushd start               # Start the daemon; daemon helper keeps legacy name for this migration phase
 aush -c "ls"              # Commands use the daemon
 rushd stop                # Stop the daemon
 ```

@@ -1,4 +1,40 @@
 units:
+- id: '24'
+  title: Rebrand/refactor shell project from rush to aush
+  status: closed
+  priority: 2
+  labels:
+  - rebrand
+  - refactor
+  - shell
+  - root-link
+  updated_at: '2026-04-27T03:35:08.159059Z'
+  has_verify: false
+  created_at: '2026-04-24T07:53:27.991937Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: true
+- id: '24.2'
+  title: Rename package/binary/distribution surfaces to AUSH with legacy invocation strategy
+  status: closed
+  priority: 2
+  parent: '24'
+  labels:
+  - aush
+  - rebrand
+  - packaging
+  - distribution
+  - needs-decision
+  updated_at: '2026-04-27T03:35:08.119308Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && (cargo build -q --bins || cargo build --bins) && (test -x target/debug/aush || test -x target/debug/rush)
+  created_at: '2026-04-24T16:33:08.558351Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: true
 - id: '25.4.1'
   title: Add backslash-newline line continuation compatibility for real shell scripts
   status: closed

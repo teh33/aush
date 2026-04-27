@@ -182,7 +182,7 @@ jobs:
 
           # Combined archive with both binaries
           if [ -f rushd ]; then
-            tar czf ${{ matrix.asset_name }}-full.tar.gz ${{ matrix.artifact_name }} rushd
+            tar czf ${{ matrix.asset_name }}-full.tar.gz ${{ matrix.artifact_name }} rush rushd
           fi
 
       - name: Generate checksums
@@ -311,6 +311,15 @@ jobs:
           ./aush -c 'echo "Hello from AUSH"'
           ./aush -c 'pwd'
           ./aush -c 'export FOO=bar && echo $FOO'
+
+      - name: Test legacy binary compatibility
+        run: |
+          if [ -x ./rush ]; then
+            ./rush -c 'echo "Legacy Rush compatibility"'
+          else
+            echo "legacy rush executable not included in archive"
+            exit 1
+          fi
 
       - name: Test binary - POSIX features
         run: |

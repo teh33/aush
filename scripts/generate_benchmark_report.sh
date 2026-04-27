@@ -128,7 +128,7 @@ fi
 mkdir -p "$REPORT_DIR"
 mkdir -p "$HISTORICAL_DIR"
 
-echo -e "${BLUE}=== Rush Benchmark Report Generator ===${NC}\n"
+echo -e "${BLUE}=== AUSH Benchmark Report Generator ===${NC}\n"
 echo "Results file: $RESULTS_FILE"
 echo "Output directory: $REPORT_DIR"
 echo ""
@@ -156,7 +156,7 @@ try:
         data = json.load(f)
 
     # Build markdown report
-    report = f"""# Rush Benchmark Report
+    report = f"""# AUSH Benchmark Report
 
 **Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
@@ -184,13 +184,13 @@ try:
     report += """
 ## Methodology
 
-This benchmark report was generated using the Rush benchmark runner.
+This benchmark report was generated using the AUSH benchmark runner.
 
 ### Test Categories
 
 - **Quick Mode:** 5-second smoke test with essential commands
 - **Full Mode:** Comprehensive test suite covering shell features
-- **Compare Mode:** Comparison benchmarks across shells (Rush, Bash, Zsh)
+- **Compare Mode:** Comparison benchmarks across shells (AUSH, Bash, Zsh)
 
 ### Metrics
 
@@ -256,7 +256,7 @@ try:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rush Benchmark Report</title>
+    <title>AUSH Benchmark Report</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <style>
         * {{
@@ -423,7 +423,7 @@ try:
 <body>
     <div class="container">
         <header>
-            <h1>Rush Benchmark Report</h1>
+            <h1>AUSH Benchmark Report</h1>
             <div class="timestamp">Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</div>
         </header>
 
@@ -506,7 +506,7 @@ try:
                     <ul>
                         <li><strong>Quick Mode:</strong> 5-second smoke test with essential commands</li>
                         <li><strong>Full Mode:</strong> Comprehensive test suite covering shell features</li>
-                        <li><strong>Compare Mode:</strong> Comparison benchmarks across shells (Rush, Bash, Zsh)</li>
+                        <li><strong>Compare Mode:</strong> Comparison benchmarks across shells (AUSH, Bash, Zsh)</li>
                     </ul>
 
                     <h3>Metrics</h3>
@@ -522,14 +522,14 @@ try:
                         <li>Results may vary based on system load and resources</li>
                         <li>The "Quick Mode" provides rapid feedback for CI/CD pipelines</li>
                         <li>The "Full Mode" performs comprehensive testing for release validation</li>
-                        <li>The "Compare Mode" benchmarks Rush against other shells</li>
+                        <li>The "Compare Mode" benchmarks AUSH against other shells</li>
                     </ul>
                 </div>
             </section>
         </main>
 
         <footer>
-            <p>Rush Benchmark Suite | Powered by criterion and custom benchmark tools</p>
+            <p>AUSH Benchmark Suite | Powered by criterion and custom benchmark tools</p>
         </footer>
     </div>
 

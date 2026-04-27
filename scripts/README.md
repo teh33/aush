@@ -1,4 +1,4 @@
-# Rush Benchmark Scripts
+# AUSH Benchmark Scripts
 
 This directory contains scripts for running performance benchmarks and comparisons.
 
@@ -9,7 +9,7 @@ This directory contains scripts for running performance benchmarks and compariso
 Comprehensive real-world performance comparison using [hyperfine](https://github.com/sharkdp/hyperfine).
 
 **What it benchmarks:**
-1. Shell startup time (Rush vs bash vs zsh)
+1. Shell startup time (AUSH vs bash vs zsh)
 2. Echo command performance
 3. PWD command performance
 4. CD command performance
@@ -70,7 +70,7 @@ For most accurate results:
 
 hyperfine output format:
 ```
-Benchmark 1: rush -c exit
+Benchmark 1: aush -c exit
   Time (mean ± σ):      8.5 ms ±   0.3 ms    [User: 2.1 ms, System: 4.2 ms]
   Range (min … max):    8.1 ms …   9.2 ms    50 runs
 ```
@@ -82,8 +82,8 @@ Benchmark 1: rush -c exit
 
 ### Comparing Results
 
-When comparing Rush vs other shells:
-- **< 100%**: Rush is faster (good!)
+When comparing AUSH vs other shells:
+- **< 100%**: AUSH is faster (good!)
 - **= 100%**: Same performance
 - **> 100%**: Other shell is faster (needs optimization)
 
