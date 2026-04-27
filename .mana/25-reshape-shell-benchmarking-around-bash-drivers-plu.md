@@ -5,7 +5,7 @@ slug: reshape-shell-benchmarking-around-bash-drivers-plu
 status: open
 priority: 1
 created_at: '2026-04-24T08:47:16.442724Z'
-updated_at: '2026-04-27T05:19:24.370849Z'
+updated_at: '2026-04-27T05:43:13.981953Z'
 notes: |-
   ---
   2026-04-24T08:54:03.854929+00:00
@@ -44,6 +44,10 @@ notes: |-
   ---
   2026-04-27T05:19:24.370831+00:00
   Fixed `benches/workloads/agentic_core.sh` so it exits 0 and produces identical output under bash, zsh -f, and AUSH. Avoided unsupported/problematic forms for now: here-doc script generation, `find src -name`, `sort | wc` behavior discrepancy, and `grep -q` miss under set -e. Re-ran perf-report successfully. Results on 2026-04-26 local machine: startup AUSH 5.3ms, bash 1.5ms, zsh -f 2.6ms; agentic_core AUSH 24.0ms, bash 19.7ms, zsh -f 26.1ms; session benchmark single persistent session AUSH 39.87ms total / 7.97ms per command vs zsh 41.63ms / 8.33ms, AUSH 1.04x faster in-session. Startup remains primary speed gap.
+
+  ---
+  2026-04-27T05:43:13.981950+00:00
+  User requested next phase: continue fixing parser compatibility gaps and run the full benchmark suite. Plan: run full suite first to capture current gate/report/regression state, then prioritize parser gaps exposed by suite or known avoided workload forms.
 labels:
 - benchmarks
 - aush

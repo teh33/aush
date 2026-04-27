@@ -1102,10 +1102,8 @@ impl Executor {
                     let result = arithmetic::evaluate_mut(expr, &mut self.runtime)?;
                     return Ok(result.to_string());
                 }
-                // Strip $( and )
-                let cmd_str = cmd.trim_start_matches("$(").trim_end_matches(')');
-                // TODO: Parse and execute the command
-                Ok(cmd_str.to_string())
+
+                self.execute_command_substitution(&cmd)
             }
             Expression::FunctionCall(call) => {
                 // Evaluate arguments
