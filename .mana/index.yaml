@@ -366,6 +366,45 @@ units:
   kind: task
   feature: false
   has_decisions: false
+- id: '24.5'
+  title: Clean AUSH release testing documentation
+  status: open
+  priority: 1
+  parent: '24'
+  dependencies:
+  - '24.4'
+  labels:
+  - aush
+  - release
+  - docs
+  updated_at: '2026-04-27T03:37:50.843232Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && ! rg -n 'opus-workshop/rush|brew install rush|brew tap opus-workshop/rush|rush-(macos|linux)' docs/RELEASE_TESTING.md && rg -n 'opus-workshop/aush|brew install aush|aush-(macos|linux)|legacy `rush`' docs/RELEASE_TESTING.md
+  created_at: '2026-04-27T03:37:50.843232Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.6'
+  title: Run AUSH alpha release gate
+  status: open
+  priority: 1
+  parent: '24'
+  dependencies:
+  - '24.4'
+  - '24.5'
+  labels:
+  - aush
+  - release
+  - verify
+  updated_at: '2026-04-27T03:37:56.861412Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test && cargo build --release --bins && tests/smoke_test.sh ./target/release/aush
+  created_at: '2026-04-27T03:37:56.861412Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
 - id: '25'
   title: Reshape shell benchmarking around bash drivers plus Rush-native workload scripts
   status: open

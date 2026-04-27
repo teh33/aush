@@ -1,5 +1,5 @@
 [package]
-name = "rush"
+name = "aush"
 version = "0.1.0"
 edition = "2021"
 default-run = "aush"
@@ -10,6 +10,31 @@ homepage = "https://github.com/opus-workshop/aush"
 repository = "https://github.com/opus-workshop/aush"
 keywords = ["shell", "posix", "terminal", "rust", "cli"]
 categories = ["command-line-utilities"]
+exclude = [
+    ".github/**",
+    ".mana/**",
+    ".pi/**",
+    ".vibecheck/**",
+    "research/**",
+    "reports/**",
+    "historical/**",
+    "target/**",
+    "homebrew/**",
+    "pi-rush/**",
+    "docs/internal/**",
+    "docs/shell-comparison*.html",
+    "benchmarks/**",
+    "apply_*.py",
+    "rush-debug.sh",
+    "rush-login-debug.sh",
+    "rush-wrapper.sh",
+    "wishlist*",
+    "*.orig",
+    "$HOME/**",
+    "Cargo.toml.orig",
+    "*.log",
+    "*.tmp",
+]
 
 [lib]
 name = "rush"

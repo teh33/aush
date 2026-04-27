@@ -69,10 +69,18 @@ shasum -a 256 -c SHA256SUMS.txt --ignore-missing
 If you have Rust installed:
 
 ```bash
+cargo install aush
+```
+
+The crates.io package is `aush`. During the migration it installs `aush` as the primary command plus a legacy `rush` executable for existing scripts.
+
+To install from git instead:
+
+```bash
 cargo install --git https://github.com/opus-workshop/aush
 ```
 
-To install a specific version:
+To install a specific git tag:
 
 ```bash
 cargo install --git https://github.com/opus-workshop/aush --tag v0.1.0

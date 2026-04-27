@@ -35,6 +35,25 @@ units:
   kind: task
   feature: false
   has_decisions: true
+- id: '24.4'
+  title: Prepare AUSH crates.io release cutover
+  status: closed
+  priority: 1
+  parent: '24'
+  labels:
+  - aush
+  - release
+  - crates
+  - packaging
+  updated_at: '2026-04-27T03:43:10.196227Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo publish --dry-run --allow-dirty 2>&1 | tee /tmp/aush-publish-dry-run.log && rg -n 'Packaging aush|Verifying aush' /tmp/aush-publish-dry-run.log
+  created_at: '2026-04-27T03:37:23.124955Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
 - id: '25.4.1'
   title: Add backslash-newline line continuation compatibility for real shell scripts
   status: closed

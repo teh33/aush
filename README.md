@@ -52,6 +52,14 @@ rush.register_builtin("weather", {
 ### Cargo
 
 ```bash
+cargo install aush
+```
+
+During the migration, the crates.io package is `aush` and installs `aush` as the primary command plus a legacy `rush` executable for existing scripts.
+
+To install directly from git:
+
+```bash
 cargo install --git https://github.com/opus-workshop/aush
 ```
 

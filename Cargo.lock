@@ -45,6 +45,48 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 
 [[package]]
+name = "aush"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "chrono",
+ "criterion",
+ "crossterm 0.27.0",
+ "dirs",
+ "fuzzy-matcher",
+ "git2",
+ "glob",
+ "grep-matcher",
+ "grep-regex",
+ "grep-searcher",
+ "ignore",
+ "libc",
+ "logos",
+ "memmap2",
+ "mimalloc",
+ "mlua",
+ "nix",
+ "nom",
+ "nu-ansi-term",
+ "num_cpus",
+ "os_pipe",
+ "reedline",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "strsim",
+ "tempfile",
+ "termcolor",
+ "terminal_size",
+ "thiserror 2.0.18",
+ "toml",
+ "ureq",
+ "walkdir",
+ "whoami",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1431,48 +1473,6 @@ dependencies = [
  "libc",
  "untrusted",
  "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "rush"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bincode",
- "chrono",
- "criterion",
- "crossterm 0.27.0",
- "dirs",
- "fuzzy-matcher",
- "git2",
- "glob",
- "grep-matcher",
- "grep-regex",
- "grep-searcher",
- "ignore",
- "libc",
- "logos",
- "memmap2",
- "mimalloc",
- "mlua",
- "nix",
- "nom",
- "nu-ansi-term",
- "num_cpus",
- "os_pipe",
- "reedline",
- "serde",
- "serde_json",
- "signal-hook",
- "strsim",
- "tempfile",
- "termcolor",
- "terminal_size",
- "thiserror 2.0.18",
- "toml",
- "ureq",
- "walkdir",
- "whoami",
 ]
 
 [[package]]
