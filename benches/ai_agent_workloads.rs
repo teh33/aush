@@ -133,7 +133,17 @@ fn execute_command(cmd: &str, cwd: &PathBuf) -> String {
     let mut executor = Executor::new_embedded();
     executor.runtime_mut().set_cwd(cwd.clone());
 
-    let result = executor.execute(statements).unwrap();
+    let result = executor.execute(statements).unwrap_or_else(|e| {
+        panic!("command failed: {cmd}: {e}");
+    });
+
+    assert_eq!(
+        result.exit_code,
+        0,
+        "command failed: {cmd}\nstderr: {}\nstdout: {}",
+        result.stderr,
+        result.stdout()
+    );
 
     result.stdout()
 }
@@ -168,16 +178,14 @@ fn bench_git_status_loop(c: &mut Criterion) {
 /// AI agents frequently search and filter files
 fn bench_find_filter_json(c: &mut Criterion) {
     let test_files = setup_test_files();
-    let data_dir = test_files.path().to_path_buf();
-
     let mut group = c.benchmark_group("find_filter_json");
 
     // Find all JSON files
     group.bench_function("find_json_files", |b| {
         b.iter(|| {
             let output = execute_command(
-                black_box("find --json data/ -name \"*.json\""),
-                black_box(&data_dir.parent().unwrap().to_path_buf()),
+                black_box("find data/ --json -name \"*.json\""),
+                black_box(&test_files.path().to_path_buf()),
             );
             black_box(output);
         });
@@ -187,8 +195,8 @@ fn bench_find_filter_json(c: &mut Criterion) {
     group.bench_function("find_json_with_size_filter", |b| {
         b.iter(|| {
             let output = execute_command(
-                black_box("find --json data/ -name \"*.json\" -size +1000"),
-                black_box(&data_dir.parent().unwrap().to_path_buf()),
+                black_box("find data/ --json -name \"*.json\" -size +1000"),
+                black_box(&test_files.path().to_path_buf()),
             );
             black_box(output);
         });
@@ -198,8 +206,8 @@ fn bench_find_filter_json(c: &mut Criterion) {
     group.bench_function("find_json_with_mtime_filter", |b| {
         b.iter(|| {
             let output = execute_command(
-                black_box("find --json data/ -name \"*.rs\" -mtime -1"),
-                black_box(&data_dir.parent().unwrap().to_path_buf()),
+                black_box("find data/ --json -name \"*.rs\" -mtime -1"),
+                black_box(&test_files.path().to_path_buf()),
             );
             black_box(output);
         });
@@ -282,7 +290,7 @@ fn bench_json_operations(c: &mut Criterion) {
     group.bench_function("json_get_array_element", |b| {
         b.iter(|| {
             let output = execute_command(
-                &format!("json_get .tags.[0] {}", json_file.display()),
+                &format!("json_get '.tags[0]' {}", json_file.display()),
                 black_box(&test_files.path().to_path_buf()),
             );
             black_box(output);
@@ -297,16 +305,14 @@ fn bench_json_operations(c: &mut Criterion) {
 /// AI agents search for patterns in code
 fn bench_grep_operations(c: &mut Criterion) {
     let test_files = setup_test_files();
-    let data_dir = test_files.path().to_path_buf();
-
     let mut group = c.benchmark_group("grep_operations");
 
     // Search for TODO in all Rust files
     group.bench_function("grep_todo_in_rust_files", |b| {
         b.iter(|| {
             let output = execute_command(
-                black_box("grep --json \"TODO\" data/*.rs"),
-                black_box(&data_dir.parent().unwrap().to_path_buf()),
+                black_box("grep --json \"TODO\" data/source*.rs"),
+                black_box(&test_files.path().to_path_buf()),
             );
             black_box(output);
         });
@@ -316,8 +322,8 @@ fn bench_grep_operations(c: &mut Criterion) {
     group.bench_function("grep_case_insensitive", |b| {
         b.iter(|| {
             let output = execute_command(
-                black_box("grep --json -i \"todo\" data/*.rs"),
-                black_box(&data_dir.parent().unwrap().to_path_buf()),
+                black_box("grep --json -i \"todo\" data/source*.rs"),
+                black_box(&test_files.path().to_path_buf()),
             );
             black_box(output);
         });
@@ -355,7 +361,6 @@ fn bench_complex_pipeline(c: &mut Criterion) {
 /// Test performance of multiple concurrent operations
 fn bench_parallel_operations(c: &mut Criterion) {
     let test_files = setup_test_files();
-    let data_dir = test_files.path().to_path_buf();
 
     c.bench_function("parallel_find_10x", |b| {
         b.iter(|| {
@@ -363,8 +368,8 @@ fn bench_parallel_operations(c: &mut Criterion) {
             for i in 0..10 {
                 let pattern = format!("file{}.json", i * 100);
                 let output = execute_command(
-                    &format!("find --json data/ -name \"{}\"", pattern),
-                    black_box(&data_dir.parent().unwrap().to_path_buf()),
+                    &format!("find data/ --json -name \"{}\"", pattern),
+                    black_box(&test_files.path().to_path_buf()),
                 );
                 black_box(output);
             }

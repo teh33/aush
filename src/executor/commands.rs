@@ -646,7 +646,18 @@ impl Executor {
                         }
                     }
 
-                    return Err(anyhow!(error_msg));
+                    let result = ExecutionResult {
+                        output: Output::Text(String::new()),
+                        stderr: format!("{}\n", error_msg),
+                        exit_code: 127,
+                        error: None,
+                    };
+
+                    return if command.redirects.is_empty() {
+                        Ok(result)
+                    } else {
+                        self.apply_redirects(result, &command.redirects)
+                    };
                 }
 
                 return Err(anyhow!("Failed to execute '{}': {}", command_name, e));
