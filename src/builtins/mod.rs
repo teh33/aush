@@ -475,8 +475,60 @@ pub(crate) fn builtin_pwd(_args: &[String], runtime: &mut Runtime) -> Result<Exe
 }
 
 pub(crate) fn builtin_echo(args: &[String], _runtime: &mut Runtime) -> Result<ExecutionResult> {
-    let output = args.join(" ") + "\n";
+    let mut interpret_escapes = false;
+    let mut suppress_newline = false;
+    let mut start = 0;
+
+    while start < args.len() {
+        match args[start].as_str() {
+            "-e" => interpret_escapes = true,
+            "-E" => interpret_escapes = false,
+            "-n" => suppress_newline = true,
+            _ => break,
+        }
+        start += 1;
+    }
+
+    let mut output = args[start..].join(" ");
+    if interpret_escapes {
+        output = decode_echo_escapes(&output);
+    }
+    if !suppress_newline {
+        output.push('\n');
+    }
+
     Ok(ExecutionResult::success(output))
+}
+
+fn decode_echo_escapes(input: &str) -> String {
+    let mut output = String::new();
+    let mut chars = input.chars();
+
+    while let Some(ch) = chars.next() {
+        if ch != '\\' {
+            output.push(ch);
+            continue;
+        }
+
+        match chars.next() {
+            Some('n') => output.push('\n'),
+            Some('t') => output.push('\t'),
+            Some('r') => output.push('\r'),
+            Some('b') => output.push('\u{0008}'),
+            Some('f') => output.push('\u{000c}'),
+            Some('v') => output.push('\u{000b}'),
+            Some('a') => output.push('\u{0007}'),
+            Some('\\') => output.push('\\'),
+            Some('0') => output.push('\0'),
+            Some(other) => {
+                output.push('\\');
+                output.push(other);
+            }
+            None => output.push('\\'),
+        }
+    }
+
+    output
 }
 
 // builtin_exit is now in exit_builtin module (uses ExitSignal for subshell support)

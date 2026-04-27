@@ -619,30 +619,49 @@ impl Executor {
         let current_dir = self.runtime.get_cwd().to_path_buf();
         let command_name = command.name.clone();
 
-        let mut child = cmd.spawn().map_err(|e| {
-            if e.kind() == std::io::ErrorKind::NotFound {
-                let suggestions = self.suggestion_engine.suggest_command(
-                    &command_name,
-                    &builtin_names,
-                    &alias_names,
-                    &history_commands,
-                    &current_dir,
-                );
+        let mut child = match cmd.spawn() {
+            Ok(child) => child,
+            Err(e) => {
+                let mut result = if e.kind() == std::io::ErrorKind::NotFound {
+                    let suggestions = self.suggestion_engine.suggest_command(
+                        &command_name,
+                        &builtin_names,
+                        &alias_names,
+                        &history_commands,
+                        &current_dir,
+                    );
 
-                let mut error_msg = format!("Command not found: '{}'", command_name);
+                    let mut error_msg = format!("Command not found: '{}'", command_name);
 
-                if !suggestions.is_empty() {
-                    error_msg.push_str("\n\nDid you mean:\n");
-                    for suggestion in suggestions.iter().take(3) {
-                        error_msg.push_str(&format!("  {}\n", suggestion.text));
+                    if !suggestions.is_empty() {
+                        error_msg.push_str("\n\nDid you mean:\n");
+                        for suggestion in suggestions.iter().take(3) {
+                            error_msg.push_str(&format!("  {}\n", suggestion.text));
+                        }
                     }
+
+                    ExecutionResult {
+                        output: Output::Text(String::new()),
+                        stderr: format!("{}\n", error_msg),
+                        exit_code: 127,
+                        error: None,
+                    }
+                } else {
+                    ExecutionResult {
+                        output: Output::Text(String::new()),
+                        stderr: format!("Failed to execute '{}': {}\n", command_name, e),
+                        exit_code: 126,
+                        error: None,
+                    }
+                };
+
+                if !command.redirects.is_empty() {
+                    result = self.apply_redirects(result, &command.redirects)?;
                 }
 
-                anyhow!(error_msg)
-            } else {
-                anyhow!("Failed to execute '{}': {}", command_name, e)
+                return Ok(result);
             }
-        })?;
+        };
 
         if should_inherit_io {
             let child_pgid = nix::unistd::Pid::from_raw(child.id() as i32);

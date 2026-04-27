@@ -1155,22 +1155,28 @@ fn fast_execute_c(
 
     let mut executor = Executor::new().with_profiling(enable_profile);
 
-    // Minimal runtime init: just PATH and PWD so commands can be found
-    if let Ok(path) = env::var("PATH") {
-        executor
-            .runtime_mut()
-            .set_variable("PATH".to_string(), path);
-    }
-    if let Ok(pwd) = env::current_dir() {
-        executor
-            .runtime_mut()
-            .set_variable("PWD".to_string(), pwd.to_string_lossy().to_string());
-    }
-    if let Ok(home) = env::var("HOME") {
-        executor
-            .runtime_mut()
-            .set_variable("HOME".to_string(), home);
-    }
+        // Minimal runtime init: enough environment for common non-interactive scripts.
+        for key in ["PATH", "PWD", "HOME", "USER", "LOGNAME", "SHELL", "TERM"] {
+            match key {
+                "PWD" => {
+                    if let Ok(pwd) = env::current_dir() {
+                        executor
+                            .runtime_mut()
+                            .set_variable("PWD".to_string(), pwd.to_string_lossy().to_string());
+                    }
+                }
+                "USER" => {
+                    if let Ok(user) = env::var("USER").or_else(|_| env::var("LOGNAME")) {
+                        executor.runtime_mut().set_variable("USER".to_string(), user);
+                    }
+                }
+                _ => {
+                    if let Ok(value) = env::var(key) {
+                        executor.runtime_mut().set_variable(key.to_string(), value);
+                    }
+                }
+            }
+        }
 
     match executor.execute(statements) {
         Ok(result) => {

@@ -368,7 +368,7 @@ units:
   has_decisions: false
 - id: '24.6'
   title: Run AUSH alpha release gate
-  status: open
+  status: in_progress
   priority: 1
   parent: '24'
   dependencies:
@@ -378,10 +378,11 @@ units:
   - aush
   - release
   - verify
-  updated_at: '2026-04-27T04:26:48.394641Z'
+  updated_at: '2026-04-27T04:37:14.255390Z'
   has_verify: true
   verify: cd /Users/asher/rush && cargo test && cargo build --release --bins && tests/smoke_test.sh ./target/release/aush
   created_at: '2026-04-27T03:37:56.861412Z'
+  claimed_by: imp
   attempts: 0
   kind: task
   feature: false
@@ -433,7 +434,7 @@ units:
   - aush
   - architecture
   - rush
-  updated_at: '2026-04-27T04:35:24.998778Z'
+  updated_at: '2026-04-27T04:38:07.653553Z'
   has_verify: true
   verify: cd /Users/asher/rush && test -d benches && true
   created_at: '2026-04-24T08:47:16.442724Z'
@@ -526,6 +527,25 @@ units:
   has_verify: true
   verify: cd /Users/asher/rush && ./target/release/rush --no-rc benches/shellbench.sh >/tmp/shellbench-next.log 2>&1 || true && tail -n 20 /tmp/shellbench-next.log
   created_at: '2026-04-24T14:50:12.724026Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.5.1'
+  title: Support compound for-loop commands on the left side of pipelines
+  status: open
+  priority: 1
+  parent: '25.5'
+  labels:
+  - aush
+  - parser
+  - pipeline
+  - posix
+  - agentic-compatibility
+  updated_at: '2026-04-27T05:01:27.224836Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test pipeline_tests --test loop_control_tests && tmp=$(mktemp -d); mkdir -p $tmp/src; touch $tmp/src/main.rs $tmp/src/lib.rs; (cd $tmp && ./target/release/aush --no-rc -c 'for f in src/*.rs; do echo "$f"; done | grep lib | sort' | grep -qx 'src/lib.rs')
+  created_at: '2026-04-27T05:01:27.224836Z'
   attempts: 0
   kind: task
   feature: false

@@ -42,6 +42,14 @@ pub fn builtin_git_log(args: &[String], runtime: &mut Runtime) -> Result<Executi
     while i < args.len() {
         match args[i].as_str() {
             "--json" => json_output = true,
+            "--oneline" => json_output = false,
+            arg if arg.starts_with('-') && arg.len() > 1 && arg[1..].chars().all(|c| c.is_ascii_digit()) => {
+                limit = Some(
+                    arg[1..]
+                        .parse()
+                        .map_err(|_| anyhow!("Invalid numeric revision limit: {}", arg))?,
+                );
+            }
             "-n" => {
                 if i + 1 < args.len() {
                     limit = Some(

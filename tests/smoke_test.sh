@@ -363,8 +363,8 @@ section "17. EXIT CODES"
 
 test_case "exit 0" 'exit 0; echo no' ''
 test_case "command not found" 'nonexistent_cmd_12345 2>/dev/null; echo $?' '127'
-test_case "successful command" "$TRUE_BIN; echo $?" '0'
-test_case "failed command" "$FALSE_BIN; echo $?" '1'
+test_case "successful command" "$TRUE_BIN; echo \$?" '0'
+test_case "failed command" "$FALSE_BIN; echo \$?" '1'
 
 # ----------------------------------------------------------------------------
 section "18. HERE DOCUMENTS"

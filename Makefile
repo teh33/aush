@@ -44,9 +44,21 @@ bench-aush-fast: build
 	@echo "=== AUSH fast smoke benchmark ==="
 	bash ./benches/aush_smoke_fast.sh ./target/release/aush
 
+bench-aush-compat: build
+	@echo "=== AUSH compatibility release gate ==="
+	bash ./benches/aush_suite.sh ./target/release/aush compat
+
+bench-aush-report: build
+	@echo "=== AUSH performance report suite ==="
+	bash ./benches/aush_suite.sh ./target/release/aush perf-report
+
+bench-aush-regress: build
+	@echo "=== AUSH performance regression suite ==="
+	bash ./benches/aush_suite.sh ./target/release/aush perf-regress
+
 bench-aush: build
 	@echo "=== AUSH full benchmark suite ==="
-	bash ./benches/aush_suite.sh ./target/release/aush
+	bash ./benches/aush_suite.sh ./target/release/aush full
 
 # --- PGO Build Pipeline ---
 #

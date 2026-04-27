@@ -110,8 +110,25 @@ bash ./benches/session_benchmark.sh
 # Run the AUSH fast smoke benchmark
 bash ./benches/aush_smoke_fast.sh ./target/release/aush
 
+# Run the compatibility release gate
+make bench-aush-compat
+# or
+bash ./benches/aush_suite.sh ./target/release/aush compat
+
+# Generate bash/zsh performance comparison artifacts
+make bench-aush-report
+# or
+bash ./benches/aush_suite.sh ./target/release/aush perf-report
+
+# Run performance regression tracking checks
+make bench-aush-regress
+# or
+bash ./benches/aush_suite.sh ./target/release/aush perf-regress
+
 # Run the full AUSH benchmark suite
-bash ./benches/aush_suite.sh ./target/release/aush
+make bench-aush
+# or
+bash ./benches/aush_suite.sh ./target/release/aush full
 ```
 
 ### AUSH fast smoke benchmark
@@ -128,17 +145,30 @@ This fast gate is intended to finish quickly and covers:
 - signal interruption behavior
 - targeted core smoke coverage
 
+### AUSH benchmark suite modes
+```bash
+make bench-aush-compat   # release gate
+make bench-aush-report   # markdown/json bash+zsh performance artifacts
+make bench-aush-regress  # Criterion regression checks
+make bench-aush          # all modes
+```
+
+The suite separates three responsibilities:
+- **compat** is the release gate. It runs fast smoke checks, POSIX-core tests, and agentic shell workload fixtures.
+- **perf-report** is for human-facing reporting. It exports markdown and JSON comparisons under `reports/benchmarks/<timestamp>/`.
+- **perf-regress** is for developer regression tracking using Criterion suites.
+
 ### AUSH full benchmark suite
 ```bash
 make bench-aush
 # or
-bash ./benches/aush_suite.sh ./target/release/aush
+bash ./benches/aush_suite.sh ./target/release/aush full
 ```
 
 This full suite runs:
-- the fast smoke gate
-- persistent interactive benchmark
-- persistent session benchmark
+- compatibility gate checks
+- bash/zsh performance report workloads
+- Criterion regression workloads
 
 ### Individual Benchmark Suites
 

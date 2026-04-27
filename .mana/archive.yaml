@@ -92,6 +92,25 @@ units:
   kind: task
   feature: false
   has_decisions: false
+- id: '25.5'
+  title: Fix AUSH compatibility gate smoke failures blocking benchmark suite
+  status: closed
+  priority: 1
+  parent: '25'
+  labels:
+  - aush
+  - benchmarks
+  - compatibility
+  - smoke
+  - release-gate
+  updated_at: '2026-04-27T05:02:08.354667Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build --release --bins && tests/smoke_test.sh ./target/release/aush && AUSH_BENCH_OUT_DIR=/tmp/aush-bench-check bash benches/aush_suite.sh ./target/release/aush compat
+  created_at: '2026-04-27T04:53:28.624573Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
 - id: '26.5'
   title: Record approval decisions in command receipts
   status: closed

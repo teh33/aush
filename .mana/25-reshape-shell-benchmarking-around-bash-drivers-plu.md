@@ -5,7 +5,7 @@ slug: reshape-shell-benchmarking-around-bash-drivers-plu
 status: open
 priority: 1
 created_at: '2026-04-24T08:47:16.442724Z'
-updated_at: '2026-04-27T04:35:24.998778Z'
+updated_at: '2026-04-27T04:38:07.653553Z'
 notes: |-
   ---
   2026-04-24T08:54:03.854929+00:00
@@ -32,6 +32,10 @@ notes: |-
   ---
   2026-04-27T04:33:44.482127+00:00
   User wants to continue AUSH benchmark suite with two explicit goals: (1) validate compatibility with agentic language / POSIX shell workflows, especially scripts agents naturally emit; (2) prove AUSH is as fast or faster than bash and zsh. Benchmark suite should likely combine correctness gates and performance comparisons, not only microbenchmarks. Existing benchmark work includes benches/aush_suite.sh, benches/aush_smoke_fast.sh, benches/interactive_benchmark.sh, benches/session_benchmark.sh, docs/benchmarking.md, benches/README.md, Criterion benches, and POSIX compliance tests under tests/posix.
+
+  ---
+  2026-04-27T04:38:07.653549+00:00
+  Implemented first benchmark-suite structure pass: benches/aush_suite.sh now accepts compat/perf-report/perf-regress/full; added benches/agentic_compat.sh and benches/workloads/agentic_core.sh; added Makefile targets bench-aush-compat, bench-aush-report, bench-aush-regress; updated BENCHMARKS.md. Verification: shell syntax passed. Running compat gate with existing ./target/release/aush fails at existing smoke failures: tests/smoke_test.sh reports 5 failures (command-not-found stderr behavior, true; echo sequence expected mismatch, git log builtin, etc.). This is useful: compat is now a real release gate and currently blocks.
 labels:
 - benchmarks
 - aush
