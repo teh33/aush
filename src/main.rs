@@ -1131,10 +1131,7 @@ fn fast_execute_c(
     // Resolve max output bytes: --max-output flag takes priority, then AUSH_MAX_OUTPUT/AUSH_MAX_OUTPUT env vars.
     let max_output_bytes: Option<usize> = max_output
         .and_then(|s| run_api::parse_max_output(s))
-        .or_else(|| {
-            brand::env_var("AUSH_MAX_OUTPUT")
-                .and_then(|v| run_api::parse_max_output(&v))
-        });
+        .or_else(|| brand::env_var("AUSH_MAX_OUTPUT").and_then(|v| run_api::parse_max_output(&v)));
 
     let tokens = match Lexer::tokenize(cmd) {
         Ok(t) => t,
@@ -1155,28 +1152,30 @@ fn fast_execute_c(
 
     let mut executor = Executor::new().with_profiling(enable_profile);
 
-        // Minimal runtime init: enough environment for common non-interactive scripts.
-        for key in ["PATH", "PWD", "HOME", "USER", "LOGNAME", "SHELL", "TERM"] {
-            match key {
-                "PWD" => {
-                    if let Ok(pwd) = env::current_dir() {
-                        executor
-                            .runtime_mut()
-                            .set_variable("PWD".to_string(), pwd.to_string_lossy().to_string());
-                    }
+    // Minimal runtime init: enough environment for common non-interactive scripts.
+    for key in ["PATH", "PWD", "HOME", "USER", "LOGNAME", "SHELL", "TERM"] {
+        match key {
+            "PWD" => {
+                if let Ok(pwd) = env::current_dir() {
+                    executor
+                        .runtime_mut()
+                        .set_variable("PWD".to_string(), pwd.to_string_lossy().to_string());
                 }
-                "USER" => {
-                    if let Ok(user) = env::var("USER").or_else(|_| env::var("LOGNAME")) {
-                        executor.runtime_mut().set_variable("USER".to_string(), user);
-                    }
+            }
+            "USER" => {
+                if let Ok(user) = env::var("USER").or_else(|_| env::var("LOGNAME")) {
+                    executor
+                        .runtime_mut()
+                        .set_variable("USER".to_string(), user);
                 }
-                _ => {
-                    if let Ok(value) = env::var(key) {
-                        executor.runtime_mut().set_variable(key.to_string(), value);
-                    }
+            }
+            _ => {
+                if let Ok(value) = env::var(key) {
+                    executor.runtime_mut().set_variable(key.to_string(), value);
                 }
             }
         }
+    }
 
     match executor.execute(statements) {
         Ok(result) => {

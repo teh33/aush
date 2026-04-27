@@ -9,7 +9,7 @@ fn test_basic_while_loop() {
     // Test while loop that runs a fixed number of times.
     let code = r#"
         count=0
-        while test "$count" != "3"; do
+        while test "$count" -ne 3; do
             echo "iteration"
             count=$((count+1))
         done
@@ -35,7 +35,7 @@ fn test_while_loop_with_break() {
         while true; do
             echo "loop"
             count=$((count+1))
-            test "$count" = "3" && break
+            test "$count" -eq 3 && break
         done
     "#;
 
@@ -56,9 +56,9 @@ fn test_while_loop_with_continue() {
 
     let code = r#"
         count=0
-        while test "$count" != "3"; do
+        while test "$count" -ne 3; do
             count=$((count+1))
-            test "$count" = "2" && continue
+            test "$count" -eq 2 && continue
             echo "printed"
         done
     "#;
@@ -69,7 +69,7 @@ fn test_while_loop_with_continue() {
     let result = executor.execute(statements).unwrap();
 
     let output = result.stdout();
-    // Should print only twice (skipping when count="..")
+    // Should print only twice (skipping when count=2)
     let print_count = output.matches("printed").count();
     assert_eq!(print_count, 2);
 }
@@ -80,9 +80,9 @@ fn test_nested_while_loops() {
 
     let code = r#"
         outer=0
-        while test "$outer" != "2"; do
+        while test "$outer" -ne 2; do
             inner=0
-            while test "$inner" != "1"; do
+            while test "$inner" -ne 1; do
                 echo "nested"
                 inner=$((inner+1))
             done
@@ -129,9 +129,9 @@ fn test_while_loop_exit_code_propagation() {
     // Last command in last iteration should set the exit code
     let code = r#"
         count=0
-        while test "$count" != "2"; do
+        while test "$count" -ne 2; do
             count=$((count+1))
-            test "$count" = "2"
+            test "$count" -eq 2
         done
     "#;
 
@@ -177,7 +177,7 @@ fn test_while_true_with_break() {
         while true; do
             echo "$count"
             count=$((count+1))
-            test "$count" = "5" && break
+            test "$count" -eq 5 && break
         done
     "#;
 
@@ -187,7 +187,7 @@ fn test_while_true_with_break() {
     let result = executor.execute(statements).unwrap();
 
     let output = result.stdout();
-    // Should print 0, ., .., ..., .... (5 times)
+    // Should print 0 through 4 (5 times)
     let lines: Vec<&str> = output.trim().lines().collect();
     assert_eq!(lines.len(), 5);
 }
@@ -201,7 +201,7 @@ fn test_while_loop_multiline_condition() {
         count=0
         while
             count=$((count+1))
-            test "$count" != "4"
+            test "$count" -ne 4
         do
             echo "loop"
         done
@@ -213,7 +213,7 @@ fn test_while_loop_multiline_condition() {
     let result = executor.execute(statements).unwrap();
 
     let output = result.stdout();
-    // Should loop 3 times (until count becomes "....")
+    // Should loop 3 times (until count becomes 4)
     let loop_count = output.matches("loop").count();
     assert_eq!(loop_count, 3);
 }
@@ -224,7 +224,7 @@ fn test_while_loop_with_compound_condition() {
 
     let code = r#"
         count=0
-        while test "$count" != "3" && echo "Testing"; do
+        while test "$count" -ne 3 && echo "Testing"; do
             echo "Loop"
             count=$((count+1))
         done

@@ -1,0 +1,1017 @@
+units:
+- id: '6.3'
+  title: 'tier-3: Pipeline hardening'
+  status: open
+  priority: 0
+  parent: '6'
+  dependencies:
+  - '6.1'
+  labels:
+  - executor
+  - pipeline
+  - circuit-breaker
+  updated_at: '2026-03-25T08:23:01.195987Z'
+  has_verify: true
+  verify: echo "echo hello | cat | cat | wc -l" | cargo run --quiet 2>/dev/null | grep -q "1"
+  created_at: '2026-03-17T05:56:25.688346Z'
+  attempts: 7
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '6.4'
+  title: 'tier-4: Non-interactive mode'
+  status: open
+  priority: 0
+  parent: '6'
+  dependencies:
+  - '6.1'
+  labels:
+  - main
+  - executor
+  - circuit-breaker
+  updated_at: '2026-03-25T08:23:01.342629Z'
+  has_verify: true
+  verify: echo "echo hello" | cargo run --quiet 2>/dev/null | grep -q "hello"
+  created_at: '2026-03-17T05:56:34.700683Z'
+  attempts: 7
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '6.5.3'
+  title: Parse double-quoted strings into DoubleQuoted parts
+  status: open
+  priority: 0
+  parent: '6.5'
+  dependencies:
+  - '6.5.1'
+  labels:
+  - circuit-breaker
+  updated_at: '2026-03-25T08:23:01.448646Z'
+  requires:
+  - ArgumentPart
+  - DoubleQuoted
+  has_verify: true
+  verify: cargo test --test quoting_tests test_double_quotes_escape_dollar test_double_quotes_escape_backtick test_quote_escaping_with_variable test_nested_command_substitution_with_quotes 2>&1 | grep -q "4 passed; 0 failed"
+  created_at: '2026-03-17T06:39:17.769012Z'
+  attempts: 7
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '10'
+  title: 'bug: grep -q (quiet mode) not supported'
+  status: in_progress
+  priority: 1
+  labels:
+  - bug
+  - grep
+  updated_at: '2026-03-24T16:36:05.079051Z'
+  has_verify: true
+  verify: echo "hello" | ~/bin/rush -c 'grep -q hello' && echo pass
+  created_at: '2026-03-24T02:40:45.241087Z'
+  claimed_by: pi-agent
+  attempts: 2
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '11'
+  title: 'bug: semicolon sequencing fails after non-builtin commands'
+  status: in_progress
+  priority: 0
+  labels:
+  - bug
+  - parser
+  - critical
+  updated_at: '2026-03-24T16:36:05.070308Z'
+  has_verify: true
+  verify: ~/bin/rush -c 'sleep 0; echo done' 2>&1 | grep -v "Expected command name" | grep done
+  created_at: '2026-03-24T02:43:58.753579Z'
+  claimed_by: pi-agent
+  attempts: 2
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '20'
+  title: 'bug: Parser/runtime bug cluster: existing suites still fail for case-pattern parsing and some while/until script forms (e.g. case bracket/dash/variable patterns, while loop scripts with compound conditions, until complex condition). Investigate and fix the parser/executor mismatch without touching the completed executor module extraction.'
+  status: in_progress
+  priority: 2
+  updated_at: '2026-03-25T04:02:25.575987Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test case_statement_tests && cargo test --test while_loop_tests && cargo test --test until_loop_tests
+  created_at: '2026-03-25T03:58:10.532766Z'
+  claimed_by: pi-agent
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '20.1'
+  title: Fix case parser for multiline shell words and glob patterns
+  status: in_progress
+  priority: 2
+  parent: '20'
+  labels:
+  - bug
+  - parser
+  - case
+  updated_at: '2026-03-25T08:14:45.405160Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test case_statement_tests
+  created_at: '2026-03-25T04:15:42.141516Z'
+  claimed_by: pi-agent
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '20.2'
+  title: Fix while/until parser to keep && and || chains attached
+  status: in_progress
+  priority: 2
+  parent: '20'
+  labels:
+  - bug
+  - parser
+  - while
+  - until
+  updated_at: '2026-03-25T08:14:44.976259Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test while_loop_tests test_while_loop_with_break && cargo test --test while_loop_tests test_while_loop_with_continue && cargo test --test while_loop_tests test_while_true_with_break && cargo test --test while_loop_tests test_while_loop_with_compound_condition && cargo test --test until_loop_tests test_until_complex_condition
+  created_at: '2026-03-25T04:15:42.471442Z'
+  claimed_by: pi-agent
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '20.3'
+  title: Repair invalid long-running while-loop tests
+  status: in_progress
+  priority: 2
+  parent: '20'
+  labels:
+  - bug
+  - test
+  - while
+  updated_at: '2026-04-27T19:12:24.788313Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test while_loop_tests test_basic_while_loop && cargo test --test while_loop_tests test_nested_while_loops && cargo test --test while_loop_tests test_while_loop_exit_code_propagation && cargo test --test while_loop_tests test_while_loop_multiline_condition
+  created_at: '2026-03-25T07:32:26.239451Z'
+  claimed_by: imp
+  attempts: 1
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '20.4'
+  title: Re-run full case/while/until bug-cluster verify
+  status: in_progress
+  priority: 2
+  parent: '20'
+  dependencies:
+  - '20.1'
+  - '20.2'
+  - '20.3'
+  labels:
+  - bug
+  - verify
+  - integration
+  updated_at: '2026-03-25T08:16:12.462011Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test case_statement_tests && cargo test --test while_loop_tests && cargo test --test until_loop_tests
+  created_at: '2026-03-25T07:39:08.619019Z'
+  claimed_by: pi-agent
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '21'
+  title: Triage Rush failing nested-loop tests and dependency audit posture
+  status: open
+  priority: 1
+  labels:
+  - rush
+  - triage
+  - deps
+  - shell
+  updated_at: '2026-04-24T07:20:04.573026Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo tree --depth 1 >/dev/null && cargo test -q executor::tests::test_for_loop_nested || true
+  created_at: '2026-04-24T03:31:02.268513Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '22'
+  title: Explore publishable shell names ending in -sh for Rush rename
+  status: open
+  priority: 2
+  labels:
+  - naming
+  - branding
+  - rush
+  - shell
+  updated_at: '2026-04-24T07:46:44.399919Z'
+  has_verify: true
+  verify: |-
+    python3 - <<'PY'
+    print('naming exploration captured in mana or response')
+    PY
+  created_at: '2026-04-24T07:20:30.979017Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '23'
+  title: Draft the Actually Usable benchmark suite and integrate it into Rush benchmark docs
+  status: open
+  priority: 1
+  labels:
+  - benchmarks
+  - docs
+  - aush
+  - usability
+  updated_at: '2026-04-24T08:36:21.590594Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n 'Actually Usable|interactive reliability|daily-driver|trust/recovery' BENCHMARKS.md docs/benchmarking.md Makefile docs 2>/dev/null
+  created_at: '2026-04-24T07:50:13.322350Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '23.1'
+  title: Fix absolute-path external command execution in AUSH smoke gate
+  status: open
+  priority: 1
+  parent: '23'
+  labels:
+  - aush
+  - smoke
+  - shell-correctness
+  - external-commands
+  updated_at: '2026-04-24T08:37:34.209313Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && ./target/release/rush --no-rc -c '/bin/true; echo $?' | grep -qx '0' && ./target/release/rush --no-rc -c '/bin/false; echo $?' | grep -qx '1'
+  created_at: '2026-04-24T08:36:39.956678Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '23.2'
+  title: Fix remaining AUSH smoke portability/semantics issues in tests/smoke_test.sh
+  status: open
+  priority: 1
+  parent: '23'
+  labels:
+  - aush
+  - smoke
+  - tests
+  updated_at: '2026-04-24T08:39:00.008369Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && tests/smoke_test.sh ./target/release/rush >/tmp/aush-smoke-next.log 2>&1; tail -n 20 /tmp/aush-smoke-next.log
+  created_at: '2026-04-24T08:39:00.008369Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.1'
+  title: Eliminate visible Rush branding from AUSH user-facing surfaces
+  status: closed
+  priority: 2
+  parent: '24'
+  labels:
+  - aush
+  - rebrand
+  - docs
+  - user-facing
+  updated_at: '2026-04-24T16:38:17.452896Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n '\bRush\b|\brush\b|RUSH' README.md QUICKSTART.md BENCHMARKS.md STATUS.md ARCHITECTURE.md docs/INSTALLATION.md docs/DISTRIBUTION.md docs/PERFORMANCE.md docs/benchmarking.md docs/error-recovery.md docs/login-shell-init.md examples/README.md src/main.rs src/banner/mod.rs src/config/banner.rs homebrew/README.md || true
+  created_at: '2026-04-24T16:32:37.403108Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.2.1'
+  title: Add AUSH binary while preserving Rush legacy invocation
+  status: closed
+  priority: 2
+  parent: '24.2'
+  labels:
+  - aush
+  - packaging
+  - binary
+  - compatibility
+  updated_at: '2026-04-24T17:09:31.921415Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build -q --bins && test -x target/debug/aush && test -x target/debug/rush && ./target/debug/aush --help >/tmp/aush-help.txt && ./target/debug/rush --help >/tmp/rush-help.txt
+  created_at: '2026-04-24T16:59:34.669480Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.2.2'
+  title: Update scripts tests and benchmarks to prefer AUSH with Rush fallback
+  status: closed
+  priority: 2
+  parent: '24.2'
+  labels:
+  - aush
+  - scripts
+  - tests
+  - benchmarks
+  - compatibility
+  updated_at: '2026-04-24T17:27:08.946805Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build -q --release --bins && bash tests/smoke_test.sh ./target/release/aush >/tmp/aush-smoke.log 2>&1 || (tail -n 40 /tmp/aush-smoke.log; exit 1)
+  created_at: '2026-04-24T17:00:00.501127Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.2.3'
+  title: Rename distribution and release surfaces to AUSH with migration guidance
+  status: in_progress
+  priority: 2
+  parent: '24.2'
+  labels:
+  - aush
+  - distribution
+  - homebrew
+  - ci
+  - release
+  - needs-decision
+  updated_at: '2026-04-24T17:38:42.765687Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build -q --bins && rg -n 'aush|AUSH' docs/INSTALLATION.md docs/DISTRIBUTION.md homebrew .github/workflows scripts
+  created_at: '2026-04-24T17:00:29.788573Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.3'
+  title: Complete AUSH-first runtime env and path compatibility migration
+  status: closed
+  priority: 2
+  parent: '24'
+  labels:
+  - aush
+  - runtime-compat
+  - env
+  - paths
+  updated_at: '2026-04-24T16:52:28.461651Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n 'env::var\("RUSH_|std::env::var\("RUSH_|\.config/rush|\.rush/|rush-undo|rush\.sock|pi-rush' src || true && cargo check -q
+  created_at: '2026-04-24T16:33:43.847949Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.6'
+  title: Run AUSH alpha release gate
+  status: in_progress
+  priority: 1
+  parent: '24'
+  dependencies:
+  - '24.4'
+  - '24.5'
+  labels:
+  - aush
+  - release
+  - verify
+  updated_at: '2026-04-27T19:15:56.414497Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test && cargo build --release --bins && tests/smoke_test.sh ./target/release/aush
+  created_at: '2026-04-27T03:37:56.861412Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: true
+- id: '24.6.1'
+  title: Diagnose AUSH release gate hang with timed sub-gates
+  status: in_progress
+  priority: 1
+  parent: '24.6'
+  labels:
+  - aush
+  - release
+  - diagnosis
+  - hang
+  updated_at: '2026-04-27T05:34:06.689226Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && test -f /tmp/aush-release-gate-diagnosis.md && rg -n 'cargo test|cargo build --release --bins|smoke_test|archive|cargo package|cargo publish' /tmp/aush-release-gate-diagnosis.md
+  created_at: '2026-04-27T05:23:26.026617Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.6.2'
+  title: Fix error recovery tests release blocker
+  status: in_progress
+  priority: 1
+  parent: '24.6'
+  labels:
+  - bug
+  - release-blocker
+  - error-recovery
+  - aush
+  updated_at: '2026-04-27T06:17:01.820711Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test error_recovery_tests test_execution_error_recovery test_nested_error_recovery && cargo test --test error_recovery_tests
+  created_at: '2026-04-27T06:12:22.534636Z'
+  claimed_by: imp
+  attempts: 1
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.7'
+  title: Complete full AUSH rebrand with no Rush compatibility surface
+  status: in_progress
+  priority: 1
+  parent: '24'
+  labels:
+  - aush
+  - rebrand
+  - breaking-change
+  - release
+  updated_at: '2026-04-27T04:34:41.709224Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build --bins && cargo test --no-run && cargo publish --dry-run --allow-dirty 2>&1 | tee /tmp/aush-full-rebrand-publish.log && rg -n 'Packaging aush|Verifying aush' /tmp/aush-full-rebrand-publish.log && ! rg -n 'name = "rush"|name = "aushd"|target/.*/rush\b|legacy `aush` executable|aushd' Cargo.toml README.md docs homebrew .github Makefile scripts tests benches
+  created_at: '2026-04-27T03:46:30.765147Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.8'
+  title: Make AUSH safe to use as Asher's login shell
+  status: open
+  priority: 1
+  parent: '24'
+  labels:
+  - aush
+  - login-shell
+  - stability
+  - release-gate
+  - macos
+  updated_at: '2026-04-27T06:49:57.116157Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build --release --bins && cargo test --test login_shell_tests && tests/integration/login_shell_test.sh && tests/integration/job_control_test.sh && tests/integration/signal_test.sh
+  created_at: '2026-04-27T04:31:41.643823Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '24.8.1'
+  title: Fix AUSH startup parse errors from Bun completion script
+  status: open
+  priority: 1
+  parent: '24.8'
+  labels:
+  - aush
+  - login-shell
+  - startup
+  - bun
+  - completion
+  - bug
+  updated_at: '2026-04-27T19:20:47.325136Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build --release --bins && (./target/release/aush --no-rc -c 'echo ok' | grep -qx ok) && ! (./target/release/aush -c 'echo ok' 2>&1 | rg '/Users/asher/.bun/_bun|_alternative|Parse error')
+  created_at: '2026-04-27T16:31:24.370907Z'
+  attempts: 3
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25'
+  title: Reshape shell benchmarking around bash drivers plus Rush-native workload scripts
+  status: open
+  priority: 1
+  labels:
+  - benchmarks
+  - aush
+  - architecture
+  - rush
+  updated_at: '2026-04-27T16:33:58.944613Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && test -d benches && true
+  created_at: '2026-04-24T08:47:16.442724Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: true
+- id: '25.1'
+  title: Create initial Rush-native benchmark workload scripts
+  status: open
+  priority: 1
+  parent: '25'
+  labels:
+  - benchmarks
+  - aush
+  - workloads
+  - rush-native
+  updated_at: '2026-04-24T08:47:53.223649Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && find benches -maxdepth 2 -type f | grep -q .
+  created_at: '2026-04-24T08:47:53.223649Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.2'
+  title: Refactor benchmark driver around Rush-native workload scripts
+  status: open
+  priority: 1
+  parent: '25'
+  labels:
+  - benchmarks
+  - driver
+  - bash
+  - aush
+  updated_at: '2026-04-24T08:48:09.832495Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && test -f scripts/benchmark.sh
+  created_at: '2026-04-24T08:48:09.832495Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.3'
+  title: Document benchmark driver vs Rush-native workload architecture
+  status: open
+  priority: 2
+  parent: '25'
+  labels:
+  - benchmarks
+  - docs
+  - aush
+  updated_at: '2026-04-24T08:48:18.523830Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n 'driver|workload|Rush-native' BENCHMARKS.md docs/benchmarking.md
+  created_at: '2026-04-24T08:48:18.523830Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.4'
+  title: Make benchmark.sh run under Rush as an AUSH compatibility fixture
+  status: open
+  priority: 1
+  parent: '25'
+  labels:
+  - aush
+  - compatibility
+  - benchmarks
+  - shell-scripts
+  updated_at: '2026-04-24T15:06:57.892154Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && ./target/release/rush --no-rc scripts/benchmark.sh >/tmp/benchmark-fixture.log 2>&1 || true && test -s /tmp/benchmark-fixture.log
+  created_at: '2026-04-24T08:54:19.804903Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.4.2'
+  title: Diagnose the next shellbench.sh parser blocker after line-continuation support
+  status: open
+  priority: 1
+  parent: '25.4'
+  labels:
+  - aush
+  - compatibility
+  - parser
+  - shell-scripts
+  updated_at: '2026-04-24T15:22:25.853553Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && ./target/release/rush --no-rc benches/shellbench.sh >/tmp/shellbench-next.log 2>&1 || true && tail -n 20 /tmp/shellbench-next.log
+  created_at: '2026-04-24T14:50:12.724026Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.5'
+  title: Make full benchmark suite finish within practical timeout
+  status: in_progress
+  priority: 1
+  parent: '25'
+  labels:
+  - aush
+  - benchmarks
+  - criterion
+  - operability
+  - regression
+  updated_at: '2026-04-27T06:39:59.387699Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && AUSH_BENCH_OUT_DIR=/tmp/aush-bench-full bash benches/aush_suite.sh ./target/release/aush full
+  created_at: '2026-04-27T05:59:12.673719Z'
+  claimed_by: imp
+  attempts: 1
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.5.1'
+  title: Support compound for-loop commands on the left side of pipelines
+  status: in_progress
+  priority: 1
+  parent: '25.5'
+  labels:
+  - aush
+  - parser
+  - pipeline
+  - posix
+  - agentic-compatibility
+  updated_at: '2026-04-27T05:26:42.902608Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test pipeline_tests --test loop_control_tests && tmp=$(mktemp -d); mkdir -p $tmp/src; touch $tmp/src/main.rs $tmp/src/lib.rs; (cd $tmp && ./target/release/aush --no-rc -c 'for f in src/*.rs; do echo "$f"; done | grep lib | sort' | grep -qx 'src/lib.rs')
+  created_at: '2026-04-27T05:01:27.224836Z'
+  claimed_by: imp
+  attempts: 1
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.6'
+  title: Reduce or explain aushd warm command latency
+  status: in_progress
+  priority: 1
+  parent: '25'
+  labels:
+  - aushd
+  - daemon
+  - benchmark
+  - performance
+  - agentic
+  updated_at: '2026-04-27T19:15:39.355947Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build --release --bins && AUSH_BENCH_OUT_DIR=/tmp/aushd-compare bash benches/aushd_compare.sh ./target/release/aush ./target/release/aushd
+  created_at: '2026-04-27T06:54:08.904153Z'
+  claimed_by: imp
+  attempts: 1
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '26'
+  title: Map AUSH against 2026+ modern shell capabilities
+  status: open
+  priority: 2
+  labels:
+  - roadmap
+  - aush
+  - modern-shell
+  - architecture
+  updated_at: '2026-04-24T09:31:00.378405Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n 'Structured pipelines|Designed for AI coding agents|Command history|Undo Capability' README.md QUICKSTART.md && test -f src/value/mod.rs && test -f src/ai/agent.rs
+  created_at: '2026-04-24T09:22:55.444500Z'
+  attempts: 0
+  kind: epic
+  feature: true
+  has_decisions: false
+- id: '26.1'
+  title: Add command effect metadata with polished human presentation
+  status: closed
+  priority: 1
+  parent: '26'
+  labels:
+  - aush
+  - effects
+  - metadata
+  - ux
+  - agent-safety
+  updated_at: '2026-04-24T09:40:42.787174Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n "Delete files|delete_file|Effect|Risk" src tests && cargo test effects --quiet
+  created_at: '2026-04-24T09:35:24.149416Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '26.2'
+  title: Add starter command metadata registry using effect metadata
+  status: closed
+  priority: 1
+  parent: '26'
+  labels:
+  - aush
+  - metadata
+  - effects
+  - command-registry
+  - agent-safety
+  updated_at: '2026-04-24T14:38:21.583053Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n "CommandMetadata|metadata_for_command|Delete files|NetworkAccess" src && cargo test command_metadata --quiet
+  created_at: '2026-04-24T14:23:17.013013Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '26.3'
+  title: Add command receipt model and JSONL ledger helper
+  status: closed
+  priority: 1
+  parent: '26'
+  labels:
+  - aush
+  - receipts
+  - audit
+  - effects
+  - metadata
+  updated_at: '2026-04-24T14:58:58.220321Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && rg -n "CommandReceipt|append_receipt_jsonl|Delete files|delete_file" src && cargo test receipts --quiet
+  created_at: '2026-04-24T14:55:36.623047Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '26.4'
+  title: Add effect-aware approval gate for high-risk commands
+  status: in_progress
+  priority: 1
+  parent: '26'
+  labels:
+  - aush
+  - modern-shell
+  - effects
+  - approval
+  updated_at: '2026-04-24T17:16:50.791084Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test approval --quiet || cargo test --quiet approval || cargo check -q
+  created_at: '2026-04-24T16:46:35.436964Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '27'
+  title: 'bug: rush source builtin should execute sourced files in current executor context'
+  status: open
+  priority: 2
+  labels:
+  - bug
+  - source
+  - shell-compat
+  updated_at: '2026-04-24T16:16:26.203011Z'
+  has_verify: true
+  verify: cargo test source --quiet
+  created_at: '2026-04-24T16:15:10.537957Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '28'
+  title: Local Bash source is available as read-only performance/behavior reference
+  status: open
+  priority: 3
+  labels:
+  - fact
+  updated_at: '2026-04-27T20:47:30.632264Z'
+  has_verify: true
+  verify: test -d /Users/asher/bash && test -d /Users/asher/aush
+  created_at: '2026-04-27T20:47:30.632264Z'
+  attempts: 0
+  paths:
+  - /Users/asher/bash
+  - /Users/asher/aush
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1'
+  title: 'feature: compatibility parity roadmap for AI-agent-critical and top commands'
+  status: open
+  priority: 1
+  parent: ''
+  labels:
+  - feature
+  - compatibility
+  - cli
+  - ai-agent
+  updated_at: '2026-04-27T19:23:45.779267Z'
+  has_verify: true
+  verify: test -f reports/compatibility-roadmap-2026-04-04.md
+  created_at: '2026-04-04T18:57:39.755952Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: true
+- id: '.1.1'
+  title: 'phase 1: behavior-critical compatibility fixes'
+  status: open
+  priority: 1
+  parent: '.1'
+  labels:
+  - compatibility
+  - critical
+  - behavior
+  updated_at: '2026-04-04T18:58:18.288488Z'
+  has_verify: true
+  verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
+  created_at: '2026-04-04T18:58:18.288488Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.1.2'
+  title: fix tail follow semantics (-f/--follow)
+  status: in_progress
+  priority: 1
+  parent: '.1.1'
+  labels:
+  - tail
+  - compatibility
+  - critical
+  updated_at: '2026-04-27T20:43:16.057914Z'
+  has_verify: true
+  verify: grep -q "follow" src/builtins/tail.rs && cargo test --quiet 2>/dev/null || cargo test
+  created_at: '2026-04-04T18:58:40.716079Z'
+  claimed_by: imp
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.1.3'
+  title: align rm recursive prompting with GNU semantics
+  status: open
+  priority: 1
+  parent: '.1.1'
+  labels:
+  - rm
+  - compatibility
+  - critical
+  updated_at: '2026-04-27T20:43:16.072297Z'
+  has_verify: true
+  verify: cargo test --quiet 2>/dev/null || cargo test
+  created_at: '2026-04-04T18:58:40.718045Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.2'
+  title: 'phase 2: grep parity for agent workflows'
+  status: open
+  priority: 1
+  parent: '.1'
+  labels:
+  - compatibility
+  - grep
+  - agent-critical
+  updated_at: '2026-04-04T18:58:18.294241Z'
+  has_verify: true
+  verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
+  created_at: '2026-04-04T18:58:18.294241Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.2.1'
+  title: expand grep common-flag parity
+  status: open
+  priority: 1
+  parent: '.1.2'
+  labels:
+  - grep
+  - compatibility
+  - phase2
+  updated_at: '2026-04-27T20:43:08.963988Z'
+  has_verify: true
+  verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
+  created_at: '2026-04-04T18:58:40.725640Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.3'
+  title: 'phase 2: find parity for agent workflows'
+  status: open
+  priority: 1
+  parent: '.1'
+  labels:
+  - compatibility
+  - find
+  - agent-critical
+  updated_at: '2026-04-27T20:43:08.975029Z'
+  has_verify: true
+  verify: cargo test --quiet 2>/dev/null || cargo test
+  created_at: '2026-04-04T18:58:18.296836Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.4'
+  title: 'phase 2: ls parity for agent workflows'
+  status: open
+  priority: 1
+  parent: '.1'
+  labels:
+  - compatibility
+  - ls
+  - agent-critical
+  updated_at: '2026-04-27T20:43:08.983703Z'
+  has_verify: true
+  verify: cargo test --quiet 2>/dev/null || cargo test
+  created_at: '2026-04-04T18:58:18.298252Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.5'
+  title: 'phase 1: compatibility regression harness'
+  status: open
+  priority: 1
+  parent: '.1'
+  labels:
+  - compatibility
+  - tests
+  - regression
+  updated_at: '2026-04-04T18:58:18.299795Z'
+  has_verify: true
+  verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
+  created_at: '2026-04-04T18:58:18.299795Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.5.1'
+  title: seed compatibility regression tests for critical builtins
+  status: open
+  priority: 1
+  parent: '.1.5'
+  labels:
+  - compatibility
+  - tests
+  - critical
+  updated_at: '2026-04-27T20:43:08.991634Z'
+  has_verify: true
+  verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
+  created_at: '2026-04-04T18:58:40.722693Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.6'
+  title: 'phase 3: file operation parity (cp/mv/rm/mkdir)'
+  status: open
+  priority: 2
+  parent: '.1'
+  labels:
+  - compatibility
+  - file-ops
+  - top-commands
+  updated_at: '2026-04-04T18:58:18.301246Z'
+  has_verify: true
+  verify: cargo test --quiet 2>/dev/null || cargo test
+  created_at: '2026-04-04T18:58:18.301246Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.7'
+  title: 'phase 3: text utility parity (sort/head/tail/wc/cat)'
+  status: open
+  priority: 2
+  parent: '.1'
+  labels:
+  - compatibility
+  - text-utils
+  - top-commands
+  updated_at: '2026-04-04T18:58:18.302825Z'
+  has_verify: true
+  verify: cargo test --quiet 2>/dev/null || cargo test
+  created_at: '2026-04-04T18:58:18.302825Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.1.8'
+  title: 'phase 4: metadata and environment parity (stat/readlink/date/env)'
+  status: open
+  priority: 2
+  parent: '.1'
+  labels:
+  - compatibility
+  - metadata
+  - env
+  updated_at: '2026-04-04T18:58:18.304228Z'
+  has_verify: true
+  verify: cargo test --quiet 2>/dev/null || cargo test
+  created_at: '2026-04-04T18:58:18.304228Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false
+- id: '.2'
+  title: 'compatibility harness: regression suite for agent-critical builtins'
+  status: open
+  priority: 1
+  parent: ''
+  labels:
+  - compatibility
+  - tests
+  - regression
+  updated_at: '2026-04-04T18:57:39.761376Z'
+  has_verify: true
+  verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
+  created_at: '2026-04-04T18:57:39.761376Z'
+  attempts: 0
+  kind: epic
+  feature: false
+  has_decisions: false

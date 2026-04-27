@@ -237,6 +237,39 @@ fn test_no_rc_flag() {
 }
 
 #[test]
+fn test_source_skips_zsh_completion_files() {
+    let temp_dir = TempDir::new().unwrap();
+    let completion_file = temp_dir.path().join("_bun");
+
+    let mut file = fs::File::create(&completion_file).unwrap();
+    writeln!(file, "#compdef bun").unwrap();
+    writeln!(file, "_bun_completion() {{").unwrap();
+    writeln!(file, "    _alternative 'files:file:_files'").unwrap();
+    writeln!(file, "}}").unwrap();
+    drop(file);
+
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
+        .arg("-c")
+        .arg(format!(
+            "[ -s {} ] && source {}",
+            completion_file.display(),
+            completion_file.display()
+        ))
+        .output()
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "expected zsh completion source to be a no-op, stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!stderr.contains("Parse error"), "stderr: {stderr}");
+    assert!(!stderr.contains("_alternative"), "stderr: {stderr}");
+}
+
+#[test]
 fn test_source_with_comments() {
     let temp_dir = TempDir::new().unwrap();
     let config_file = temp_dir.path().join("test_comments.aush");

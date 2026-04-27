@@ -172,10 +172,9 @@ fn execute_inner(command: &str, options: &RunOptions) -> Result<RunResult> {
 
     // Resolve effective max_output_bytes: RunOptions takes priority, then
     // AUSH_MAX_OUTPUT with AUSH_MAX_OUTPUT fallback.
-    let max_output_bytes = options.max_output_bytes.or_else(|| {
-        crate::brand::env_var("AUSH_MAX_OUTPUT")
-            .and_then(|v| parse_max_output(&v))
-    });
+    let max_output_bytes = options
+        .max_output_bytes
+        .or_else(|| crate::brand::env_var("AUSH_MAX_OUTPUT").and_then(|v| parse_max_output(&v)));
 
     // Lex → parse → execute.
     let tokens = Lexer::tokenize(command)?;

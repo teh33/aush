@@ -200,9 +200,7 @@ fn duration_ms_between(started_at: DateTime<Utc>, finished_at: DateTime<Utc>) ->
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        append_receipt_jsonl, render_human_receipt, ApprovalDecision, CommandReceipt,
-    };
+    use super::{append_receipt_jsonl, render_human_receipt, ApprovalDecision, CommandReceipt};
     use crate::effects::{CommandEffect, RiskLevel};
     use chrono::{TimeZone, Utc};
     use tempfile::tempdir;

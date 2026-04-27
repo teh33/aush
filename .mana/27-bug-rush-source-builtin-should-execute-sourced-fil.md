@@ -16,7 +16,7 @@ labels:
 - source
 - shell-compat
 verify: cargo test source --quiet
-kind: task
+kind: job
 ---
 
 User reports needing to run `source ~/.zshrc` manually before commands work in rush. Initial inspection shows `src/builtins/mod.rs::builtin_source` is a TODO-style implementation that creates a temporary Executor per line and copies runtime state, which is fragile and cannot preserve executor-owned state consistently. `src/executor/mod.rs::source_file` also executes config line-by-line and is used for startup rc files. Fix should make `source`/`.` execute a sourced file in the current executor/runtime context, preserving variables, aliases, functions, cwd/env, and return behavior. Avoid broad parser/runtime refactors; keep change focused. Existing dirty files before this work: .mana/25.4.2..., .mana/index.yaml, src/lexer/mod.rs (do not overwrite unrelated changes).

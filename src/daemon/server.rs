@@ -589,9 +589,11 @@ impl DaemonServer {
                         }
                     }
                     Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                        // No connection ready, reap workers and sleep briefly
+                        // No connection ready, reap workers and yield briefly. This is in the
+                        // hot path for daemon-backed one-shot commands, so avoid a fixed
+                        // millisecond sleep that dominates small command latency.
                         self.reap_workers();
-                        std::thread::sleep(std::time::Duration::from_millis(10));
+                        std::thread::sleep(std::time::Duration::from_micros(100));
                     }
                     Err(e) => {
                         eprintln!("Error accepting connection: {}", e);

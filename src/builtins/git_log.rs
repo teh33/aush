@@ -43,7 +43,10 @@ pub fn builtin_git_log(args: &[String], runtime: &mut Runtime) -> Result<Executi
         match args[i].as_str() {
             "--json" => json_output = true,
             "--oneline" => json_output = false,
-            arg if arg.starts_with('-') && arg.len() > 1 && arg[1..].chars().all(|c| c.is_ascii_digit()) => {
+            arg if arg.starts_with('-')
+                && arg.len() > 1
+                && arg[1..].chars().all(|c| c.is_ascii_digit()) =>
+            {
                 limit = Some(
                     arg[1..]
                         .parse()

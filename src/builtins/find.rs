@@ -70,6 +70,8 @@ struct FindOptions {
     max_depth: Option<usize>,
     /// Follow symbolic links
     follow_links: bool,
+    /// Print only whether any result matched (-print -quit style)
+    quit_after_first: bool,
     /// Output results in JSON format
     json_output: bool,
 }
@@ -88,6 +90,7 @@ impl Default for FindOptions {
             exec_command: None,
             max_depth: None,
             follow_links: false,
+            quit_after_first: false,
             json_output: false,
         }
     }
@@ -164,6 +167,12 @@ fn parse_args(args: &[String], runtime: &Runtime) -> Result<FindOptions> {
                     return Err(anyhow!("find: -exec must be terminated with ';'"));
                 }
                 options.exec_command = Some(exec_cmd);
+            }
+            "-print" => {
+                // GNU find's default action is -print; accept it explicitly for compatibility.
+            }
+            "-quit" => {
+                options.quit_after_first = true;
             }
             "--json" => {
                 options.json_output = true;
@@ -517,6 +526,10 @@ pub fn builtin_find(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
                         // Just collect the path
                         text_results.push(path.to_string_lossy().to_string());
                     }
+
+                    if options.quit_after_first {
+                        break;
+                    }
                 }
             }
             Err(err) => {
@@ -754,6 +767,40 @@ mod tests {
         for item in array {
             assert_eq!(item.get("type").unwrap().as_str().unwrap(), "directory");
         }
+    }
+
+    #[test]
+    fn test_find_explicit_print_and_quit() {
+        let temp_dir = TempDir::new().unwrap();
+        create_test_file(temp_dir.path(), "first.txt", "content");
+        create_test_file(temp_dir.path(), "second.txt", "content");
+
+        let mut runtime = Runtime::new();
+        runtime.set_cwd(temp_dir.path().to_path_buf());
+
+        let result = builtin_find(
+            &vec![
+                "-name".to_string(),
+                "*.txt".to_string(),
+                "-print".to_string(),
+            ],
+            &mut runtime,
+        )
+        .unwrap();
+        assert!(result.stdout().contains("first.txt"));
+        assert!(result.stdout().contains("second.txt"));
+
+        let result = builtin_find(
+            &vec![
+                "-name".to_string(),
+                "*.txt".to_string(),
+                "-print".to_string(),
+                "-quit".to_string(),
+            ],
+            &mut runtime,
+        )
+        .unwrap();
+        assert_eq!(result.stdout().lines().count(), 1);
     }
 
     #[test]

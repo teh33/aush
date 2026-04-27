@@ -1,9 +1,9 @@
-use nix::unistd::{getpgrp, Pid};
 use aush::executor::Executor;
 use aush::lexer::Lexer;
 use aush::parser::Parser;
 use aush::runtime::Runtime;
 use aush::terminal::TerminalControl;
+use nix::unistd::{getpgrp, Pid};
 
 #[test]
 fn test_terminal_control_creation() {

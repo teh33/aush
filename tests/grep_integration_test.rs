@@ -433,3 +433,103 @@ fn test_grep_quiet_cli_stdin_regression() {
     assert!(output.stdout.is_empty());
     assert!(output.stderr.is_empty());
 }
+
+#[test]
+fn test_grep_count_stdin() {
+    let mut runtime = Runtime::new();
+    let builtins = Builtins::new();
+    let args = vec!["-c".to_string(), "hello".to_string()];
+
+    let result = builtins
+        .execute_with_stdin("grep", args, &mut runtime, Some(b"hello\nworld\nhello\n"))
+        .unwrap();
+
+    assert_eq!(result.exit_code, 0);
+    assert_eq!(result.stdout(), "2\n");
+    assert!(result.stderr.is_empty());
+}
+
+#[test]
+fn test_grep_files_with_matches_and_without_matches() {
+    let tmp = TempDir::new().unwrap();
+    let matching = tmp.path().join("yes.txt");
+    let nonmatching = tmp.path().join("no.txt");
+    fs::write(&matching, "hello world\n").unwrap();
+    fs::write(&nonmatching, "goodbye world\n").unwrap();
+
+    let mut runtime = Runtime::new();
+    runtime.set_cwd(tmp.path().to_path_buf());
+    let builtins = Builtins::new();
+
+    let result = builtins
+        .execute(
+            "grep",
+            vec![
+                "-l".to_string(),
+                "hello".to_string(),
+                matching.to_string_lossy().to_string(),
+                nonmatching.to_string_lossy().to_string(),
+            ],
+            &mut runtime,
+        )
+        .unwrap();
+
+    assert_eq!(result.exit_code, 0);
+    assert!(result.stdout().contains("yes.txt"));
+    assert!(!result.stdout().contains("no.txt"));
+
+    let result = builtins
+        .execute(
+            "grep",
+            vec![
+                "-L".to_string(),
+                "hello".to_string(),
+                matching.to_string_lossy().to_string(),
+                nonmatching.to_string_lossy().to_string(),
+            ],
+            &mut runtime,
+        )
+        .unwrap();
+
+    assert_eq!(result.exit_code, 0);
+    assert!(!result.stdout().contains("yes.txt"));
+    assert!(result.stdout().contains("no.txt"));
+}
+
+#[test]
+fn test_grep_count_multiple_files_prefixes_filename() {
+    let tmp = TempDir::new().unwrap();
+    let first = tmp.path().join("first.txt");
+    let second = tmp.path().join("second.txt");
+    fs::write(&first, "hello\nhello\n").unwrap();
+    fs::write(&second, "hello\nnope\n").unwrap();
+
+    let mut runtime = Runtime::new();
+    runtime.set_cwd(tmp.path().to_path_buf());
+    let builtins = Builtins::new();
+
+    let result = builtins
+        .execute(
+            "grep",
+            vec![
+                "-c".to_string(),
+                "hello".to_string(),
+                first.to_string_lossy().to_string(),
+                second.to_string_lossy().to_string(),
+            ],
+            &mut runtime,
+        )
+        .unwrap();
+
+    assert_eq!(result.exit_code, 0);
+    assert!(
+        result.stdout().contains("first.txt:2"),
+        "{}",
+        result.stdout()
+    );
+    assert!(
+        result.stdout().contains("second.txt:1"),
+        "{}",
+        result.stdout()
+    );
+}

@@ -15,7 +15,7 @@ units:
   verify: echo "echo hello | cat | cat | wc -l" | cargo run --quiet 2>/dev/null | grep -q "1"
   created_at: '2026-03-17T05:56:25.688346Z'
   attempts: 7
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '6.4'
@@ -34,7 +34,7 @@ units:
   verify: echo "echo hello" | cargo run --quiet 2>/dev/null | grep -q "hello"
   created_at: '2026-03-17T05:56:34.700683Z'
   attempts: 7
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '6.5.3'
@@ -54,7 +54,7 @@ units:
   verify: cargo test --test quoting_tests test_double_quotes_escape_dollar test_double_quotes_escape_backtick test_quote_escaping_with_variable test_nested_command_substitution_with_quotes 2>&1 | grep -q "4 passed; 0 failed"
   created_at: '2026-03-17T06:39:17.769012Z'
   attempts: 7
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '10'
@@ -70,7 +70,7 @@ units:
   created_at: '2026-03-24T02:40:45.241087Z'
   claimed_by: pi-agent
   attempts: 2
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '11'
@@ -87,7 +87,7 @@ units:
   created_at: '2026-03-24T02:43:58.753579Z'
   claimed_by: pi-agent
   attempts: 2
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '20'
@@ -100,7 +100,7 @@ units:
   created_at: '2026-03-25T03:58:10.532766Z'
   claimed_by: pi-agent
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '20.1'
@@ -118,7 +118,7 @@ units:
   created_at: '2026-03-25T04:15:42.141516Z'
   claimed_by: pi-agent
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '20.2'
@@ -137,24 +137,25 @@ units:
   created_at: '2026-03-25T04:15:42.471442Z'
   claimed_by: pi-agent
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '20.3'
   title: Repair invalid long-running while-loop tests
-  status: open
+  status: in_progress
   priority: 2
   parent: '20'
   labels:
   - bug
   - test
   - while
-  updated_at: '2026-03-25T07:32:26.239451Z'
+  updated_at: '2026-04-27T19:12:24.788313Z'
   has_verify: true
   verify: cd /Users/asher/rush && cargo test --test while_loop_tests test_basic_while_loop && cargo test --test while_loop_tests test_nested_while_loops && cargo test --test while_loop_tests test_while_loop_exit_code_propagation && cargo test --test while_loop_tests test_while_loop_multiline_condition
   created_at: '2026-03-25T07:32:26.239451Z'
-  attempts: 0
-  kind: task
+  claimed_by: imp
+  attempts: 1
+  kind: job
   feature: false
   has_decisions: false
 - id: '20.4'
@@ -176,7 +177,7 @@ units:
   created_at: '2026-03-25T07:39:08.619019Z'
   claimed_by: pi-agent
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '21'
@@ -193,7 +194,7 @@ units:
   verify: cd /Users/asher/rush && cargo tree --depth 1 >/dev/null && cargo test -q executor::tests::test_for_loop_nested || true
   created_at: '2026-04-24T03:31:02.268513Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '22'
@@ -213,7 +214,7 @@ units:
     PY
   created_at: '2026-04-24T07:20:30.979017Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '23'
@@ -230,7 +231,7 @@ units:
   verify: cd /Users/asher/rush && rg -n 'Actually Usable|interactive reliability|daily-driver|trust/recovery' BENCHMARKS.md docs/benchmarking.md Makefile docs 2>/dev/null
   created_at: '2026-04-24T07:50:13.322350Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '23.1'
@@ -248,7 +249,7 @@ units:
   verify: cd /Users/asher/rush && ./target/release/rush --no-rc -c '/bin/true; echo $?' | grep -qx '0' && ./target/release/rush --no-rc -c '/bin/false; echo $?' | grep -qx '1'
   created_at: '2026-04-24T08:36:39.956678Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '23.2'
@@ -265,7 +266,7 @@ units:
   verify: cd /Users/asher/rush && tests/smoke_test.sh ./target/release/rush >/tmp/aush-smoke-next.log 2>&1; tail -n 20 /tmp/aush-smoke-next.log
   created_at: '2026-04-24T08:39:00.008369Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '24.1'
@@ -284,7 +285,7 @@ units:
   created_at: '2026-04-24T16:32:37.403108Z'
   claimed_by: imp
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '24.2.1'
@@ -303,7 +304,7 @@ units:
   created_at: '2026-04-24T16:59:34.669480Z'
   claimed_by: imp
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '24.2.2'
@@ -323,7 +324,7 @@ units:
   created_at: '2026-04-24T17:00:00.501127Z'
   claimed_by: imp
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '24.2.3'
@@ -344,7 +345,7 @@ units:
   created_at: '2026-04-24T17:00:29.788573Z'
   claimed_by: imp
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '24.3'
@@ -363,7 +364,7 @@ units:
   created_at: '2026-04-24T16:33:43.847949Z'
   claimed_by: imp
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '24.6'
@@ -378,15 +379,15 @@ units:
   - aush
   - release
   - verify
-  updated_at: '2026-04-27T05:50:03.097820Z'
+  updated_at: '2026-04-27T19:15:56.414497Z'
   has_verify: true
   verify: cd /Users/asher/rush && cargo test && cargo build --release --bins && tests/smoke_test.sh ./target/release/aush
   created_at: '2026-04-27T03:37:56.861412Z'
   claimed_by: imp
   attempts: 0
-  kind: task
+  kind: job
   feature: false
-  has_decisions: false
+  has_decisions: true
 - id: '24.6.1'
   title: Diagnose AUSH release gate hang with timed sub-gates
   status: in_progress
@@ -403,7 +404,7 @@ units:
   created_at: '2026-04-27T05:23:26.026617Z'
   claimed_by: imp
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '24.6.2'
@@ -422,7 +423,7 @@ units:
   created_at: '2026-04-27T06:12:22.534636Z'
   claimed_by: imp
   attempts: 1
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '24.7'
@@ -441,7 +442,7 @@ units:
   created_at: '2026-04-27T03:46:30.765147Z'
   claimed_by: imp
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '24.8'
@@ -455,12 +456,32 @@ units:
   - stability
   - release-gate
   - macos
-  updated_at: '2026-04-27T04:31:41.643823Z'
+  updated_at: '2026-04-27T06:49:57.116157Z'
   has_verify: true
   verify: cd /Users/asher/rush && cargo build --release --bins && cargo test --test login_shell_tests && tests/integration/login_shell_test.sh && tests/integration/job_control_test.sh && tests/integration/signal_test.sh
   created_at: '2026-04-27T04:31:41.643823Z'
   attempts: 0
   kind: epic
+  feature: false
+  has_decisions: false
+- id: '24.8.1'
+  title: Fix AUSH startup parse errors from Bun completion script
+  status: open
+  priority: 1
+  parent: '24.8'
+  labels:
+  - aush
+  - login-shell
+  - startup
+  - bun
+  - completion
+  - bug
+  updated_at: '2026-04-27T19:20:47.325136Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build --release --bins && (./target/release/aush --no-rc -c 'echo ok' | grep -qx ok) && ! (./target/release/aush -c 'echo ok' 2>&1 | rg '/Users/asher/.bun/_bun|_alternative|Parse error')
+  created_at: '2026-04-27T16:31:24.370907Z'
+  attempts: 3
+  kind: job
   feature: false
   has_decisions: false
 - id: '25'
@@ -472,7 +493,7 @@ units:
   - aush
   - architecture
   - rush
-  updated_at: '2026-04-27T05:59:04.417823Z'
+  updated_at: '2026-04-27T20:57:53.318343Z'
   has_verify: true
   verify: cd /Users/asher/rush && test -d benches && true
   created_at: '2026-04-24T08:47:16.442724Z'
@@ -495,7 +516,7 @@ units:
   verify: cd /Users/asher/rush && find benches -maxdepth 2 -type f | grep -q .
   created_at: '2026-04-24T08:47:53.223649Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '25.2'
@@ -513,7 +534,7 @@ units:
   verify: cd /Users/asher/rush && test -f scripts/benchmark.sh
   created_at: '2026-04-24T08:48:09.832495Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '25.3'
@@ -530,7 +551,7 @@ units:
   verify: cd /Users/asher/rush && rg -n 'driver|workload|Rush-native' BENCHMARKS.md docs/benchmarking.md
   created_at: '2026-04-24T08:48:18.523830Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '25.4'
@@ -548,7 +569,7 @@ units:
   verify: cd /Users/asher/rush && ./target/release/rush --no-rc scripts/benchmark.sh >/tmp/benchmark-fixture.log 2>&1 || true && test -s /tmp/benchmark-fixture.log
   created_at: '2026-04-24T08:54:19.804903Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '25.4.2'
@@ -566,7 +587,7 @@ units:
   verify: cd /Users/asher/rush && ./target/release/rush --no-rc benches/shellbench.sh >/tmp/shellbench-next.log 2>&1 || true && tail -n 20 /tmp/shellbench-next.log
   created_at: '2026-04-24T14:50:12.724026Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '25.5'
@@ -586,7 +607,7 @@ units:
   created_at: '2026-04-27T05:59:12.673719Z'
   claimed_by: imp
   attempts: 1
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '25.5.1'
@@ -606,7 +627,27 @@ units:
   created_at: '2026-04-27T05:01:27.224836Z'
   claimed_by: imp
   attempts: 1
-  kind: task
+  kind: job
+  feature: false
+  has_decisions: false
+- id: '25.6'
+  title: Reduce or explain aushd warm command latency
+  status: in_progress
+  priority: 1
+  parent: '25'
+  labels:
+  - aushd
+  - daemon
+  - benchmark
+  - performance
+  - agentic
+  updated_at: '2026-04-27T21:03:48.657391Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build --release --bins && AUSH_BENCH_OUT_DIR=/tmp/aushd-compare bash benches/aushd_compare.sh ./target/release/aush ./target/release/aushd
+  created_at: '2026-04-27T06:54:08.904153Z'
+  claimed_by: imp
+  attempts: 1
+  kind: job
   feature: false
   has_decisions: false
 - id: '26'
@@ -698,7 +739,7 @@ units:
   verify: cd /Users/asher/rush && cargo test approval --quiet || cargo test --quiet approval || cargo check -q
   created_at: '2026-04-24T16:46:35.436964Z'
   attempts: 0
-  kind: task
+  kind: job
   feature: false
   has_decisions: false
 - id: '27'
@@ -714,7 +755,24 @@ units:
   verify: cargo test source --quiet
   created_at: '2026-04-24T16:15:10.537957Z'
   attempts: 0
-  kind: task
+  kind: job
+  feature: false
+  has_decisions: false
+- id: '28'
+  title: Local Bash source is available as read-only performance/behavior reference
+  status: open
+  priority: 3
+  labels:
+  - fact
+  updated_at: '2026-04-27T20:47:30.632264Z'
+  has_verify: true
+  verify: test -d /Users/asher/bash && test -d /Users/asher/aush
+  created_at: '2026-04-27T20:47:30.632264Z'
+  attempts: 0
+  paths:
+  - /Users/asher/bash
+  - /Users/asher/aush
+  kind: epic
   feature: false
   has_decisions: false
 - id: '.1'
@@ -727,14 +785,14 @@ units:
   - compatibility
   - cli
   - ai-agent
-  updated_at: '2026-04-04T18:57:39.755952Z'
+  updated_at: '2026-04-27T19:23:45.779267Z'
   has_verify: true
   verify: test -f reports/compatibility-roadmap-2026-04-04.md
   created_at: '2026-04-04T18:57:39.755952Z'
   attempts: 0
   kind: epic
   feature: false
-  has_decisions: false
+  has_decisions: true
 - id: '.1.1'
   title: 'phase 1: behavior-critical compatibility fixes'
   status: open
@@ -752,23 +810,6 @@ units:
   kind: epic
   feature: false
   has_decisions: false
-- id: '.1.1.2'
-  title: fix tail follow semantics (-f/--follow)
-  status: open
-  priority: 1
-  parent: '.1.1'
-  labels:
-  - tail
-  - compatibility
-  - critical
-  updated_at: '2026-04-04T18:58:40.716079Z'
-  has_verify: true
-  verify: grep -q "follow" src/builtins/tail.rs && cargo test --quiet 2>/dev/null || cargo test
-  created_at: '2026-04-04T18:58:40.716079Z'
-  attempts: 0
-  kind: epic
-  feature: false
-  has_decisions: false
 - id: '.1.1.3'
   title: align rm recursive prompting with GNU semantics
   status: open
@@ -778,9 +819,9 @@ units:
   - rm
   - compatibility
   - critical
-  updated_at: '2026-04-04T18:58:40.718045Z'
+  updated_at: '2026-04-27T20:43:16.072297Z'
   has_verify: true
-  verify: cargo test --quiet 2>/dev/null || cargo test
+  verify: cd /Users/asher/aush && cargo test test_rm_recursive_default_behavior_matches_gnu --quiet && cargo test test_rm_recursive_confirmation_extension_non_interactive_defaults_to_no --quiet && cargo test test_rm_needs_confirmation --quiet
   created_at: '2026-04-04T18:58:40.718045Z'
   attempts: 0
   kind: epic
@@ -812,7 +853,7 @@ units:
   - grep
   - compatibility
   - phase2
-  updated_at: '2026-04-04T18:58:40.725640Z'
+  updated_at: '2026-04-27T20:43:08.963988Z'
   has_verify: true
   verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
   created_at: '2026-04-04T18:58:40.725640Z'
@@ -829,7 +870,7 @@ units:
   - compatibility
   - find
   - agent-critical
-  updated_at: '2026-04-04T18:58:18.296836Z'
+  updated_at: '2026-04-27T20:43:08.975029Z'
   has_verify: true
   verify: cargo test --quiet 2>/dev/null || cargo test
   created_at: '2026-04-04T18:58:18.296836Z'
@@ -846,7 +887,7 @@ units:
   - compatibility
   - ls
   - agent-critical
-  updated_at: '2026-04-04T18:58:18.298252Z'
+  updated_at: '2026-04-27T20:43:08.983703Z'
   has_verify: true
   verify: cargo test --quiet 2>/dev/null || cargo test
   created_at: '2026-04-04T18:58:18.298252Z'
@@ -880,7 +921,7 @@ units:
   - compatibility
   - tests
   - critical
-  updated_at: '2026-04-04T18:58:40.722693Z'
+  updated_at: '2026-04-27T20:43:08.991634Z'
   has_verify: true
   verify: cargo test grep_integration_test 2>/dev/null || cargo test --test grep_integration_test
   created_at: '2026-04-04T18:58:40.722693Z'

@@ -116,7 +116,11 @@ fn tail_file(file: File, file_path: &str, output: &mut String, mode: &TailMode) 
         TailMode::LastBytes(n) => {
             let mut file = file;
             let len = file.metadata()?.len();
-            let skip = if len as usize > *n { len as usize - n } else { 0 };
+            let skip = if len as usize > *n {
+                len as usize - n
+            } else {
+                0
+            };
             file.seek(SeekFrom::Start(skip as u64))?;
             let mut buf = Vec::new();
             file.read_to_end(&mut buf)?;
@@ -132,8 +136,7 @@ fn tail_file(file: File, file_path: &str, output: &mut String, mode: &TailMode) 
         }
         _ => {
             let reader = BufReader::new(file);
-            tail_reader(reader, output, mode)
-                .map_err(|e| anyhow!("tail: {}: {}", file_path, e))?;
+            tail_reader(reader, output, mode).map_err(|e| anyhow!("tail: {}: {}", file_path, e))?;
         }
     }
     Ok(())
@@ -347,7 +350,8 @@ mod tests {
         let path = file.path().to_str().unwrap().to_string();
 
         let mut runtime = Runtime::new();
-        let result = builtin_tail(&["-n".to_string(), "5".to_string(), path], &mut runtime).unwrap();
+        let result =
+            builtin_tail(&["-n".to_string(), "5".to_string(), path], &mut runtime).unwrap();
 
         assert_eq!(result.exit_code, 0);
         let _stdout = result.stdout();
@@ -365,7 +369,8 @@ mod tests {
 
         let mut runtime = Runtime::new();
         // +3 means from line 3 onward
-        let result = builtin_tail(&["-n".to_string(), "+3".to_string(), path], &mut runtime).unwrap();
+        let result =
+            builtin_tail(&["-n".to_string(), "+3".to_string(), path], &mut runtime).unwrap();
 
         assert_eq!(result.exit_code, 0);
         let _stdout = result.stdout();
@@ -381,7 +386,8 @@ mod tests {
         let path = file.path().to_str().unwrap().to_string();
 
         let mut runtime = Runtime::new();
-        let result = builtin_tail(&["-c".to_string(), "7".to_string(), path], &mut runtime).unwrap();
+        let result =
+            builtin_tail(&["-c".to_string(), "7".to_string(), path], &mut runtime).unwrap();
 
         assert_eq!(result.exit_code, 0);
         assert_eq!(result.stdout(), "World!\n");
@@ -394,7 +400,8 @@ mod tests {
         let path = file.path().to_str().unwrap().to_string();
 
         let mut runtime = Runtime::new();
-        let result = builtin_tail(&["-n".to_string(), "10".to_string(), path], &mut runtime).unwrap();
+        let result =
+            builtin_tail(&["-n".to_string(), "10".to_string(), path], &mut runtime).unwrap();
 
         assert_eq!(result.exit_code, 0);
         let _stdout = result.stdout();
@@ -447,7 +454,8 @@ mod tests {
         let path = file.path().to_str().unwrap().to_string();
 
         let mut runtime = Runtime::new();
-        let result = builtin_tail(&["-n".to_string(), "0".to_string(), path], &mut runtime).unwrap();
+        let result =
+            builtin_tail(&["-n".to_string(), "0".to_string(), path], &mut runtime).unwrap();
 
         assert_eq!(result.exit_code, 0);
         assert_eq!(result.stdout(), "");
@@ -483,12 +491,11 @@ mod tests {
     fn test_builtin_tail_with_stdin_follow_flag_errors() {
         let data = make_lines(5);
         let mut runtime = Runtime::new();
-        let result = builtin_tail_with_stdin(&["-f".to_string()], &mut runtime, data.as_bytes())
-            .unwrap();
+        let result =
+            builtin_tail_with_stdin(&["-f".to_string()], &mut runtime, data.as_bytes()).unwrap();
 
         assert_eq!(result.exit_code, 1);
         assert!(result.stderr.contains("-f/--follow"));
         assert_eq!(result.stdout(), "");
     }
 }
-

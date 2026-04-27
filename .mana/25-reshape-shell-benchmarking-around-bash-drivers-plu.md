@@ -5,7 +5,7 @@ slug: reshape-shell-benchmarking-around-bash-drivers-plu
 status: open
 priority: 1
 created_at: '2026-04-24T08:47:16.442724Z'
-updated_at: '2026-04-27T05:59:04.417823Z'
+updated_at: '2026-04-27T20:57:53.318343Z'
 notes: |-
   ---
   2026-04-24T08:54:03.854929+00:00
@@ -52,6 +52,37 @@ notes: |-
   ---
   2026-04-27T05:59:04.417817+00:00
   Ran full benchmark suite with `AUSH_BENCH_OUT_DIR=/tmp/aush-bench-full bash benches/aush_suite.sh ./target/release/aush full`. It timed out at 900s during `regress-criterion-agentic`, specifically `rapid_fire_git_status_1000x` wanted ~103s for sampling and continued past suite timeout. Completed stages before timeout all passed: compat-fast-smoke, compat-posix-core, compat-agentic-workloads, perf-startup, perf-agentic-hyperfine, perf-session, regress-criterion-startup, regress-criterion-builtins. Killed leftover tee process. Need to make full suite practical by reducing/ignoring expensive Criterion agentic workload or adding a quick regression profile before running full as a gate.
+
+  ---
+  2026-04-27T06:46:51.301118+00:00
+  User asked about benchmarking AUSH through `aushd`. Need inspect existing daemon/client implementation and add/measure daemon-backed shell comparison if available. This likely matters because AUSH cold startup is the main speed gap; daemon/persistent mode may be the intended way to beat bash/zsh for agentic workflows.
+
+  ---
+  2026-04-27T06:54:17.038282+00:00
+  Added `benches/aushd_compare.sh` to benchmark AUSH frontend with a running daemon and direct daemon protocol Criterion latency. Fixed `benches/daemon_latency.rs` to use current `StdinMode::Null` protocol type so it compiles. Measurement: `aush --no-rc -c true` with daemon running ~5.4ms, same as without daemon; bash ~1.4ms, zsh ~2.5ms. Direct daemon protocol `daemon/exec/{true,echo_hello,arithmetic,pipe}` all ~11.2ms. Conclusion: current aushd path is not the speed win; it is slower than direct AUSH startup for simple commands. Created task 25.6 to reduce/explain aushd warm latency.
+
+  ---
+  2026-04-27T16:33:58.944606+00:00
+  Project path moved from `/Users/asher/rush` to `/Users/asher/aush`; continue benchmark work from new path. Existing mana verify strings may still mention old path and should be updated opportunistically when touching units.
+
+  ---
+  2026-04-27T20:57:53.318339+00:00
+  2026-04-27 performance plan externalized from chat:
+
+  Benchmarking decomposition remains three-track:
+  1. Compatibility gate: AUSH must correctly run agent-authored/POSIX-ish scripts and real benchmark fixtures. This is the release gate; failures here block credible performance claims.
+  2. Performance reporting: compare AUSH against system bash and zsh on cold startup, agentic workload scripts, and persistent/session execution. Use system bash/zsh for timings; use /Users/asher/bash source only for read-only implementation insight.
+  3. Regression tracking: keep the suite practical to run often by trimming or profiling expensive Criterion workloads, especially long agentic loops.
+
+  Immediate performance target:
+  - Continue task 25.6: reduce or explain aushd warm command latency. Current evidence: cold `aush -c true` ~5.3ms vs bash ~1.5ms; AUSH persistent session was competitive with zsh; direct aushd protocol unexpectedly measured ~11ms. Hypothesis is fixed overhead in the daemon/client path or an architecture mismatch where `aush -c` still pays process startup and aushd needs a resident client/session API to matter.
+
+  Next execution steps for 25.6:
+  1. Measure latency breakdown: client connect, protocol write/init, daemon dispatch, worker execution, response read.
+  2. Inspect `src/daemon/*`, frontend `aush -c` daemon integration, and benchmark files `benches/aushd_compare.sh` / `benches/daemon_latency.rs`.
+  3. Make only small reversible Rust-native optimizations if the measurements identify clear overhead.
+  4. Re-run `cargo build --release --bins`, `AUSH_BENCH_OUT_DIR=/tmp/aushd-compare bash benches/aushd_compare.sh ./target/release/aush ./target/release/aushd`, and `benches/session_benchmark.sh` if relevant.
+  5. If no safe fix is obvious, document measured bottlenecks and whether a persistent client/session API should be a follow-up unit.
 labels:
 - benchmarks
 - aush

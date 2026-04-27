@@ -1,7 +1,7 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use aush::executor::Executor;
 use aush::lexer::Lexer;
 use aush::parser::Parser;
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::fs;
 use std::path::PathBuf;
 

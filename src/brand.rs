@@ -17,4 +17,3 @@ pub fn env_flag(name: &str, enabled_value: &str) -> bool {
 pub fn xdg_config_file(name: &str) -> Option<PathBuf> {
     dirs::home_dir().map(|home| home.join(".config").join("aush").join(name))
 }
-

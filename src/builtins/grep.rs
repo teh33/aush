@@ -186,18 +186,42 @@ pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
                 match entry {
                     Ok(entry) => {
                         if entry.file_type().is_some_and(|ft| ft.is_file()) {
-                            let outcome = search_file(
-                                &matcher,
-                                entry.path(),
-                                &config,
-                                &mut stdout,
-                                &mut stderr,
-                            )?;
-                            if outcome.matched {
-                                found_any = true;
-                            }
-                            if outcome.had_error {
-                                had_errors = true;
+                            if should_use_summary_output(&config) {
+                                match count_matches_in_file(
+                                    &matcher,
+                                    entry.path(),
+                                    &config,
+                                    &mut stderr,
+                                )? {
+                                    Some(count) => {
+                                        let matched = count > 0;
+                                        write_count_or_file_list_output(
+                                            &mut stdout,
+                                            &config,
+                                            Some(&entry.path().display().to_string()),
+                                            count,
+                                            matched,
+                                        )?;
+                                        if matched {
+                                            found_any = true;
+                                        }
+                                    }
+                                    None => had_errors = true,
+                                }
+                            } else {
+                                let outcome = search_file(
+                                    &matcher,
+                                    entry.path(),
+                                    &config,
+                                    &mut stdout,
+                                    &mut stderr,
+                                )?;
+                                if outcome.matched {
+                                    found_any = true;
+                                }
+                                if outcome.had_error {
+                                    had_errors = true;
+                                }
                             }
                         }
                     }
@@ -232,12 +256,31 @@ pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
                 continue;
             }
 
-            let outcome = search_file(&matcher, &path_buf, &config, &mut stdout, &mut stderr)?;
-            if outcome.matched {
-                found_any = true;
-            }
-            if outcome.had_error {
-                had_errors = true;
+            if should_use_summary_output(&config) {
+                match count_matches_in_file(&matcher, &path_buf, &config, &mut stderr)? {
+                    Some(count) => {
+                        let matched = count > 0;
+                        write_count_or_file_list_output(
+                            &mut stdout,
+                            &config,
+                            Some(&path.display().to_string()),
+                            count,
+                            matched,
+                        )?;
+                        if matched {
+                            found_any = true;
+                        }
+                    }
+                    None => had_errors = true,
+                }
+            } else {
+                let outcome = search_file(&matcher, &path_buf, &config, &mut stdout, &mut stderr)?;
+                if outcome.matched {
+                    found_any = true;
+                }
+                if outcome.had_error {
+                    had_errors = true;
+                }
             }
         }
     }
@@ -272,6 +315,19 @@ pub fn builtin_grep_with_stdin(
         .case_insensitive(config.ignore_case)
         .build(&config.pattern)
         .map_err(|e| anyhow!("Invalid regex pattern: {}", e))?;
+
+    if should_use_summary_output(&config) {
+        let count = count_matches_in_data(&matcher, stdin_data, &config)?;
+        let found = count > 0;
+        write_count_or_file_list_output(&mut stdout, &config, None, count, found)?;
+        let exit_code = grep_exit_code(found, false, config.quiet);
+        return Ok(ExecutionResult {
+            output: crate::executor::Output::Text(String::from_utf8_lossy(&stdout).to_string()),
+            stderr: String::from_utf8_lossy(&stderr).to_string(),
+            exit_code,
+            error: None,
+        });
+    }
 
     let found = if config.json_output {
         search_stdin_json(&matcher, stdin_data, &config, &mut json_matches)?
@@ -585,6 +641,89 @@ fn search_lines_json(
     Ok(found)
 }
 
+fn write_count_or_file_list_output(
+    stdout: &mut Vec<u8>,
+    config: &GrepConfig,
+    label: Option<&str>,
+    count: usize,
+    found: bool,
+) -> Result<()> {
+    if config.quiet {
+        return Ok(());
+    }
+
+    if config.files_with_matches {
+        if found {
+            if let Some(label) = label {
+                writeln!(stdout, "{}", label)?;
+            }
+        }
+        return Ok(());
+    }
+
+    if config.files_without_match {
+        if !found {
+            if let Some(label) = label {
+                writeln!(stdout, "{}", label)?;
+            }
+        }
+        return Ok(());
+    }
+
+    if config.count_only {
+        if let Some(label) = label.filter(|_| config.show_filename) {
+            writeln!(stdout, "{}:{}", label, count)?;
+        } else {
+            writeln!(stdout, "{}", count)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn count_matches_in_data(
+    matcher: &impl Matcher,
+    data: &[u8],
+    config: &GrepConfig,
+) -> Result<usize> {
+    let mut count = 0;
+    let content = String::from_utf8_lossy(data);
+
+    for line in content.lines() {
+        let is_match = matcher
+            .is_match(line.as_bytes())
+            .map_err(|e| anyhow!("Matcher error: {}", e))?;
+        if if config.invert_match {
+            !is_match
+        } else {
+            is_match
+        } {
+            count += 1;
+        }
+    }
+
+    Ok(count)
+}
+
+fn count_matches_in_file(
+    matcher: &impl Matcher,
+    path: &Path,
+    config: &GrepConfig,
+    stderr: &mut Vec<u8>,
+) -> Result<Option<usize>> {
+    match std::fs::read(path) {
+        Ok(data) => Ok(Some(count_matches_in_data(matcher, &data, config)?)),
+        Err(e) => {
+            writeln!(stderr, "Error reading {}: {}", path.display(), e)?;
+            Ok(None)
+        }
+    }
+}
+
+fn should_use_summary_output(config: &GrepConfig) -> bool {
+    config.count_only || config.files_with_matches || config.files_without_match
+}
+
 fn write_colored_line(
     stdout: &mut Vec<u8>,
     line: &str,
@@ -625,6 +764,9 @@ struct GrepConfig {
     color: bool,
     json_output: bool,
     quiet: bool,
+    count_only: bool,
+    files_with_matches: bool,
+    files_without_match: bool,
     context_before: usize,
     context_after: usize,
 }
@@ -645,6 +787,9 @@ impl Default for GrepConfig {
             color: true,
             json_output: false,
             quiet: false,
+            count_only: false,
+            files_with_matches: false,
+            files_without_match: false,
             context_before: 0,
             context_after: 0,
         }
@@ -703,6 +848,15 @@ fn parse_args(args: &[String]) -> Result<GrepConfig> {
             "-q" | "--quiet" | "--silent" => {
                 config.quiet = true;
             }
+            "-c" | "--count" => {
+                config.count_only = true;
+            }
+            "-l" | "--files-with-matches" => {
+                config.files_with_matches = true;
+            }
+            "-L" | "--files-without-match" => {
+                config.files_without_match = true;
+            }
             "-C" => {
                 i += 1;
                 if i >= args.len() {
@@ -748,6 +902,9 @@ fn parse_args(args: &[String]) -> Result<GrepConfig> {
                      -A NUM, --after-context Show NUM lines after match\n\
                      -B NUM, --before-context Show NUM lines before match\n\
                      -q, --quiet, --silent   Suppress stdout; use exit status for results\n\
+                     -c, --count             Print only a count of matching lines\n\
+                     -l, --files-with-matches Print only names of files with matches\n\
+                     -L, --files-without-match Print only names of files without matches\n\
                      --color                 Colorize output (default)\n\
                      --no-color              Don't colorize output\n\
                      --hidden                Search hidden files\n\

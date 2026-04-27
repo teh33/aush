@@ -7,7 +7,7 @@
 //! - Stack traces for nested command/function calls
 //! - Common typo suggestions
 
-use crate::error::{help_db, CommandContext, AUSHError, SourceLocation};
+use crate::error::{help_db, AUSHError, CommandContext, SourceLocation};
 
 /// ANSI color codes for terminal output
 pub mod ansi {

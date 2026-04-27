@@ -196,7 +196,10 @@ impl Executor {
         match self.maybe_confirm_effects(&command_name, &args)? {
             ApprovalDecision::Denied => {
                 self.restore_prefix_env(&saved_env);
-                return Ok(ExecutionResult::error(format!("Cancelled {}\n", command_name)));
+                return Ok(ExecutionResult::error(format!(
+                    "Cancelled {}\n",
+                    command_name
+                )));
             }
             ApprovalDecision::Approved | ApprovalDecision::NotRequired => {}
         }
@@ -831,7 +834,11 @@ impl Executor {
             && std::io::stdout().is_terminal()
     }
 
-    fn maybe_confirm_effects(&self, command_name: &str, args: &[String]) -> Result<ApprovalDecision> {
+    fn maybe_confirm_effects(
+        &self,
+        command_name: &str,
+        args: &[String],
+    ) -> Result<ApprovalDecision> {
         let Some(metadata) = metadata_for_command(command_name) else {
             return Ok(ApprovalDecision::NotRequired);
         };

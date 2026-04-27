@@ -5,7 +5,7 @@ use crate::runtime::Runtime;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
 
 /// Re-export so callers can use `builtins::LuaBuiltin` without knowing the lua module path.
@@ -46,6 +46,7 @@ pub mod return_builtin; // Public so executor can access ReturnSignal
 mod rm;
 mod set;
 mod shift;
+mod tail;
 mod test;
 pub mod time; // Public so executor can access timing functions
 pub mod trap; // Public so runtime and executor can access TrapSignal
@@ -82,6 +83,7 @@ static BUILTIN_MAP: LazyLock<HashMap<&'static str, BuiltinFn>> = LazyLock::new(|
     m.insert("fg", jobs::builtin_fg);
     m.insert("bg", jobs::builtin_bg);
     m.insert("set", set::builtin_set);
+    m.insert("tail", tail::builtin_tail);
     m.insert("alias", alias::builtin_alias);
     m.insert("unalias", alias::builtin_unalias);
     m.insert("test", test::builtin_test);
@@ -220,6 +222,13 @@ impl Builtins {
         if name == "grep" {
             if let Some(stdin_data) = stdin {
                 return grep::builtin_grep_with_stdin(&args, runtime, stdin_data);
+            }
+        }
+
+        // Special handling for tail with stdin
+        if name == "tail" {
+            if let Some(stdin_data) = stdin {
+                return tail::builtin_tail_with_stdin(&args, runtime, stdin_data);
             }
         }
 
@@ -657,6 +666,10 @@ pub(crate) fn builtin_source(args: &[String], runtime: &mut Runtime) -> Result<E
         return Err(anyhow!("source: {}: No such file or directory", file_path));
     }
 
+    if should_skip_sourced_file(&path)? {
+        return Ok(ExecutionResult::success(String::new()));
+    }
+
     // Read and execute file
     let file = fs::File::open(&path)
         .map_err(|e| anyhow!("source: Failed to open '{}': {}", path.display(), e))?;
@@ -734,6 +747,26 @@ pub(crate) fn builtin_source(args: &[String], runtime: &mut Runtime) -> Result<E
     runtime.exit_function_context();
 
     Ok(ExecutionResult::success(String::new()))
+}
+
+fn should_skip_sourced_file(path: &Path) -> Result<bool> {
+    if path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.starts_with('_'))
+    {
+        let first_line = std::fs::read_to_string(path)
+            .map_err(|e| anyhow!("source: Failed to read '{}': {}", path.display(), e))?
+            .lines()
+            .next()
+            .unwrap_or("")
+            .trim()
+            .to_string();
+
+        return Ok(first_line.starts_with("#compdef") || first_line.starts_with("#autoload"));
+    }
+
+    Ok(false)
 }
 
 #[cfg(test)]

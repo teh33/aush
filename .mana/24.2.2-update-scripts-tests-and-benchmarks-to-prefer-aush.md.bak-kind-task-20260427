@@ -1,0 +1,65 @@
+---
+id: '24.2.2'
+title: Update scripts tests and benchmarks to prefer AUSH with Rush fallback
+slug: update-scripts-tests-and-benchmarks-to-prefer-aush
+status: closed
+priority: 2
+created_at: '2026-04-24T17:00:00.501127Z'
+updated_at: '2026-04-24T17:27:08.946805Z'
+notes: |-
+  ---
+  2026-04-24T17:18:17.002736+00:00
+  Starting automation migration: update scripts/tests/benches/Makefile to prefer target/.../aush while preserving explicit shell path args or rush fallback where appropriate.
+
+  ---
+  2026-04-24T17:27:08.946788+00:00
+  Updated core automation to prefer AUSH binary with Rush fallback. Makefile now installs/benchmarks/PGo-profiles target/release/aush while still installing legacy target/release/rush. tests/smoke_test.sh defaults to target/release/aush and falls back to target/release/rush. AUSH smoke bench wrappers default to aush with rush fallback. Updated benchmark scripts/defaults and selected Rust tests/benches to invoke target/*/aush where active. Integration shell scripts now set AUSH_BINARY first while preserving RUSH_BINARY as the variable consumed by existing harnesses.
+
+  Verification passed: cargo build -q --release --bins; bash tests/smoke_test.sh ./target/release/aush; bash tests/smoke_test.sh ./target/release/rush; bash benches/aush_smoke_fast.sh ./target/release/aush; cargo test -q --test ansi_c_quoting_tests --test grep_integration_test; cargo test -q --test pipeline_tests test_two_stage_pipeline -- --exact; cargo fmt --check; cargo check -q.
+
+  Known existing failures/surprises: full pipeline_tests still has an existing parser/runtime failure on `sort | uniq -c | wc -l` (`Expected command name` / empty output) unrelated to binary rename; shell_variables_tests were already failing for PPID/SHLVL/SHELL even after restoring the temporary binary-path edit. Deferred remaining traces include intentional rush fallback paths, RUSH_BINARY harness variables, daemon `rushd`, and deeper benchmark/report variable names.
+labels:
+- aush
+- scripts
+- tests
+- benchmarks
+- compatibility
+parent: '24.2'
+verify: cd /Users/asher/rush && cargo build -q --release --bins && bash tests/smoke_test.sh ./target/release/aush >/tmp/aush-smoke.log 2>&1 || (tail -n 40 /tmp/aush-smoke.log; exit 1)
+checkpoint: a12f5cbf0c9bac9d03bb297fa16e2c5517aa69f9
+verify_hash: '00510e1c7b8123dd6636738f42849c406280e9568da159d3cb7ab4553cbd5f39'
+claimed_by: imp
+claimed_at: '2026-04-24T17:18:07.945281Z'
+kind: task
+attempt_log:
+- num: 1
+  outcome: abandoned
+  agent: imp
+  started_at: '2026-04-24T17:18:07.945281Z'
+---
+
+Goal: update local automation, smoke tests, benchmark scripts, and Makefile references to prefer the new `aush` binary while retaining `rush` fallback where useful.
+
+Current state: many scripts, smoke gates, benches, and Makefile targets hardcode `target/.../rush` or `rush`. This should happen after 24.2.1 proves both binaries build.
+
+Steps:
+1. Scan Makefile, scripts/**, tests/smoke_test.sh, benches/**, benchmarks/** for hardcoded `rush` executable paths.
+2. Update active automation to use `aush` as the preferred binary.
+3. Where compatibility matters, accept an explicit shell path argument or fall back from `target/release/aush` to `target/release/rush`.
+4. Keep one targeted legacy invocation check proving `rush` still works.
+5. Avoid editing generated reports, historical research, `.mana`, or unrelated fixtures.
+6. Run focused smoke/bench verification commands that do not require the full release pipeline.
+
+Files likely in scope:
+- Makefile
+- scripts/*.sh
+- tests/smoke_test.sh and active integration shell scripts
+- benches/*.sh and benchmark docs if command examples are adjacent
+
+Out of scope:
+- Cargo package/lib rename
+- Homebrew/release artifact rename
+- internal Rust symbol rename
+- generated benchmark outputs/reports
+
+Do not globally replace `rush`; preserve compatibility wording and legacy checks.

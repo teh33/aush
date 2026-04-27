@@ -303,7 +303,10 @@ fn strip_comments(input: &str) -> String {
                 }
             }
             '#' if !in_single && !in_double => {
-                if output.ends_with("${") || output.contains("${") && !output.rsplit('$').next().unwrap_or("").contains('}') {
+                if output.ends_with("${")
+                    || output.contains("${")
+                        && !output.rsplit('$').next().unwrap_or("").contains('}')
+                {
                     output.push(ch);
                     continue;
                 }

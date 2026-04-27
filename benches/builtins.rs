@@ -1,6 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use aush::builtins::Builtins;
 use aush::runtime::Runtime;
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::process::Command;
 use std::time::Duration;
 

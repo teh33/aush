@@ -1682,33 +1682,32 @@ impl Executor {
         let _ = self.execute_trap(crate::builtins::trap::TrapSignal::Exit);
     }
 
-    /// Source a file by executing its contents line by line
-    /// Used for .aushrc and .aush_profile files
+    /// Source a file by executing its contents line by line.
+    /// Used for AUSH startup files; zsh completion scripts are skipped because
+    /// parsing them as shell config creates hundreds of startup errors.
     pub fn source_file(&mut self, path: &std::path::Path) -> Result<()> {
         use std::fs;
         use std::io::{BufRead, BufReader};
 
-        // Check if file exists
         if !path.exists() {
-            return Ok(()); // Silently ignore missing config files
+            return Ok(());
         }
 
-        // Read file
+        if should_skip_sourced_file(path)? {
+            return Ok(());
+        }
+
         let file = fs::File::open(path)
             .map_err(|e| anyhow!("Failed to open '{}': {}", path.display(), e))?;
         let reader = BufReader::new(file);
 
-        // Execute each line
         for (line_num, line) in reader.lines().enumerate() {
             let line = line?;
             let line = line.trim();
-
-            // Skip empty lines and comments
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
 
-            // Execute the line
             match self.execute_line_internal(line) {
                 Ok(_) => {}
                 Err(e) => {
@@ -1731,6 +1730,26 @@ impl Executor {
         let statements = parser.parse()?;
         self.execute(statements)
     }
+}
+
+fn should_skip_sourced_file(path: &std::path::Path) -> Result<bool> {
+    if path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.starts_with('_'))
+    {
+        let first_line = std::fs::read_to_string(path)
+            .map_err(|e| anyhow!("Failed to read '{}': {}", path.display(), e))?
+            .lines()
+            .next()
+            .unwrap_or("")
+            .trim()
+            .to_string();
+
+        return Ok(first_line.starts_with("#compdef") || first_line.starts_with("#autoload"));
+    }
+
+    Ok(false)
 }
 
 /// Expand tilde (`~`) at the start of a path to the user's home directory.

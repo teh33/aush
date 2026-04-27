@@ -50,8 +50,7 @@ impl SuggestionConfig {
         }
 
         // AUSH_SUGGEST_THRESHOLD / AUSH_SUGGEST_THRESHOLD
-        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_THRESHOLD")
-        {
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_THRESHOLD") {
             if let Ok(threshold) = val.parse::<i64>() {
                 config.min_threshold = threshold.clamp(0, 100);
             }

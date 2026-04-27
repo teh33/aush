@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use thiserror::Error;
 
-use crate::daemon::protocol::{decode_jsonl, encode_jsonl, PiToAUSH, AUSHToPi, ShellContext};
+use crate::daemon::protocol::{decode_jsonl, encode_jsonl, AUSHToPi, PiToAUSH, ShellContext};
 
 /// Global counter for generating unique request IDs
 static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(0);

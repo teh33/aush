@@ -82,14 +82,11 @@ impl LlmConfig {
         let model = crate::brand::env_var("AUSH_AI_MODEL")
             .unwrap_or_else(|| "qwen2.5-coder:7b".to_string());
 
-        let api_key =
-            crate::brand::env_var("AUSH_AI_API_KEY").or_else(
-                || match provider {
-                    ProviderType::OpenAi => std::env::var("OPENAI_API_KEY").ok(),
-                    ProviderType::Anthropic => std::env::var("ANTHROPIC_API_KEY").ok(),
-                    ProviderType::Ollama => None,
-                },
-            );
+        let api_key = crate::brand::env_var("AUSH_AI_API_KEY").or_else(|| match provider {
+            ProviderType::OpenAi => std::env::var("OPENAI_API_KEY").ok(),
+            ProviderType::Anthropic => std::env::var("ANTHROPIC_API_KEY").ok(),
+            ProviderType::Ollama => None,
+        });
 
         let base_url = crate::brand::env_var("AUSH_AI_BASE_URL");
 

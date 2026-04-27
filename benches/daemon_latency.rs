@@ -67,7 +67,7 @@ fn ensure_daemon() {
 // ---------------------------------------------------------------------------
 
 fn execute_via_daemon(cmd: &str) -> i32 {
-    use aush::daemon::protocol::{read_message, write_message, Message, SessionInit};
+    use aush::daemon::protocol::{read_message, write_message, Message, SessionInit, StdinMode};
 
     let path = socket_path();
     let mut stream = UnixStream::connect(&path).expect("Failed to connect to daemon socket");
@@ -87,7 +87,7 @@ fn execute_via_daemon(cmd: &str) -> i32 {
         working_dir,
         env,
         args: vec!["-c".to_string(), cmd.to_string()],
-        stdin_mode: "null".to_string(),
+        stdin_mode: StdinMode::Null,
     };
 
     write_message(&mut stream, &Message::SessionInit(init), 1).expect("Failed to write message");

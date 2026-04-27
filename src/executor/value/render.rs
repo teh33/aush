@@ -136,8 +136,7 @@ impl TableRenderer {
             .map(|(col, &width)| {
                 let padded = format!("{:width$}", col, width = width);
                 if self.use_colors {
-                    let color = parse_env_color("AUSH_COLOR_HEADER")
-                        .unwrap_or(Color::Cyan);
+                    let color = parse_env_color("AUSH_COLOR_HEADER").unwrap_or(Color::Cyan);
                     color.bold().paint(&padded).to_string()
                 } else {
                     padded

@@ -3,10 +3,10 @@
 //! Provides commands to start, stop, and manage the AUSH daemon.
 
 use anyhow::{anyhow, Result};
-use nix::libc;
 use aush::brand;
 use aush::daemon::server::DaemonServer;
 use aush::daemon::worker_pool::PoolConfig;
+use nix::libc;
 use std::env;
 use std::fs;
 use std::process;

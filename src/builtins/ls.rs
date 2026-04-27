@@ -36,11 +36,12 @@ struct FileEntry {
 
 #[derive(Default)]
 struct LsFlags {
-    long: bool,  // -l: long format
-    all: bool,   // -a: show hidden files
-    human: bool, // -h: human-readable sizes
-    color: bool, // default: color output
-    json: bool,  // --json: JSON output
+    long: bool,             // -l: long format
+    all: bool,              // -a: show hidden files
+    human: bool,            // -h: human-readable sizes
+    color: bool,            // default: color output
+    directory_itself: bool, // -d: list directories themselves, not contents
+    json: bool,             // --json: JSON output
 }
 
 pub fn builtin_ls(args: &[String], runtime: &mut Runtime) -> Result<ExecutionResult> {
@@ -138,6 +139,7 @@ fn parse_args(args: &[String]) -> Result<(LsFlags, Vec<String>)> {
                 match ch {
                     'l' => flags.long = true,
                     'a' => flags.all = true,
+                    'd' => flags.directory_itself = true,
                     'h' => flags.human = true,
                     _ => return Err(anyhow!("ls: invalid option: -{}", ch)),
                 }
@@ -158,7 +160,7 @@ fn collect_entries(path: &Path, flags: &LsFlags) -> Result<Vec<FileEntry>> {
         ));
     }
 
-    if path.is_file() {
+    if path.is_file() || flags.directory_itself {
         // Return single file entry
         let metadata = fs::metadata(path)?;
         return Ok(vec![metadata_to_file_entry(path, &metadata)?]);
@@ -323,7 +325,7 @@ fn list_path(path: &Path, flags: &LsFlags) -> Result<String> {
         ));
     }
 
-    if path.is_file() {
+    if path.is_file() || flags.directory_itself {
         // List single file
         let metadata = fs::metadata(path)?;
         return Ok(format_entry(path, &metadata, flags));
@@ -570,11 +572,12 @@ mod tests {
 
     #[test]
     fn test_parse_args_with_flags() {
-        let args = vec!["-lah".to_string(), "dir".to_string()];
+        let args = vec!["-ld".to_string(), "dir".to_string()];
         let (flags, paths) = parse_args(&args).unwrap();
         assert!(flags.long);
-        assert!(flags.all);
-        assert!(flags.human);
+        assert!(!flags.all);
+        assert!(!flags.human);
+        assert!(flags.directory_itself);
         assert_eq!(paths, vec!["dir"]);
     }
 
@@ -702,6 +705,21 @@ mod tests {
         let result = builtin_ls(&["specific.txt".to_string()], &mut runtime).unwrap();
         assert_eq!(result.exit_code, 0);
         assert!(result.stdout().contains("specific.txt"));
+    }
+
+    #[test]
+    fn test_ls_directory_itself_flag() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir(dir.path().join("subdir")).unwrap();
+        File::create(dir.path().join("subdir").join("child.txt")).unwrap();
+
+        let mut runtime = Runtime::new();
+        runtime.set_cwd(dir.path().to_path_buf());
+
+        let result = builtin_ls(&["-d".to_string(), "subdir".to_string()], &mut runtime).unwrap();
+        assert_eq!(result.exit_code, 0);
+        assert!(result.stdout().contains("subdir"));
+        assert!(!result.stdout().contains("child.txt"));
     }
 
     #[test]
