@@ -406,6 +406,25 @@ units:
   kind: task
   feature: false
   has_decisions: false
+- id: '24.6.2'
+  title: Fix error recovery tests release blocker
+  status: in_progress
+  priority: 1
+  parent: '24.6'
+  labels:
+  - bug
+  - release-blocker
+  - error-recovery
+  - aush
+  updated_at: '2026-04-27T06:17:01.820711Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test error_recovery_tests test_execution_error_recovery test_nested_error_recovery && cargo test --test error_recovery_tests
+  created_at: '2026-04-27T06:12:22.534636Z'
+  claimed_by: imp
+  attempts: 1
+  kind: task
+  feature: false
+  has_decisions: false
 - id: '24.7'
   title: Complete full AUSH rebrand with no Rush compatibility surface
   status: in_progress
@@ -552,7 +571,7 @@ units:
   has_decisions: false
 - id: '25.5'
   title: Make full benchmark suite finish within practical timeout
-  status: open
+  status: in_progress
   priority: 1
   parent: '25'
   labels:
@@ -561,10 +580,11 @@ units:
   - criterion
   - operability
   - regression
-  updated_at: '2026-04-27T05:59:12.673719Z'
+  updated_at: '2026-04-27T06:12:38.500793Z'
   has_verify: true
   verify: cd /Users/asher/rush && AUSH_BENCH_OUT_DIR=/tmp/aush-bench-full bash benches/aush_suite.sh ./target/release/aush full
   created_at: '2026-04-27T05:59:12.673719Z'
+  claimed_by: imp
   attempts: 0
   kind: task
   feature: false

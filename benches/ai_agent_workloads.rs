@@ -1,11 +1,11 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use aush::executor::Executor;
 use aush::lexer::Lexer;
 use aush::parser::Parser;
-use aush::runtime::Runtime;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::Duration;
 use tempfile::TempDir;
 
 /// Setup a benchmark git repository with realistic structure
@@ -148,7 +148,7 @@ fn bench_git_status_loop(c: &mut Criterion) {
     c.bench_function("git_status_json_100x", |b| {
         b.iter(|| {
             for _ in 0..100 {
-                let output = execute_command(black_box("git_status --json"), black_box(&repo_path));
+                let output = execute_command(black_box("git status --json"), black_box(&repo_path));
                 black_box(output);
             }
         });
@@ -157,7 +157,7 @@ fn bench_git_status_loop(c: &mut Criterion) {
     // Single call benchmark for detailed timing
     c.bench_function("git_status_json_single", |b| {
         b.iter(|| {
-            let output = execute_command(black_box("git_status --json"), black_box(&repo_path));
+            let output = execute_command(black_box("git status --json"), black_box(&repo_path));
             black_box(output);
         });
     });
@@ -220,7 +220,7 @@ fn bench_git_log_analysis(c: &mut Criterion) {
     // Get 100 commits as JSON
     group.bench_function("git_log_100_commits", |b| {
         b.iter(|| {
-            let output = execute_command(black_box("git_log --json -n 100"), black_box(&repo_path));
+            let output = execute_command(black_box("git log --json -n 100"), black_box(&repo_path));
             black_box(output);
         });
     });
@@ -228,7 +228,7 @@ fn bench_git_log_analysis(c: &mut Criterion) {
     // Get 10 commits (common case)
     group.bench_function("git_log_10_commits", |b| {
         b.iter(|| {
-            let output = execute_command(black_box("git_log --json -n 10"), black_box(&repo_path));
+            let output = execute_command(black_box("git log --json -n 10"), black_box(&repo_path));
             black_box(output);
         });
     });
@@ -237,7 +237,7 @@ fn bench_git_log_analysis(c: &mut Criterion) {
     group.bench_function("git_log_with_grep", |b| {
         b.iter(|| {
             let output = execute_command(
-                black_box("git_log --json -n 50 --grep \"Update\""),
+                black_box("git log --json -n 50 --grep \"Update\""),
                 black_box(&repo_path),
             );
             black_box(output);
@@ -337,7 +337,7 @@ fn bench_complex_pipeline(c: &mut Criterion) {
         b.iter(|| {
             // Get unstaged files
             let status_output =
-                execute_command(black_box("git_status --json"), black_box(&repo_path));
+                execute_command(black_box("git status --json"), black_box(&repo_path));
             black_box(status_output);
 
             // In a real pipeline, we'd parse the JSON and grep each file
@@ -403,19 +403,34 @@ fn bench_builtin_overhead(c: &mut Criterion) {
 }
 
 /// Benchmark 9: Rapid Fire Operations
-/// Test performance under high-frequency calls (AI agent polling)
+/// Test performance under high-frequency calls (AI agent polling).
+///
+/// Default regression mode uses 100 calls so `benches/aush_suite.sh full`
+/// finishes in a practical time. Set `AUSH_BENCH_STRESS=1` to run the
+/// original 1000-call stress workload manually.
 fn bench_rapid_fire(c: &mut Criterion) {
     let repo = setup_git_repo();
     let repo_path = repo.path().to_path_buf();
+    let iterations = if std::env::var("AUSH_BENCH_STRESS").as_deref() == Ok("1") {
+        1000
+    } else {
+        100
+    };
+    let bench_name = format!("rapid_fire_git_status_{}x", iterations);
 
-    c.bench_function("rapid_fire_git_status_1000x", |b| {
+    let mut group = c.benchmark_group("rapid_fire");
+    group.sample_size(10);
+    group.warm_up_time(Duration::from_secs(1));
+    group.measurement_time(Duration::from_secs(5));
+    group.bench_function(bench_name, |b| {
         b.iter(|| {
-            for _ in 0..1000 {
-                let output = execute_command(black_box("git_status --json"), black_box(&repo_path));
+            for _ in 0..iterations {
+                let output = execute_command(black_box("git status --json"), black_box(&repo_path));
                 black_box(output);
             }
         });
     });
+    group.finish();
 }
 
 /// Benchmark 10: Large File Operations

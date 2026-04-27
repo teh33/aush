@@ -93,6 +93,25 @@ units:
   kind: task
   feature: false
   has_decisions: false
+- id: '24.6.3'
+  title: Fix exec builtin error reporting release blocker
+  status: closed
+  priority: 1
+  parent: '24.6'
+  labels:
+  - bug
+  - release-blocker
+  - exec-builtin
+  - aush
+  updated_at: '2026-04-27T06:20:26.235828Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo test --test exec_builtin_tests
+  created_at: '2026-04-27T06:17:44.328949Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
 - id: '25.4.1'
   title: Add backslash-newline line continuation compatibility for real shell scripts
   status: closed
