@@ -48,14 +48,20 @@ run_step() {
   local name="$1"
   shift
   local log="$RUN_DIR/${name}.log"
+  local start end elapsed
 
   echo
   echo "=== $name ==="
+  start=$(date +%s)
   if "$@" 2>&1 | tee "$log"; then
-    echo "PASS $name" | tee -a "$RUN_DIR/summary.txt" >/dev/null
+    end=$(date +%s)
+    elapsed=$((end - start))
+    echo "PASS $name (${elapsed}s)" | tee -a "$RUN_DIR/summary.txt" >/dev/null
   else
     local status=${PIPESTATUS[0]}
-    echo "FAIL $name (exit $status)" | tee -a "$RUN_DIR/summary.txt" >/dev/null
+    end=$(date +%s)
+    elapsed=$((end - start))
+    echo "FAIL $name (${elapsed}s, exit $status)" | tee -a "$RUN_DIR/summary.txt" >/dev/null
     return "$status"
   fi
 }

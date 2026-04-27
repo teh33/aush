@@ -213,7 +213,7 @@ impl Executor {
                             if crate::executor::flow_signals::is_flow_control_signal(&e) {
                                 return Err(e);
                             }
-                            if cmd_name == "command" || cmd_name == "exec" {
+                            if matches!(cmd_name, "command" | "exec" | "local" | "shift") {
                                 return Err(e);
                             }
                             Ok(ExecutionResult::error(format!("{}: {}\n", cmd_name, e)))
@@ -625,7 +625,7 @@ impl Executor {
         let mut child = match cmd.spawn() {
             Ok(child) => child,
             Err(e) => {
-                if e.kind() == std::io::ErrorKind::NotFound {
+                let mut result = if e.kind() == std::io::ErrorKind::NotFound {
                     let suggestions = self.suggestion_engine.suggest_command(
                         &command_name,
                         &builtin_names,
@@ -643,10 +643,26 @@ impl Executor {
                         }
                     }
 
-                    return Err(anyhow!(error_msg));
+                    ExecutionResult {
+                        output: Output::Text(String::new()),
+                        stderr: format!("{}\n", error_msg),
+                        exit_code: 127,
+                        error: None,
+                    }
                 } else {
-                    return Err(anyhow!("Failed to execute '{}': {}", command_name, e));
+                    ExecutionResult {
+                        output: Output::Text(String::new()),
+                        stderr: format!("Failed to execute '{}': {}\n", command_name, e),
+                        exit_code: 126,
+                        error: None,
+                    }
+                };
+
+                if !command.redirects.is_empty() {
+                    result = self.apply_redirects(result, &command.redirects)?;
                 }
+
+                return Ok(result);
             }
         };
 
