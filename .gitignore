@@ -13,6 +13,9 @@
 .vscode/
 *.orig
 
+# Agent workspace state
+.mana/
+
 # Agent artifacts
 *.bak
 *.bak[0-9]
