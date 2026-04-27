@@ -1,209 +1,153 @@
-# AUSH Criterion Benchmarks
+# AUSH Benchmarks and Smoke Gates
 
-This directory contains microbenchmarks using the [Criterion](https://github.com/bheisler/criterion.rs) framework.
+This directory contains several kinds of performance and release checks. They are intentionally separated because not every benchmark answers the same question.
 
-## Benchmark Files
+## Which command should I run?
 
-### startup.rs
-Benchmarks AUSH initialization and startup performance:
-- **Cold startup**: Shell launch and immediate exit
-- **Startup with command**: Launch, execute, exit
-- **Lexer init**: Tokenization performance
-- **Parser init**: AST construction performance
-- **Executor init**: Execution engine initialization
-- **Runtime init**: Runtime environment setup
-- **Memory footprint**: Allocation measurements
+### Release smoke
 
-**Target**: < 10ms startup time
+Use these before publishing or after touching shell execution behavior:
 
-### builtins.rs
-Benchmarks builtin commands vs GNU equivalents:
-- **Echo**: AUSH builtin vs system echo
-- **PWD**: AUSH builtin vs system pwd
-- **CD**: Directory change performance
-- **Export**: Environment variable setting
-- **Find**: File search (AUSH vs GNU find)
-- **Dispatch**: Builtin lookup performance
-- **Arg scaling**: Performance with varying argument counts
-
-**Target**: Equal to or faster than GNU utilities
-
-## Running Benchmarks
-
-### All benchmarks
 ```bash
-cargo bench
+cargo build --release --bins
+bash benches/aush_smoke_fast.sh ./target/release/aush
+bash benches/aush_suite.sh ./target/release/aush compat
 ```
 
-### Specific suite
+- `aush_smoke_fast.sh` runs a small, fast release gate.
+- `aush_suite.sh ... compat` runs the fast smoke plus compatibility workloads that model agent-style command sequences.
+- These scripts should fail loudly when a command under test fails. They are gates, not statistical benchmarks.
+
+### Compile benchmark targets
+
+Use this after editing benchmark code or shared APIs:
+
+```bash
+cargo test --benches --no-run
+```
+
+This catches benchmark compile breaks without spending time on measurements.
+
+### Criterion measurements
+
+Use Criterion when you need statistically useful timing data:
+
 ```bash
 cargo bench --bench startup
 cargo bench --bench builtins
+cargo bench --bench shell_comparison
+cargo bench --bench ai_agent_workloads
+cargo bench --bench daemon_latency
 ```
 
-### Specific function
+Criterion reports are written under `target/criterion/`.
+
+### Daemon comparison
+
+Use this when working on `aushd` protocol latency:
+
 ```bash
-cargo bench --bench startup bench_lexer_init
-cargo bench --bench builtins bench_echo_builtin
+cargo build --release --bins
+AUSH_BENCH_OUT_DIR=/tmp/aushd-compare \
+  bash benches/aushd_compare.sh ./target/release/aush ./target/release/aushd
 ```
 
-### With baseline comparison
+Interpretation:
+
+- direct daemon protocol calls measure resident-client latency;
+- one-shot `aush -c` measurements include process startup;
+- those are different paths and should not be described as the same thing.
+
+### POSIX regression score
+
+AUSH has a Rust POSIX regression suite in addition to optional ShellSpec/Bats fixtures:
+
 ```bash
-# Save baseline
+cargo test --test posix_2024_compliance --quiet
+cargo test --test posix_compliance_tests --quiet
+bash tests/posix/run_tests.sh
+```
+
+Current local results:
+
+- `posix_2024_compliance`: 146 passed, 3 failed, 31 ignored, 180 total;
+- executed POSIX 2024 pass rate: 146/149 = 98.0%;
+- total POSIX 2024 coverage pass rate if ignored tests are counted as pending: 146/180 = 81.1%;
+- `posix_compliance_tests`: 8 passed, 0 failed, 2 ignored;
+- ShellSpec/Bats: optional harness; no score on machines where ShellSpec/Bats are unavailable.
+
+Use the executed pass rate to track regressions in implemented POSIX behavior. Use the total-with-ignored number to track how much of the planned POSIX surface is covered and passing. Do not describe either number as formal POSIX certification.
+
+## Benchmark map
+
+| File | Purpose | Typical use |
+| --- | --- | --- |
+| `aush_smoke_fast.sh` | Fast release smoke gate | Run before commits/releases |
+| `aush_suite.sh` | Orchestrates smoke/compat suites | Run `compat` before publishing |
+| `agentic_compat.sh` | Agent-style compatibility workloads | Check automation behavior |
+| `workloads/agentic_core.sh` | Core shell workload fixture | Used by compatibility suite |
+| `ai_agent_workloads.rs` | Criterion benchmark for agent-like operations | Measure native command paths |
+| `daemon_latency.rs` | Criterion daemon protocol benchmarks | Work on `aushd` latency |
+| `aushd_compare.sh` | Scripted daemon vs CLI comparison | Quick before/after daemon check |
+| `startup.rs` | Startup/initialization Criterion benches | Work on startup cost |
+| `builtins.rs` | Builtin command Criterion benches | Work on native command speed |
+| `shell_comparison.rs` | Criterion comparison across shells | Contextual performance work |
+| `compare_bash.sh` | Scripted Bash comparison | Exploratory comparison |
+| `shellbench.sh` | Broad shell behavior timing script | Exploratory shell comparison |
+| `benchmark.sh` | POSIX-ish behavior benchmark script | Exploratory compatibility/perf |
+| `quick_benchmark.sh` | Short local timing helper | Manual iteration |
+| `profile_benchmark.sh` | Profiling helper | Hot-path investigation |
+| `interactive_benchmark.sh` | Interactive/session timing helper | Manual UX/perf checks |
+| `session_benchmark.sh` | Persistent session timing helper | Manual session checks |
+| `claude_code_benchmark.py` | Python benchmark harness for coding-agent flows | Exploratory agent workload timing |
+
+## Interpreting numbers
+
+Avoid turning one local timing result into a permanent product claim. Prefer language like:
+
+- “direct daemon protocol calls are in the hundreds of microseconds on this machine”;
+- “one-shot `aush -c` includes process startup and is measured in milliseconds”;
+- “native builtins avoid subprocess overhead for supported operations.”
+
+When reporting numbers, include:
+
+- hardware/OS if relevant;
+- release/debug build;
+- exact command;
+- whether startup is included;
+- whether the command succeeded.
+
+## Recommended release gate
+
+```bash
+cargo fmt --check
+cargo test --test command_tests --quiet
+cargo test --benches --no-run
+cargo build --release --bins
+bash benches/aush_smoke_fast.sh ./target/release/aush
+bash benches/aush_suite.sh ./target/release/aush compat
+cargo package
+```
+
+## Adding or changing benchmarks
+
+- Make benchmark commands fail loudly if the shell command fails.
+- Do not silently time failed commands.
+- Keep release gates deterministic and short.
+- Keep statistical Criterion benchmarks separate from smoke tests.
+- Use temp directories for filesystem workloads.
+- Avoid depending on user-specific shell config; prefer `--no-rc`.
+- Document what path is being measured: CLI startup, builtin execution, daemon protocol, or external command execution.
+
+## Viewing Criterion reports
+
+```bash
+open target/criterion/report/index.html
+```
+
+Criterion output includes confidence intervals, outlier detection, and historical comparisons when baselines are saved.
+
+```bash
 cargo bench -- --save-baseline main
-
-# Make changes...
-
-# Compare to baseline
 cargo bench -- --baseline main
 ```
-
-## Viewing Results
-
-Criterion generates detailed HTML reports:
-
-```bash
-# Open report in browser
-open target/criterion/report/index.html
-
-# Or navigate to specific benchmark
-open target/criterion/startup/cold_start_exit/report/index.html
-```
-
-Reports include:
-- Statistical analysis (mean, median, std dev)
-- Performance regression detection
-- Historical comparison charts
-- Detailed timing distributions
-- Violin plots showing data distribution
-
-## Understanding Output
-
-Terminal output format:
-```
-startup/cold_start_exit
-                        time:   [8.234 ms 8.456 ms 8.678 ms]
-                        change: [-5.123% -3.456% -1.789%] (p = 0.00 < 0.05)
-                        Performance has improved.
-```
-
-- **time**: [lower_bound mean upper_bound] with 95% confidence
-- **change**: Performance delta vs previous run
-- **p-value**: Statistical significance (< 0.05 = significant)
-
-## Benchmark Configuration
-
-Current settings:
-- **Warmup**: 3-5 runs to stabilize cache
-- **Sample size**: 30-100 iterations
-- **Measurement time**: 5-10 seconds
-- **Confidence level**: 95%
-
-Adjust in individual benchmarks:
-```rust
-group.warmup_time(Duration::from_secs(5));
-group.measurement_time(Duration::from_secs(10));
-group.sample_size(100);
-```
-
-## Adding New Benchmarks
-
-1. Add function to appropriate file:
-```rust
-fn bench_my_feature(c: &mut Criterion) {
-    c.bench_function("my_feature", |b| {
-        b.iter(|| {
-            // Code to benchmark
-            let result = my_function(black_box(input));
-            black_box(result);
-        });
-    });
-}
-```
-
-2. Add to criterion_group:
-```rust
-criterion_group!(
-    startup_benches,
-    bench_my_feature,  // Add here
-    bench_other_feature
-);
-```
-
-3. Always use `black_box()` to prevent optimization
-
-## Best Practices
-
-### DO
-- ✅ Use `black_box()` for inputs and outputs
-- ✅ Benchmark realistic scenarios
-- ✅ Compare against baselines (bash, GNU utils)
-- ✅ Run warmup iterations
-- ✅ Document expected performance in comments
-
-### DON'T
-- ❌ Benchmark trivial operations
-- ❌ Ignore variance in results
-- ❌ Optimize based on single run
-- ❌ Skip warmup in noisy benchmarks
-- ❌ Forget to update baselines after improvements
-
-## Performance Targets
-
-| Component | Target | Current | Status |
-|-----------|--------|---------|--------|
-| Startup (cold) | < 10ms | TBD | ⏳ |
-| Lexer tokenize | < 1ms | TBD | ⏳ |
-| Parser (simple) | < 500μs | TBD | ⏳ |
-| Executor init | < 100μs | TBD | ⏳ |
-| Echo builtin | ≤ GNU | TBD | ⏳ |
-| PWD builtin | ≤ GNU | TBD | ⏳ |
-| Find builtin | ≤ GNU | TBD | ⏳ |
-
-Run benchmarks and update this table!
-
-## Profiling
-
-For deeper analysis:
-
-### Flamegraphs
-```bash
-cargo install flamegraph
-cargo flamegraph --bench startup
-```
-
-### Instruments (macOS)
-```bash
-cargo install cargo-instruments
-cargo instruments -t time --bench builtins
-```
-
-### Cachegrind (Linux)
-```bash
-valgrind --tool=cachegrind --cachegrind-out-file=cache.out \
-    target/release/aush -c exit
-cg_annotate cache.out
-```
-
-## Troubleshooting
-
-### Noisy benchmarks
-- Increase warmup and sample size
-- Close background applications
-- Run on consistent power settings
-
-### "Benchmark took too long"
-- Reduce sample size
-- Decrease measurement time
-- Check for infinite loops
-
-### Inconsistent results
-- Enable CPU frequency scaling
-- Disable turbo boost for consistency
-- Run multiple times and average
-
-## See Also
-
-- [BENCHMARKS.md](../BENCHMARKS.md) - Complete benchmarking guide
-- [scripts/benchmark.sh](../scripts/benchmark.sh) - Real-world hyperfine benchmarks
-- [Criterion Book](https://bheisler.github.io/criterion.rs/book/)

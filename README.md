@@ -3,67 +3,66 @@
 [![CI](https://github.com/opus-workshop/aush/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/opus-workshop/aush/actions/workflows/integration-tests.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-**Actually Usable Shell: the AI-native shell with structured pipelines.**
+**Another Unix Shell** — a Rust shell for Unix-style command execution, native builtins, structured output, and automation-heavy workflows.
 
-AUSH is a POSIX-compatible shell built in Rust with three things your current shell doesn't have: a real AI agent at the prompt, typed structured pipelines, and Lua extensions for anything else.
+AUSH is intentionally familiar: commands, pipelines, redirections, variables, functions, control flow, jobs, and exit codes should feel like a shell. The difference is that common operations are implemented natively and increasingly expose structured output for tools and coding agents.
 
----
-
-## What makes it different
-
-**Structured pipelines** — builtins produce typed data, not text. Pipe into `| where`, `| select`, `| sort`, `| count` without touching `awk` or `jq`.
-
-**AI agent built in** — prefix any query with `?` and AUSH sends it to the LLM, shows you the command, and asks to run it. Works with Ollama (local), OpenAI, or Anthropic. No wrapper scripts.
-
-**Lua extensions** — register custom builtins, prompt segments, completions, and shell hooks in `~/.aush/lua/`. No recompile.
-
-Oh, and it's still a shell. Your existing scripts run unchanged.
-
----
-
-## Quick examples
-
-```bash
-# Ask the AI to write a command — it generates, you confirm
-? find all Rust files changed in the last week
-
-# Structured pipeline: filter git status without awk
-git status --json | where status == "modified" | select path
-
-# Count TODO comments across the codebase
-grep --json 'TODO' src/**/*.rs | count
-
-# Register a custom builtin in Lua
-# ~/.aush/lua/weather.lua
-aush.register_builtin("weather", {
-    description = "Current weather",
-    run = function(args)
-        local city = args[1] or "London"
-        local data = aush.exec_structured("fetch https://wttr.in/" .. city .. "?format=j1")
-        return { text = data.current_condition[1].temp_C .. "°C in " .. city }
-    end
-})
+```text
+┌──────────────────────────── AUSH ────────────────────────────┐
+│ $ aush --no-rc -c 'printf "one\ntwo\n" | tail -n 1'         │
+│ two                                                          │
+│                                                              │
+│ $ aush --no-rc -c 'grep -q beta <<EOF                       │
+│ alpha                                                        │
+│ beta                                                         │
+│ EOF'                                                         │
+│ # exit status: 0                                             │
+│                                                              │
+│ $ aushd                                                      │
+│ daemon protocol for warm, resident clients                   │
+└──────────────────────────────────────────────────────────────┘
 ```
 
----
+## Why AUSH
 
-## Installation
+Traditional shells are excellent at composition, but they were not designed for programs that make hundreds of short shell calls and need reliable machine-readable results.
 
-### Cargo
+AUSH focuses on four things:
+
+1. **Shell compatibility where it matters** — scripts should keep using ordinary shell syntax.
+2. **Native builtins for hot paths** — avoid subprocess overhead for common commands.
+3. **Structured output** — prefer JSON/typed records when commands are used by programs.
+4. **Agent-friendly behavior** — deterministic startup, useful exit codes, and less stdout scraping.
+
+AUSH is not trying to be a toy shell or a total reinvention of Unix. It is a practical shell with modern implementation choices.
+
+## Status
+
+AUSH is early but usable for focused workflows. Treat it as a shell you can experiment with, script against, and improve — not yet as a guaranteed login-shell replacement for every Bash/Zsh edge case.
+
+Good fits today:
+
+- `aush --no-rc -c '...'` command execution;
+- native builtin and file/text workflows;
+- shell compatibility testing;
+- structured JSON-oriented automation;
+- coding-agent harnesses and benchmarks;
+- daemon protocol experiments.
+
+Use caution for:
+
+- replacing your daily login shell;
+- production scripts that depend on obscure Bash/Zsh behavior;
+- platform-specific job-control edge cases;
+- long-running interactive terminal sessions.
+
+## Install
 
 ```bash
 cargo install aush
 ```
 
-The crates.io package is `aush` and installs `aush` as the primary command.
-
-To install directly from git:
-
-```bash
-cargo install --git https://github.com/opus-workshop/aush
-```
-
-### Build from source
+From source:
 
 ```bash
 git clone https://github.com/opus-workshop/aush.git
@@ -71,265 +70,275 @@ cd aush
 cargo install --path .
 ```
 
-**Requirements:** Rust 1.70+.
-
----
-
-## AI setup
-
-On first `?` use, AUSH runs an interactive wizard. Or set it up manually:
-
-```toml
-# ~/.aush/ai.toml
-provider = "ollama"           # ollama | openai | anthropic
-model = "qwen2.5-coder:7b"
-```
-
-**Ollama** (local, private — recommended):
-```bash
-ollama pull qwen2.5-coder:7b
-# That's it. AUSH finds Ollama at localhost:11434 automatically.
-```
-
-**OpenAI:**
-```toml
-provider = "openai"
-model = "gpt-4o"
-# Set OPENAI_API_KEY in your environment
-```
-
-**Anthropic:**
-```toml
-provider = "anthropic"
-model = "claude-3-5-sonnet-20241022"
-# Set ANTHROPIC_API_KEY in your environment
-```
-
-### How the agent works
-
-The `?` prefix sends your natural language query to the LLM with shell context (cwd, project type, recent history). The model returns a command with an explanation. AUSH shows you both and asks to run, edit, or cancel. Destructive commands always require explicit confirmation.
+Build local release binaries:
 
 ```bash
-? find files over 100MB and list them by size
-# Suggests: find . -type f -size +100M | xargs ls -lh | sort -k5 -rh
-# [r]un  [e]dit  [c]ancel?
+cargo build --release --bins
+./target/release/aush --no-rc -c 'echo hello from aush'
 ```
 
----
+The package installs two binaries:
 
-## Lua extensions
+- `aush` — shell CLI;
+- `aushd` — daemon/server binary for warm execution experiments.
 
-Scripts in `~/.aush/lua/` load at startup in alphabetical order.
-
-```lua
--- ~/.aush/lua/myconfig.lua
-
--- Custom builtin
-aush.register_builtin("greet", {
-    description = "Say hello",
-    run = function(args)
-        return { text = "Hello, " .. (args[1] or "world") }
-    end
-})
-
--- Prompt segment
-aush.register_prompt("git_branch", function()
-    local branch = aush.exec("git rev-parse --abbrev-ref HEAD 2>/dev/null")
-    if branch ~= "" then
-        return " " .. branch
-    end
-end)
-
--- Shell hooks
-aush.on("precmd", function(exit_code, elapsed_ms)
-    -- fires before every prompt draw
-end)
-
--- Custom completion
-aush.register_completion("deploy", function(args)
-    return { "staging", "production", "preview" }
-end)
-```
-
-The full API surface: `aush.exec()`, `aush.exec_structured()`, `aush.json_parse()`, `aush.json_encode()`, `aush.env.get/set()`, `aush.cwd()`.
-
----
-
-## Structured pipelines
-
-All AUSH builtins emit typed `Value` objects — not text. The pipeline operators work on that data directly.
+## Quick start
 
 ```bash
-# Filter: keep rows where field matches value
-ls --json | where type == "file"
+# Run without startup files for deterministic automation
+aush --no-rc -c 'echo hello'
 
-# Select: keep only named columns
-git log --json | select hash message author
+# Pipelines and redirections
+aush --no-rc -c 'printf "one\ntwo\nthree\n" | tail -n 2'
+aush --no-rc -c 'echo log line >> /tmp/aush-example.log'
 
-# Sort: order by field
-find --json . -name "*.rs" | sort size --reverse
+# Shell-style exit codes
+aush --no-rc -c 'grep -q needle README.md'
+echo $?
 
-# Count: number of rows
-grep --json 'TODO' src/**/*.rs | count
-
-# Chaining
-find --json . -name "*.rs" | where size > 10000 | sort size | select path size
+# Native file/text commands
+aush --no-rc -c 'find . -name "*.rs" -print -quit'
+aush --no-rc -c 'ls -d src'
+aush --no-rc -c 'grep -c "TODO" README.md'
 ```
 
-Text output from external commands is coerced into a single-column table (`{line: "..."}`) so operators work on anything.
+## Feature overview
 
-### Built-in structured commands
+### Shell language
 
-| Command | Output |
-|---------|--------|
-| `ls --json` | File list with name, size, type, modified |
-| `git status --json` | Staged, unstaged, untracked, branch info |
-| `git log --json` | Commits with hash, author, date, message |
-| `git diff --json` | Hunks with additions, deletions, context |
-| `grep --json` | Matches with file, line number, context |
-| `find --json` | Paths with size, type, permissions |
-| `fetch --json` | HTTP response with status, headers, body |
+AUSH implements a growing Unix shell language surface:
 
----
+- simple commands and pipelines;
+- `;` command sequencing;
+- command substitution;
+- arithmetic expansion;
+- variables and environment mutation;
+- functions;
+- `if`/`elif`/`else`;
+- `while`, `until`, and `for` loops;
+- `case` patterns;
+- here-docs and common redirections;
+- background jobs and job-control builtins;
+- shell-style exit status propagation.
 
-## Designed for AI coding agents
+### Builtins
 
-AUSH is optimized for AI assistants that make hundreds of shell calls per task.
+AUSH includes native implementations for common shell and utility commands, including:
+
+- shell/session: `cd`, `pwd`, `echo`, `printf`, `read`, `export`, `unset`, `source`, `eval`, `exec`, `exit`;
+- tests/control: `test`, `[`, `true`, `false`, `return`, `shift`;
+- jobs/signals: `jobs`, `fg`, `bg`, `kill`, `wait`, `trap`;
+- files/directories: `ls`, `cat`, `mkdir`, `rm`, `cp`, `mv`, `chmod`, `readlink`, `find`;
+- text: `grep`, `head`, `tail`, `wc`, `sort`, `uniq`-style structured operators where available;
+- developer helpers: Git, HTTP, JSON, and structured-output commands behind the default feature set.
+
+Native builtins are ordinary shell commands from the user’s perspective, but they avoid fork/exec when AUSH can handle the operation itself.
+
+### Structured output
+
+Several native commands support `--json` for programmatic access. That lets scripts and agents consume command results without parsing human-formatted text.
+
+Examples:
+
+```bash
+# File search as JSON records
+aush --no-rc -c 'find . --json -name "*.rs"'
+
+# Grep matches as JSON records
+aush --no-rc -c 'grep --json "CommandNotFound" src'
+
+# Directory listing as JSON records
+aush --no-rc -c 'ls --json src'
+```
+
+Structured pipeline operators such as `where`, `select`, `sort`, and `count` are part of the direction of the project. They are useful for AUSH-native data, and their compatibility surface is still being expanded.
+
+### Coding-agent workflows
+
+AUSH is designed for callers that need repeatable shell behavior:
+
+- `--no-rc` skips startup config for deterministic tests;
+- command-not-found uses shell-style exit code `127`;
+- native JSON output reduces fragile text parsing;
+- benchmarks and smoke tests fail loudly when commands fail;
+- daemon protocol support is available for resident clients.
+
+Python example:
 
 ```python
-import subprocess, json
+import subprocess
 
-def aush(cmd: str):
-    result = subprocess.run(
-        ["aush", "-c", cmd],
-        capture_output=True, text=True,
-        env={"AUSH_ERROR_FORMAT": "json"}
-    )
-    return json.loads(result.stdout)
+result = subprocess.run(
+    ["aush", "--no-rc", "-c", "grep --json 'TODO' src"],
+    text=True,
+    capture_output=True,
+)
 
-# Structured data, no text parsing
-todos  = aush("grep --json 'TODO|FIXME' src/**/*.rs")
-status = aush("git status --json")
-staged = [f["path"] for f in status["staged"]]
+if result.returncode == 0:
+    print(result.stdout)
+else:
+    raise RuntimeError(result.stderr)
 ```
 
-Errors come back as typed JSON (`CommandNotFound`, `GitError`, `NetworkError`, etc.) so agents can handle them programmatically instead of parsing stderr.
+### Daemon mode
 
-For workloads with many rapid calls, the daemon mode cuts startup to **0.4ms**:
+`aushd` provides a daemon path for clients that want to keep shell/runtime state warm instead of launching a fresh process for every command.
+
+Current benchmark interpretation:
+
+- direct daemon protocol calls can complete in hundreds of microseconds for simple commands;
+- one-shot `aush -c` still pays process startup and is measured in milliseconds;
+- daemon mode is most useful for resident clients, editor integrations, and agent runtimes that make many calls.
+
+## Compatibility notes
+
+AUSH is intended to be Unix-shell-shaped, not Bash-perfect on day one.
+
+Recent compatibility work includes:
+
+- `grep -q` quiet behavior;
+- `grep -c`, `grep -l`, and `grep -L`;
+- `tail -f` / `--follow` fails loudly instead of being silently ignored;
+- GNU-style non-interactive `rm -r` behavior;
+- `find -print` and `find -quit`;
+- `ls -d`;
+- command-not-found exit status `127`.
+
+Known limitations:
+
+- some POSIX edge cases remain under active development;
+- Bash/Zsh-specific extensions are not all implemented;
+- interactive login-shell use is experimental;
+- long-running follow/watch-style commands are conservative unless explicitly supported.
+
+### POSIX regression coverage
+
+AUSH tracks POSIX shell behavior with Rust integration tests plus optional external harnesses.
+
+Current local POSIX 2024 regression result:
+
+```text
+cargo test --test posix_2024_compliance --quiet
+146 passed / 3 failed / 31 ignored / 180 total
+```
+
+That is **98.0% passing among executed tests** (`146/149`) and **81.1% passing if ignored/pending tests are counted in the total** (`146/180`). This is a project regression benchmark, not formal POSIX certification.
+
+The older POSIX compliance smoke test also passes its executed cases:
+
+```text
+cargo test --test posix_compliance_tests --quiet
+8 passed / 0 failed / 2 ignored
+```
+
+The ShellSpec/Bats harness under `tests/posix/` is optional; on machines without ShellSpec/Bats installed it reports no external harness score.
+
+## Benchmarks and smoke tests
+
+Benchmarking in AUSH is split by purpose:
+
+- **smoke gates** check whether the shell works at all for release-critical behavior;
+- **compatibility workloads** exercise agent-style command sequences;
+- **Criterion benches** measure startup, builtins, shell comparison, and daemon latency;
+- **ad hoc scripts** compare against other shells or profile specific scenarios.
+
+Common commands:
 
 ```bash
-aushd start          # keep AUSH warm in the background
-aush -c "ls"         # Run a command
-aushd stop
+# Build optimized binaries
+cargo build --release --bins
+
+# Fast release smoke
+bash benches/aush_smoke_fast.sh ./target/release/aush
+
+# Broader compatibility workload
+bash benches/aush_suite.sh ./target/release/aush compat
+
+# Compile benchmark targets without running long measurements
+cargo test --benches --no-run
+
+# Criterion benches
+cargo bench --bench startup
+cargo bench --bench builtins
+cargo bench --bench daemon_latency
 ```
 
-See [docs/AI_AGENT_GUIDE.md](docs/AI_AGENT_GUIDE.md) for the full integration guide including JSON schemas, error types, and Python/batch examples.
+See [benches/README.md](benches/README.md) for the benchmark map and when to use each script.
 
----
-
-## POSIX compatibility
-
-AUSH targets 90%+ POSIX.1-2017 compliance. Your scripts work.
-
-- **Control flow**: `if`/`elif`/`else`, `while`, `until`, `for`, `case`, functions
-- **Job control**: background jobs, `fg`/`bg`, job specs (`%1`, `%+`, `%-`), process groups
-- **Redirections**: `>`, `>>`, `<`, `2>&1`, here-docs (`<<EOF`), arbitrary FD redirection
-- **Expansions**: variables, `$(...)`, `$((...))`, globbing, brace expansion
-- **Signals**: `trap`, SIGCHLD, SIGTSTP/SIGCONT, SIGTTIN/SIGTTOU
-- **Special vars**: `$$`, `$!`, `$?`, `$-`, `$_`, `$0`, `$@`, `$*`, `$#`, `$IFS`
-- **50+ builtins**: `cd`, `pwd`, `echo`, `export`, `source`, `eval`, `exec`, `test`, `[`, `printf`, `read`, `trap`, `alias`, `jobs`, `fg`, `bg`, `kill`, `wait`, and more
+## Development
 
 ```bash
-#!/usr/bin/env aush
+# Format
+cargo fmt --check
 
-# This is valid POSIX sh — AUSH runs it fine
-for file in $(find . -name "*.rs"); do
-    if grep -q "TODO" "$file"; then
-        echo "Found TODO in: $file"
-    fi
-done
+# Build
+cargo build --bins
+
+# Focused tests
+cargo test --test command_tests
+cargo test --test grep_integration_test
+cargo test --test tail_builtin_tests
+
+# Package verification
+cargo package
 ```
 
----
-
-## Performance
-
-AUSH builtins skip fork/exec entirely. Commands are native Rust, not subprocess calls.
-
-| Operation | Bash/Zsh | AUSH | Speedup |
-|-----------|----------|------|---------|
-| `ls` (1000 files) | 12–15ms | **0.1ms** | 120x |
-| `grep` pattern | 42–45ms | **0.2ms** | 212x |
-| `cat` small file | 8–9ms | **0.02ms** | 427x |
-| Cold startup | 2.5–12ms | **4.9ms** | — |
-| Daemon startup | — | **0.4ms** | — |
-
-For AI agent workloads (git status × 3, file search × 5, JSON ops × 10, HTTP × 2): roughly **2–5s in AUSH vs 10–20s in bash + external tools**.
-
----
-
-## Architecture
-
-```
-aush/
-├── src/
-│   ├── ai/           # LLM client, agent loop, provider adapters (Ollama/OpenAI/Anthropic)
-│   ├── lua/          # Lua 5.4 runtime (mlua), aush.* API, script loader
-│   ├── lexer/        # Token stream (Logos)
-│   ├── parser/       # AST (nom)
-│   ├── executor/     # Command execution + structured_ops (where/select/sort/count)
-│   ├── value/        # Typed Value system (String, Int, List, Table, Path, ...)
-│   ├── builtins/     # 80+ native Rust commands
-│   ├── daemon/       # Client-server fast startup
-│   ├── intent/       # ? prefix: natural language → shell command
-│   ├── runtime/      # Variable scoping, environment
-│   ├── signal.rs     # POSIX signal handling
-│   └── jobs/         # Job control
-├── tests/
-│   ├── posix/        # POSIX compliance suite
-│   └── *.rs          # 52 integration test files
-├── benches/          # Criterion benchmarks
-├── examples/         # 12 example scripts
-└── docs/             # 65+ documentation files
-```
-
----
-
-## Testing
+Before publishing or cutting a release, run at least:
 
 ```bash
-cargo test
-cargo test --test posix_compliance_tests
-cargo test --test pipeline_tests
-cargo bench
+cargo fmt --check
+cargo test --test command_tests --quiet
+cargo test --benches --no-run
+cargo build --release --bins
+bash benches/aush_smoke_fast.sh ./target/release/aush
+bash benches/aush_suite.sh ./target/release/aush compat
+cargo package
 ```
 
-52 test files including a POSIX compliance suite.
+## Project layout
 
----
+```text
+src/
+  builtins/    native shell/file/text/developer commands
+  daemon/      aushd protocol and server pieces
+  executor/    command execution, pipelines, redirects
+  parser/      shell parser
+  runtime/     variables, cwd, environment state
+  value/       structured value model
+benches/       release smoke, compatibility workloads, Criterion benches
+tests/         integration and compatibility tests
+docs/          deeper references and design notes
+examples/      sample shell scripts and usage patterns
+```
 
 ## Documentation
 
-- [AI Agent Integration Guide](docs/AI_AGENT_GUIDE.md)
-- [POSIX Compliance Report](tests/posix/COMPLIANCE_REPORT.md)
-- [Daemon Architecture](docs/daemon-architecture.md)
-- [Performance Guide](docs/PERFORMANCE.md)
-- [Builtin Reference](docs/builtins/)
+- [docs/README.md](docs/README.md)
+- [docs/AI_AGENT_GUIDE.md](docs/AI_AGENT_GUIDE.md)
+- [docs/AI_AGENT_JSON_REFERENCE.md](docs/AI_AGENT_JSON_REFERENCE.md)
+- [benches/README.md](benches/README.md)
+- [tests/posix/README.md](tests/posix/README.md)
+- [examples/README.md](examples/README.md)
 
----
+## Name
+
+AUSH can be read as **Another Unix Shell**. It started from a simpler idea: make a shell that is actually pleasant to use from both humans and programs.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Help wanted on POSIX edge cases, platform support (BSD, WSL), and documentation.
+Small compatibility improvements are valuable. Good first contributions include:
+
+- adding a missing flag to a native builtin;
+- adding a regression test for Bash/POSIX behavior;
+- improving exit-code or stderr compatibility;
+- making a benchmark fail loudly instead of silently measuring a failed command;
+- documenting a known limitation with a reproducible example.
+
+Please run the smallest relevant tests plus `cargo fmt --check` before sending changes.
 
 ## License
 
-Dual-licensed under MIT or Apache-2.0 (your choice).
+Dual-licensed under either:
 
-## Acknowledgments
-
-Built on: [logos](https://github.com/maciejhirsz/logos), [nom](https://github.com/rust-bakery/nom), [reedline](https://github.com/nushell/reedline), [git2](https://github.com/rust-lang/git2-rs), [mlua](https://github.com/khvzalenko/mlua), [grep-*](https://github.com/BurntSushi/ripgrep)
-
----
-
-**~68,000 lines of Rust** · **80+ builtins** · **Ollama/OpenAI/Anthropic** · **Lua extensions**
+- MIT — see [LICENSE-MIT](LICENSE-MIT)
+- Apache-2.0 — see [LICENSE-APACHE](LICENSE-APACHE)
