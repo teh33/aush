@@ -1,4 +1,4 @@
-//! Structured error types for Rush shell
+//! Structured error types for AUSH shell
 //!
 //! This module provides typed error representations that can be formatted
 //! as either human-readable text or structured JSON.
@@ -83,9 +83,9 @@ impl CommandContext {
     }
 }
 
-/// Structured error type for Rush shell operations
+/// Structured error type for AUSH shell operations
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RushError {
+pub struct AUSHError {
     /// Error code category
     pub error_code: String,
     /// Human-readable error message
@@ -103,7 +103,7 @@ pub struct RushError {
     pub command_context: Option<CommandContext>,
 }
 
-impl RushError {
+impl AUSHError {
     /// Create a new error with the given code, message, and exit code
     pub fn new(error_code: impl Into<String>, message: impl Into<String>, exit_code: i32) -> Self {
         Self {
@@ -188,10 +188,10 @@ impl RushError {
 
 /// Check if errors should be output in JSON format
 ///
-/// Currently checks AUSH_ERROR_FORMAT with fallback to RUSH_ERROR_FORMAT.
+/// Currently checks AUSH_ERROR_FORMAT with fallback to AUSH_ERROR_FORMAT.
 /// Returns true if it's set to "json", false otherwise.
 pub fn should_output_json_errors() -> bool {
-    crate::brand::env_var("AUSH_ERROR_FORMAT", "RUSH_ERROR_FORMAT")
+    crate::brand::env_var("AUSH_ERROR_FORMAT")
         .map(|v| v.to_lowercase() == "json")
         .unwrap_or(false)
 }
@@ -202,7 +202,7 @@ mod tests {
 
     #[test]
     fn test_file_not_found() {
-        let err = RushError::file_not_found(Path::new("/tmp/nonexistent"));
+        let err = AUSHError::file_not_found(Path::new("/tmp/nonexistent"));
         assert_eq!(err.error_code, "FILE_NOT_FOUND");
         assert_eq!(err.exit_code, 1);
         assert!(err.message.contains("No such file or directory"));
@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_is_a_directory() {
-        let err = RushError::is_a_directory(Path::new("/tmp"));
+        let err = AUSHError::is_a_directory(Path::new("/tmp"));
         assert_eq!(err.error_code, "IS_A_DIRECTORY");
         assert_eq!(err.exit_code, 1);
         assert!(err.message.contains("Is a directory"));
@@ -218,7 +218,7 @@ mod tests {
 
     #[test]
     fn test_to_json() {
-        let err = RushError::new("TEST_ERROR", "Test message", 42);
+        let err = AUSHError::new("TEST_ERROR", "Test message", 42);
         let json = err.to_json();
         assert!(json.contains("TEST_ERROR"));
         assert!(json.contains("Test message"));
@@ -227,13 +227,13 @@ mod tests {
 
     #[test]
     fn test_to_text() {
-        let err = RushError::new("TEST_ERROR", "Test message", 42);
+        let err = AUSHError::new("TEST_ERROR", "Test message", 42);
         assert_eq!(err.to_text(), "Test message");
     }
 
     #[test]
     fn test_with_context() {
-        let err = RushError::new("TEST_ERROR", "Test message", 1)
+        let err = AUSHError::new("TEST_ERROR", "Test message", 1)
             .with_context(serde_json::json!({"file": "/tmp/test.txt"}));
         assert!(err.context.is_some());
     }
@@ -241,23 +241,23 @@ mod tests {
     #[test]
     fn test_should_output_json_errors() {
         // Default should be false
-        std::env::remove_var("RUSH_ERROR_FORMAT");
+        std::env::remove_var("AUSH_ERROR_FORMAT");
         assert!(!should_output_json_errors());
 
         // Set to json
-        std::env::set_var("RUSH_ERROR_FORMAT", "json");
+        std::env::set_var("AUSH_ERROR_FORMAT", "json");
         assert!(should_output_json_errors());
 
         // Set to JSON (uppercase)
-        std::env::set_var("RUSH_ERROR_FORMAT", "JSON");
+        std::env::set_var("AUSH_ERROR_FORMAT", "JSON");
         assert!(should_output_json_errors());
 
         // Set to something else
-        std::env::set_var("RUSH_ERROR_FORMAT", "text");
+        std::env::set_var("AUSH_ERROR_FORMAT", "text");
         assert!(!should_output_json_errors());
 
         // Clean up
-        std::env::remove_var("RUSH_ERROR_FORMAT");
+        std::env::remove_var("AUSH_ERROR_FORMAT");
     }
 
     #[test]
@@ -273,11 +273,11 @@ mod tests {
     fn test_source_location_with_content() {
         let loc = SourceLocation::new(5, 10)
             .with_line_content("let x = invalid".to_string())
-            .with_filename("script.rush".to_string());
+            .with_filename("script.aush".to_string());
         assert_eq!(loc.line, 5);
         assert_eq!(loc.column, 10);
         assert_eq!(loc.line_content, Some("let x = invalid".to_string()));
-        assert_eq!(loc.filename, Some("script.rush".to_string()));
+        assert_eq!(loc.filename, Some("script.aush".to_string()));
     }
 
     #[test]
@@ -305,7 +305,7 @@ mod tests {
     #[test]
     fn test_error_with_location() {
         let loc = SourceLocation::new(5, 10).with_line_content("let x = invalid".to_string());
-        let err = RushError::new("PARSE_ERROR", "Invalid syntax", 1).with_location(loc);
+        let err = AUSHError::new("PARSE_ERROR", "Invalid syntax", 1).with_location(loc);
         assert!(err.location.is_some());
         assert_eq!(err.location.as_ref().unwrap().line, 5);
     }
@@ -314,7 +314,7 @@ mod tests {
     fn test_error_with_command_context() {
         let ctx = CommandContext::new("echo").with_args(vec!["hello".to_string()]);
         let err =
-            RushError::new("EXECUTION_ERROR", "Failed to execute", 1).with_command_context(ctx);
+            AUSHError::new("EXECUTION_ERROR", "Failed to execute", 1).with_command_context(ctx);
         assert!(err.command_context.is_some());
         assert_eq!(err.command_context.as_ref().unwrap().command_name, "echo");
     }
@@ -323,7 +323,7 @@ mod tests {
     fn test_error_with_both_contexts() {
         let loc = SourceLocation::new(5, 10);
         let cmd_ctx = CommandContext::new("test");
-        let err = RushError::new("ERROR", "Test error", 1)
+        let err = AUSHError::new("ERROR", "Test error", 1)
             .with_location(loc)
             .with_command_context(cmd_ctx);
         assert!(err.location.is_some());
@@ -332,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_get_help_for_error() {
-        let err = RushError::new("FILE_NOT_FOUND", "missing.txt: No such file", 1);
+        let err = AUSHError::new("FILE_NOT_FOUND", "missing.txt: No such file", 1);
         let help = err.get_help();
         assert!(help.is_some());
         let entry = help.unwrap();
@@ -341,14 +341,14 @@ mod tests {
 
     #[test]
     fn test_get_help_for_nonexistent_error() {
-        let err = RushError::new("CUSTOM_ERROR", "Custom message", 1);
+        let err = AUSHError::new("CUSTOM_ERROR", "Custom message", 1);
         let help = err.get_help();
         assert!(help.is_none());
     }
 
     #[test]
     fn test_with_help_formatting() {
-        let err = RushError::new("FILE_NOT_FOUND", "missing.txt: No such file", 1);
+        let err = AUSHError::new("FILE_NOT_FOUND", "missing.txt: No such file", 1);
         let formatted = err.with_help();
         assert!(formatted.contains("missing.txt: No such file"));
         assert!(formatted.contains("Help:"));
@@ -357,7 +357,7 @@ mod tests {
 
     #[test]
     fn test_with_help_no_help_available() {
-        let err = RushError::new("UNKNOWN_ERROR", "Something went wrong", 1);
+        let err = AUSHError::new("UNKNOWN_ERROR", "Something went wrong", 1);
         let formatted = err.with_help();
         // Should still contain the error message, just without help
         assert!(formatted.contains("Something went wrong"));

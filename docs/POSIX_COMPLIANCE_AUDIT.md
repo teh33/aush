@@ -1,11 +1,11 @@
-# Rush POSIX Compliance Audit
+# AUSH POSIX Compliance Audit
 
 **Date**: 2026-01-24
-**Purpose**: Determine what Rush needs to legitimately call itself "Unix"
+**Purpose**: Determine what AUSH needs to legitimately call itself "Unix"
 
 ## Executive Summary
 
-Rush has **solid POSIX foundations** but gaps remain. To call itself Unix:
+AUSH has **solid POSIX foundations** but gaps remain. To call itself Unix:
 
 **Current Status**: ~60% POSIX compliant
 - ✅ Core execution model (pipes, redirects, subshells, jobs)
@@ -14,11 +14,11 @@ Rush has **solid POSIX foundations** but gaps remain. To call itself Unix:
 - ❌ Incomplete I/O redirection (no arbitrary FDs, no here-docs)
 - ❌ No trap builtin for signal handling
 
-**Verdict**: Rush is a **capable shell** with excellent performance, but not yet a **POSIX shell**.
+**Verdict**: AUSH is a **capable shell** with excellent performance, but not yet a **POSIX shell**.
 
 ---
 
-# Part 1: What Rush HAS Implemented ✅
+# Part 1: What AUSH HAS Implemented ✅
 
 ## 1.1 Core Execution Model
 
@@ -137,7 +137,7 @@ Rush has **solid POSIX foundations** but gaps remain. To call itself Unix:
 - `test` - test conditions
 - `[` - test conditions (bracket syntax)
 
-**Rush-Enhanced Builtins** (optimized versions):
+**AUSH-Enhanced Builtins** (optimized versions):
 - `cat` - concatenate files
 - `echo` - print arguments
 - `find` - find files
@@ -147,7 +147,7 @@ Rush has **solid POSIX foundations** but gaps remain. To call itself Unix:
 - `mkdir` - make directory
 - `printf` - formatted output
 
-**Rush-Specific**:
+**AUSH-Specific**:
 - `builtin` - run builtin bypassing functions
 - `help` - show help
 - `undo` - undo filesystem operations
@@ -177,9 +177,9 @@ Rush has **solid POSIX foundations** but gaps remain. To call itself Unix:
 
 ---
 
-# Part 2: What Rush NEEDS to Implement ❌
+# Part 2: What AUSH NEEDS to Implement ❌
 
-These are **required for POSIX compliance** and calling Rush "Unix".
+These are **required for POSIX compliance** and calling AUSH "Unix".
 
 ## 2.1 Critical Missing Builtins
 
@@ -255,7 +255,7 @@ $@                      # All arguments (individually quoted)
 $*                      # All arguments (merged)
 ```
 
-Rush has `positional_params` field in Runtime but not fully wired up.
+AUSH has `positional_params` field in Runtime but not fully wired up.
 
 **shift Builtin**:
 - Shifts $1, $2, etc. down
@@ -297,7 +297,7 @@ case $var in
 esac
 ```
 
-Rush has `match` which is similar but not POSIX syntax.
+AUSH has `match` which is similar but not POSIX syntax.
 
 ## 2.6 Process Groups & Terminal Control
 
@@ -355,7 +355,7 @@ echo 'outer "inner" outer'
 
 ---
 
-# Part 3: What Rush SHOULD Implement 💡
+# Part 3: What AUSH SHOULD Implement 💡
 
 These are **nice to have** for better compatibility, but not strictly required for basic POSIX.
 
@@ -383,7 +383,7 @@ set -m     # monitor - enable job control
 set -a     # allexport - auto-export variables
 ```
 
-Rush has `noclobber` and `verbose` fields but they're not wired up.
+AUSH has `noclobber` and `verbose` fields but they're not wired up.
 
 **Positional Parameter Setting**:
 ```bash
@@ -395,7 +395,7 @@ set --                  # Clear positional parameters
 
 **Standard Variables**:
 ```bash
-SHELL=/path/to/rush     # Path to shell executable
+SHELL=/path/to/aush     # Path to shell executable
 PWD=/current/dir        # Current directory
 OLDPWD=/previous/dir    # Previous directory (for cd -)
 PPID=12345             # Parent process ID
@@ -417,7 +417,7 @@ SHLVL=2                # Shell nesting level
 %%          # Alias for %+
 ```
 
-Rush has `get_current_job()` and `get_previous_job()` but not full parsing.
+AUSH has `get_current_job()` and `get_previous_job()` but not full parsing.
 
 ## 3.5 Advanced I/O
 
@@ -544,9 +544,9 @@ command >(tee log.txt)
 
 ---
 
-# What Makes Rush "Unix"?
+# What Makes AUSH "Unix"?
 
-To legitimately call Rush a Unix shell, implement **Priority 1 + Priority 2**:
+To legitimately call AUSH a Unix shell, implement **Priority 1 + Priority 2**:
 
 **Must Have** (Priority 1):
 - ✅ All required POSIX builtins
@@ -569,7 +569,7 @@ To legitimately call Rush a Unix shell, implement **Priority 1 + Priority 2**:
 
 # Strategic Decision
 
-Rush can be:
+AUSH can be:
 
 **A) Strict POSIX Shell**
 - Focus: 100% POSIX compliance

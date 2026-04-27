@@ -1,24 +1,24 @@
 #!/bin/bash
 # Quick Claude Code Shell Benchmark
-# Compares basic command performance between Rush and Zsh
+# Compares basic command performance between AUSH and Zsh
 
 set -e
 
 AUSH="${AUSH:-./target/release/aush}"
-if [ ! -x "$AUSH" ] && [ -x ./target/release/rush ]; then
-    AUSH=./target/release/rush
+if [ ! -x "$AUSH" ] && [ -x ./target/release/aush ]; then
+    AUSH=./target/release/aush
 fi
 ZSH="/bin/zsh"
 RUNS=20
 
 if [ ! -x "$AUSH" ]; then
-    echo "Error: Rush binary not found at $AUSH"
+    echo "Error: AUSH binary not found at $AUSH"
     echo "Run: cargo build --release"
     exit 1
 fi
 
 echo "🚀 Quick Claude Code Shell Benchmark"
-echo "   Comparing: Rush vs Zsh"
+echo "   Comparing: AUSH vs Zsh"
 echo "   Runs per test: $RUNS"
 echo ""
 
@@ -46,18 +46,18 @@ run_test() {
 
     printf "  %-35s" "$name:"
 
-    local rush_time=$(time_command "$AUSH" "$cmd")
-    printf " AUSH: %7.2fms" "$rush_time"
+    local aush_time=$(time_command "$AUSH" "$cmd")
+    printf " AUSH: %7.2fms" "$aush_time"
 
     local zsh_time=$(time_command "$ZSH" "$cmd")
     printf "  Zsh: %7.2fms" "$zsh_time"
 
-    local speedup=$(python3 -c "print($zsh_time / $rush_time)")
+    local speedup=$(python3 -c "print($zsh_time / $aush_time)")
     local is_faster=$(python3 -c "print('yes' if $speedup > 1.0 else 'no')")
 
     printf "  →  %.2fx" "$speedup"
     if [ "$is_faster" = "yes" ]; then
-        printf " 🏆 Rush"
+        printf " 🏆 AUSH"
     fi
     printf "\n"
 }
@@ -75,8 +75,8 @@ echo ""
 
 echo "📊 Pipes & Redirects:"
 run_test "Pipe to cat" "echo test | cat"
-run_test "Redirect to file" "echo test > /tmp/rush_test.txt"
-run_test "Append to file" "echo test >> /tmp/rush_test.txt"
+run_test "Redirect to file" "echo test > /tmp/aush_test.txt"
+run_test "Append to file" "echo test >> /tmp/aush_test.txt"
 echo ""
 
 echo "📊 Command Substitution:"
@@ -85,7 +85,7 @@ run_test "Nested substitution" 'echo $(echo $(pwd))'
 echo ""
 
 # Cleanup
-rm -f /tmp/rush_test.txt
+rm -f /tmp/aush_test.txt
 
 echo "✅ Quick benchmark complete!"
 echo ""

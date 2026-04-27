@@ -114,7 +114,7 @@ pub enum LlmError {
     #[error("Configuration error: {0}")]
     Config(String),
 
-    #[error("Provider '{0}' requires an API key (set {1} env var or add api_key to ~/.rushrc)")]
+    #[error("Provider '{0}' requires an API key (set {1} env var or add api_key to ~/.aushrc)")]
     MissingApiKey(String, String),
 }
 
@@ -136,7 +136,7 @@ pub trait LlmProvider: Send {
 /// The main entry point for LLM interaction.
 ///
 /// Created once per session (or per request) and delegates to the configured
-/// provider. Use `LlmClient::from_config` to build one from `~/.rushrc`.
+/// provider. Use `LlmClient::from_config` to build one from `~/.aushrc`.
 pub struct LlmClient {
     provider: Box<dyn LlmProvider>,
     pub config: LlmConfig,
@@ -167,7 +167,7 @@ impl LlmClient {
         Ok(Self { provider, config })
     }
 
-    /// Load config from `~/.rushrc` and create a client.
+    /// Load config from `~/.aushrc` and create a client.
     pub fn from_config() -> Result<Self, LlmError> {
         let config = LlmConfig::load().map_err(LlmError::Config)?;
         Self::new(config)

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Rush Daemon Benchmark Runner
+# AUSH Daemon Benchmark Runner
 # =============================
 #
 # Thin wrapper around `cargo bench --bench daemon_latency`.
@@ -17,16 +17,16 @@
 #   1. Daemon execution  — warm workers, bincode IPC (primary metric)
 #   2. Daemon throughput  — sequential burst (cmds/sec)
 #   3. Daemon cold start  — first command after restart
-#   4. Cold startup       — rush -c process spawn (reference only)
-#   5. Shell comparison   — rush vs bash vs zsh -c (context only)
+#   4. Cold startup       — aush -c process spawn (reference only)
+#   5. Shell comparison   — aush vs bash vs zsh -c (context only)
 #
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-RUSHD="${PROJECT_DIR}/target/release/rushd"
-SOCKET_PATH="${HOME}/.rush/daemon.sock"
+RUSHD="${PROJECT_DIR}/target/release/aushd"
+SOCKET_PATH="${HOME}/.aush/daemon.sock"
 
 # Colors
 if [ -t 1 ]; then
@@ -71,7 +71,7 @@ main() {
         esac
     done
 
-    header "Rush Daemon Benchmark"
+    header "AUSH Daemon Benchmark"
     info "Date: $(date '+%Y-%m-%d %H:%M:%S')"
     info "System: $(uname -srm)"
     info "CPU: $(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo unknown)"
@@ -87,7 +87,7 @@ main() {
     fi
 
     # Verify binaries
-    for bin in "$PROJECT_DIR/target/release/rush" "$RUSHD"; do
+    for bin in "$PROJECT_DIR/target/release/aush" "$RUSHD"; do
         [ -x "$bin" ] || { err "Missing: $bin"; exit 1; }
     done
 

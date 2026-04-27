@@ -37,7 +37,7 @@ exclude = [
 ]
 
 [lib]
-name = "rush"
+name = "aush"
 path = "src/lib.rs"
 
 [[bin]]
@@ -45,12 +45,8 @@ name = "aush"
 path = "src/main.rs"
 
 [[bin]]
-name = "rush"
-path = "src/main.rs"
-
-[[bin]]
-name = "rushd"
-path = "src/bin/rushd.rs"
+name = "aushd"
+path = "src/bin/aushd.rs"
 
 [dependencies]
 # Parsing

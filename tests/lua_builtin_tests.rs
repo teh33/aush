@@ -1,16 +1,16 @@
 //! Integration tests for Lua builtin registration and structured data dispatch.
 //!
 //! These tests verify that:
-//! - Lua scripts can register builtins via `rush.register_builtin`
+//! - Lua scripts can register builtins via `aush.register_builtin`
 //! - Registered builtins are visible through `Builtins::is_builtin` and `builtin_names`
 //! - `Builtins::execute` dispatches to the Lua implementation
 //! - Structured outputs (list, record, table) are returned as `Output::Structured`
 //! - Plain text outputs are returned as `Output::Text`
 
-use rush::builtins::{Builtins, LuaBuiltin};
-use rush::executor::Output;
-use rush::lua::LuaRuntime;
-use rush::runtime::Runtime;
+use aush::builtins::{Builtins, LuaBuiltin};
+use aush::executor::Output;
+use aush::lua::LuaRuntime;
+use aush::runtime::Runtime;
 use std::sync::Arc;
 
 fn make_lua_with_script(script: &str) -> Arc<LuaRuntime> {
@@ -29,7 +29,7 @@ fn make_lua_with_script(script: &str) -> Arc<LuaRuntime> {
 fn lua_builtin_is_visible_in_is_builtin() {
     let lua = make_lua_with_script(
         r#"
-        rush.register_builtin("greet", {
+        aush.register_builtin("greet", {
             description = "Say hello",
             run = function(args) return "Hello, " .. (args[1] or "world") end
         })
@@ -45,7 +45,7 @@ fn lua_builtin_is_visible_in_is_builtin() {
 fn lua_builtin_appears_in_builtin_names() {
     let lua = make_lua_with_script(
         r#"
-        rush.register_builtin("my_cmd", {
+        aush.register_builtin("my_cmd", {
             description = "test",
             run = function(args) return "ok" end
         })
@@ -66,7 +66,7 @@ fn lua_builtin_appears_in_builtin_names() {
 fn lua_builtin_registration_exposes_lua_builtin_type() {
     let lua = make_lua_with_script(
         r#"
-        rush.register_builtin("typed_cmd", {
+        aush.register_builtin("typed_cmd", {
             description = "A typed builtin",
             run = function(args) return "hi" end
         })
@@ -90,7 +90,7 @@ fn lua_builtin_registration_exposes_lua_builtin_type() {
 fn lua_builtin_returns_text_string() {
     let lua = make_lua_with_script(
         r#"
-        rush.register_builtin("say_hi", {
+        aush.register_builtin("say_hi", {
             description = "returns a string",
             run = function(args) return args[1] or "hi" end
         })
@@ -114,7 +114,7 @@ fn lua_builtin_returns_text_string() {
 fn lua_builtin_null_return_is_empty_text() {
     let lua = make_lua_with_script(
         r#"
-        rush.register_builtin("noop", {
+        aush.register_builtin("noop", {
             description = "returns nothing",
             run = function(args) end
         })
@@ -142,7 +142,7 @@ fn lua_builtin_null_return_is_empty_text() {
 fn lua_builtin_int_return_is_text() {
     let lua = make_lua_with_script(
         r#"
-        rush.register_builtin("count", {
+        aush.register_builtin("count", {
             description = "returns a number",
             run = function(args) return 42 end
         })
@@ -170,7 +170,7 @@ fn lua_builtin_int_return_is_text() {
 fn lua_builtin_list_return_is_structured() {
     let lua = make_lua_with_script(
         r#"
-        rush.register_builtin("list_things", {
+        aush.register_builtin("list_things", {
             description = "returns a list",
             run = function(args)
                 return {"alpha", "beta", "gamma"}
@@ -199,10 +199,10 @@ fn lua_builtin_list_return_is_structured() {
 fn lua_builtin_record_return_is_structured() {
     let lua = make_lua_with_script(
         r#"
-        rush.register_builtin("get_info", {
+        aush.register_builtin("get_info", {
             description = "returns a record",
             run = function(args)
-                return { name = "rush", version = "0.1" }
+                return { name = "aush", version = "0.1" }
             end
         })
         "#,
@@ -222,8 +222,8 @@ fn lua_builtin_record_return_is_structured() {
             // Check that the data is there in some form.
             let json_str = serde_json::to_string(&obj).unwrap();
             assert!(
-                json_str.contains("rush"),
-                "expected 'rush' in JSON: {}",
+                json_str.contains("aush"),
+                "expected 'aush' in JSON: {}",
                 json_str
             );
         }
@@ -235,7 +235,7 @@ fn lua_builtin_record_return_is_structured() {
 fn lua_builtin_table_return_is_structured() {
     let lua = make_lua_with_script(
         r#"
-        rush.register_builtin("list_files", {
+        aush.register_builtin("list_files", {
             description = "returns a table",
             run = function(args)
                 return {
@@ -316,7 +316,7 @@ fn set_lua_runtime_attaches_lua_after_construction() {
 
     let lua = make_lua_with_script(
         r#"
-        rush.register_builtin("late_cmd", {
+        aush.register_builtin("late_cmd", {
             description = "registered after construction",
             run = function(args) return "late" end
         })

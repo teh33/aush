@@ -1,9 +1,9 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Analyze git commit statistics by author
-# Usage: ./git_author_stats.rush [commit_count]
+# Usage: ./git_author_stats.aush [commit_count]
 
 set -e
-export RUSH_ERROR_FORMAT=json
+export AUSH_ERROR_FORMAT=json
 
 # Check if in git repo
 if ! git_status --json > /dev/null 2>&1; then
@@ -67,4 +67,4 @@ done
 
 echo ""
 echo "---"
-echo "Generated with Rush"
+echo "Generated with AUSH"

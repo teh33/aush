@@ -15,11 +15,11 @@ pub struct ShellTimings {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComparisonResult {
     pub command: String,
-    pub rush_time: f64,
+    pub aush_time: f64,
     pub bash_time: Option<f64>,
     pub zsh_time: Option<f64>,
-    pub rush_vs_bash_ratio: Option<f64>,
-    pub rush_vs_zsh_ratio: Option<f64>,
+    pub aush_vs_bash_ratio: Option<f64>,
+    pub aush_vs_zsh_ratio: Option<f64>,
     pub min_time: f64,
     pub max_time: f64,
     pub std_dev: f64,
@@ -60,13 +60,13 @@ impl ComparisonRunner {
         }
 
         // Actual test runs
-        let mut rush_times = Vec::new();
+        let mut aush_times = Vec::new();
         let mut bash_times = Vec::new();
         let mut zsh_times = Vec::new();
 
         for _ in 0..self.test_runs {
             if let Ok(t) = self.time_rush(cmd) {
-                rush_times.push(t);
+                aush_times.push(t);
             }
             if let Ok(t) = self.time_bash(cmd) {
                 bash_times.push(t);
@@ -77,7 +77,7 @@ impl ComparisonRunner {
         }
 
         // Calculate statistics
-        let rush_time = Self::mean(&rush_times);
+        let aush_time = Self::mean(&aush_times);
         let bash_time = if !bash_times.is_empty() {
             Some(Self::mean(&bash_times))
         } else {
@@ -90,11 +90,11 @@ impl ComparisonRunner {
         };
 
         // Calculate speedup ratios
-        let rush_vs_bash_ratio = bash_time.map(|b| b / rush_time);
-        let rush_vs_zsh_ratio = zsh_time.map(|z| z / rush_time);
+        let aush_vs_bash_ratio = bash_time.map(|b| b / aush_time);
+        let aush_vs_zsh_ratio = zsh_time.map(|z| z / aush_time);
 
         // Collect all times for min/max/stddev
-        let all_times = [&rush_times[..], &bash_times[..], &zsh_times[..]].concat();
+        let all_times = [&aush_times[..], &bash_times[..], &zsh_times[..]].concat();
 
         let min_time = all_times.iter().cloned().fold(f64::INFINITY, f64::min);
         let max_time = all_times.iter().cloned().fold(0.0, f64::max);
@@ -102,18 +102,18 @@ impl ComparisonRunner {
 
         Ok(ComparisonResult {
             command: cmd.to_string(),
-            rush_time,
+            aush_time,
             bash_time,
             zsh_time,
-            rush_vs_bash_ratio,
-            rush_vs_zsh_ratio,
+            aush_vs_bash_ratio,
+            aush_vs_zsh_ratio,
             min_time,
             max_time,
             std_dev,
         })
     }
 
-    /// Time command execution in Rush
+    /// Time command execution in AUSH
     fn time_rush(&self, cmd: &str) -> Result<f64> {
         let start = Instant::now();
 
@@ -261,7 +261,7 @@ mod tests {
 
         let comparison = result.unwrap();
         assert_eq!(comparison.command, "echo test");
-        assert!(comparison.rush_time > 0.0);
+        assert!(comparison.aush_time > 0.0);
         assert!(comparison.bash_time.is_some());
         assert!(comparison.bash_time.unwrap() > 0.0);
     }
@@ -273,7 +273,7 @@ mod tests {
         assert!(result.is_ok());
 
         let comparison = result.unwrap();
-        if let Some(ratio) = comparison.rush_vs_bash_ratio {
+        if let Some(ratio) = comparison.aush_vs_bash_ratio {
             assert!(ratio > 0.0);
         }
     }

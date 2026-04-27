@@ -45,7 +45,7 @@ jobs:
 
             A high-performance, POSIX-compliant shell written in Rust.
 
-            The release still includes a legacy `rush` executable for migration compatibility.
+            
 
             ### Installation
 
@@ -149,40 +149,36 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Build daemon binary
-        run: cargo build --release --target ${{ matrix.target }} --bin rushd
+        run: cargo build --release --target ${{ matrix.target }} --bin aushd
         continue-on-error: true
 
       - name: Strip binary (Linux)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
-          strip target/${{ matrix.target }}/release/rushd || true
+          strip target/${{ matrix.target }}/release/aushd || true
 
       - name: Strip binary (macOS)
         if: startsWith(matrix.os, 'macos')
         run: |
           strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
-          strip target/${{ matrix.target }}/release/rushd || true
+          strip target/${{ matrix.target }}/release/aushd || true
 
       - name: Create archives
         run: |
           cd target/${{ matrix.target }}/release
 
-          # Main AUSH binary. Include legacy rush executable when available for compatibility.
-          if [ -f rush ]; then
-            tar czf ${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }} rush
-          else
-            tar czf ${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }}
-          fi
+          # Main AUSH binary.
+          tar czf ${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }}
 
           # Daemon binary (if exists)
-          if [ -f rushd ]; then
-            tar czf ${{ matrix.asset_name }}-daemon.tar.gz rushd
+          if [ -f aushd ]; then
+            tar czf ${{ matrix.asset_name }}-daemon.tar.gz aushd
           fi
 
           # Combined archive with both binaries
-          if [ -f rushd ]; then
-            tar czf ${{ matrix.asset_name }}-full.tar.gz ${{ matrix.artifact_name }} rush rushd
+          if [ -f aushd ]; then
+            tar czf ${{ matrix.asset_name }}-full.tar.gz ${{ matrix.artifact_name }} aushd
           fi
 
       - name: Generate checksums
@@ -311,15 +307,6 @@ jobs:
           ./aush -c 'echo "Hello from AUSH"'
           ./aush -c 'pwd'
           ./aush -c 'export FOO=bar && echo $FOO'
-
-      - name: Test legacy binary compatibility
-        run: |
-          if [ -x ./rush ]; then
-            ./rush -c 'echo "Legacy Rush compatibility"'
-          else
-            echo "legacy rush executable not included in archive"
-            exit 1
-          fi
 
       - name: Test binary - POSIX features
         run: |

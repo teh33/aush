@@ -1,5 +1,5 @@
 #!/bin/bash
-# File redirection integration tests for rush shell
+# File redirection integration tests for AUSH shell
 # Tests stdout redirection (>), append (>>), stdin redirection (<)
 
 TESTS_PASSED=0
@@ -12,18 +12,18 @@ NC='\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 AUSH_BINARY="$PROJECT_ROOT/target/release/aush"
-if [ ! -f "$AUSH_BINARY" ] && [ -f "$PROJECT_ROOT/target/release/rush" ]; then
-    AUSH_BINARY="$PROJECT_ROOT/target/release/rush"
+if [ ! -f "$AUSH_BINARY" ] && [ -f "$PROJECT_ROOT/target/release/aush" ]; then
+    AUSH_BINARY="$PROJECT_ROOT/target/release/aush"
 fi
-RUSH_BINARY="$AUSH_BINARY"
+AUSH_BINARY="$AUSH_BINARY"
 
-if [ ! -f "$RUSH_BINARY" ]; then
-    echo -e "${RED}Error: aush binary not found at $RUSH_BINARY${NC}"
+if [ ! -f "$AUSH_BINARY" ]; then
+    echo -e "${RED}Error: aush binary not found at $AUSH_BINARY${NC}"
     exit 1
 fi
 
 echo "======================================"
-echo "Rush Redirection Tests"
+echo "AUSH Redirection Tests"
 echo "======================================"
 echo ""
 
@@ -41,13 +41,13 @@ assert_success() {
     fi
 }
 
-TEMP_DIR="/tmp/rush_redirect_test_$$"
+TEMP_DIR="/tmp/aush_redirect_test_$$"
 mkdir -p "$TEMP_DIR"
 
 # Test 1: Simple output redirection
 test_case "Output redirection >"
 TEMP_FILE="$TEMP_DIR/out1.txt"
-"$RUSH_BINARY" -c "echo hello > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo hello > $TEMP_FILE" 2>&1
 CONTENT=$(cat "$TEMP_FILE" 2>/dev/null || echo "")
 echo "$CONTENT" | grep -q "hello"
 assert_success
@@ -55,8 +55,8 @@ assert_success
 # Test 2: Overwrite with redirection
 test_case "Overwrite with >"
 TEMP_FILE="$TEMP_DIR/out2.txt"
-"$RUSH_BINARY" -c "echo first > $TEMP_FILE" 2>&1
-"$RUSH_BINARY" -c "echo second > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo first > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo second > $TEMP_FILE" 2>&1
 CONTENT=$(cat "$TEMP_FILE" 2>/dev/null || echo "")
 echo "$CONTENT" | grep -q "second" && ! echo "$CONTENT" | grep -q "first"
 assert_success
@@ -64,8 +64,8 @@ assert_success
 # Test 3: Append redirection
 test_case "Append redirection >>"
 TEMP_FILE="$TEMP_DIR/out3.txt"
-"$RUSH_BINARY" -c "echo line1 > $TEMP_FILE" 2>&1
-"$RUSH_BINARY" -c "echo line2 >> $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo line1 > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo line2 >> $TEMP_FILE" 2>&1
 CONTENT=$(cat "$TEMP_FILE" 2>/dev/null || echo "")
 echo "$CONTENT" | grep -q "line1" && echo "$CONTENT" | grep -q "line2"
 assert_success
@@ -73,9 +73,9 @@ assert_success
 # Test 4: Multiple appends
 test_case "Multiple appends"
 TEMP_FILE="$TEMP_DIR/out4.txt"
-"$RUSH_BINARY" -c "echo a > $TEMP_FILE" 2>&1
-"$RUSH_BINARY" -c "echo b >> $TEMP_FILE" 2>&1
-"$RUSH_BINARY" -c "echo c >> $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo a > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo b >> $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo c >> $TEMP_FILE" 2>&1
 CONTENT=$(cat "$TEMP_FILE" 2>/dev/null || echo "")
 echo "$CONTENT" | grep -q "a" && echo "$CONTENT" | grep -q "b" && echo "$CONTENT" | grep -q "c"
 assert_success
@@ -84,7 +84,7 @@ assert_success
 test_case "Input redirection <"
 TEMP_FILE="$TEMP_DIR/input1.txt"
 echo "input data" > "$TEMP_FILE"
-OUTPUT=$("$RUSH_BINARY" -c "cat $TEMP_FILE" 2>&1)
+OUTPUT=$("$AUSH_BINARY" -c "cat $TEMP_FILE" 2>&1)
 echo "$OUTPUT" | grep -q "input data"
 assert_success
 
@@ -92,8 +92,8 @@ assert_success
 test_case "Sequential redirects"
 FILE1="$TEMP_DIR/seq1.txt"
 FILE2="$TEMP_DIR/seq2.txt"
-"$RUSH_BINARY" -c "echo one > $FILE1" 2>&1
-"$RUSH_BINARY" -c "echo two > $FILE2" 2>&1
+"$AUSH_BINARY" -c "echo one > $FILE1" 2>&1
+"$AUSH_BINARY" -c "echo two > $FILE2" 2>&1
 CONTENT1=$(cat "$FILE1")
 CONTENT2=$(cat "$FILE2")
 echo "$CONTENT1" | grep -q "one" && echo "$CONTENT2" | grep -q "two"
@@ -102,7 +102,7 @@ assert_success
 # Test 7: Redirect with builtin command
 test_case "Redirect with builtin (echo)"
 TEMP_FILE="$TEMP_DIR/builtin1.txt"
-"$RUSH_BINARY" -c "echo builtin test > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo builtin test > $TEMP_FILE" 2>&1
 CONTENT=$(cat "$TEMP_FILE")
 echo "$CONTENT" | grep -q "builtin test"
 assert_success
@@ -110,7 +110,7 @@ assert_success
 # Test 8: Redirect with external command
 test_case "Redirect with external (printf)"
 TEMP_FILE="$TEMP_DIR/external1.txt"
-"$RUSH_BINARY" -c "printf 'external test' > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "printf 'external test' > $TEMP_FILE" 2>&1
 CONTENT=$(cat "$TEMP_FILE" 2>/dev/null || echo "")
 echo "$CONTENT" | grep -q "external test"
 assert_success
@@ -118,14 +118,14 @@ assert_success
 # Test 9: Redirect empty output
 test_case "Redirect empty output"
 TEMP_FILE="$TEMP_DIR/empty1.txt"
-"$RUSH_BINARY" -c "echo -n > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo -n > $TEMP_FILE" 2>&1
 [ -f "$TEMP_FILE" ]  # File should exist
 assert_success
 
 # Test 10: Redirect with spaces in filename
 test_case "Redirect with quoted filename"
 TEMP_FILE="$TEMP_DIR/spaced file.txt"
-"$RUSH_BINARY" -c "echo spaces > '$TEMP_FILE'" 2>&1
+"$AUSH_BINARY" -c "echo spaces > '$TEMP_FILE'" 2>&1
 [ -f "$TEMP_FILE" ] && cat "$TEMP_FILE" | grep -q "spaces"
 assert_success
 
@@ -133,8 +133,8 @@ assert_success
 test_case "Chain of redirects"
 FILE1="$TEMP_DIR/chain1.txt"
 FILE2="$TEMP_DIR/chain2.txt"
-"$RUSH_BINARY" -c "echo start > $FILE1" 2>&1
-"$RUSH_BINARY" -c "cat $FILE1 > $FILE2" 2>&1
+"$AUSH_BINARY" -c "echo start > $FILE1" 2>&1
+"$AUSH_BINARY" -c "cat $FILE1 > $FILE2" 2>&1
 CONTENT=$(cat "$FILE2")
 echo "$CONTENT" | grep -q "start"
 assert_success
@@ -142,7 +142,7 @@ assert_success
 # Test 12: Redirect pwd output
 test_case "Redirect pwd output"
 TEMP_FILE="$TEMP_DIR/pwd.txt"
-"$RUSH_BINARY" -c "pwd > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "pwd > $TEMP_FILE" 2>&1
 CONTENT=$(cat "$TEMP_FILE")
 echo "$CONTENT" | grep -q "/"
 assert_success
@@ -150,7 +150,7 @@ assert_success
 # Test 13: Redirect with pipeline
 test_case "Redirect after pipeline"
 TEMP_FILE="$TEMP_DIR/pipeline.txt"
-"$RUSH_BINARY" -c "echo test | cat > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo test | cat > $TEMP_FILE" 2>&1
 CONTENT=$(cat "$TEMP_FILE" 2>/dev/null || echo "")
 echo "$CONTENT" | grep -q "test"
 assert_success
@@ -158,7 +158,7 @@ assert_success
 # Test 14: Multiple lines redirect
 test_case "Multiple lines redirect"
 TEMP_FILE="$TEMP_DIR/multiline.txt"
-"$RUSH_BINARY" <<EOF > /dev/null 2>&1
+"$AUSH_BINARY" <<EOF > /dev/null 2>&1
 echo line1 > $TEMP_FILE
 echo line2 >> $TEMP_FILE
 echo line3 >> $TEMP_FILE
@@ -169,7 +169,7 @@ assert_success
 
 # Test 15: Redirect to /dev/null
 test_case "Redirect to /dev/null"
-"$RUSH_BINARY" -c "echo discard > /dev/null" 2>&1
+"$AUSH_BINARY" -c "echo discard > /dev/null" 2>&1
 EXIT_CODE=$?
 [ $EXIT_CODE -eq 0 ]
 assert_success
@@ -178,7 +178,7 @@ assert_success
 test_case "Cat redirected file"
 TEMP_FILE="$TEMP_DIR/cattest.txt"
 echo "cat this" > "$TEMP_FILE"
-OUTPUT=$("$RUSH_BINARY" -c "cat $TEMP_FILE" 2>&1)
+OUTPUT=$("$AUSH_BINARY" -c "cat $TEMP_FILE" 2>&1)
 echo "$OUTPUT" | grep -q "cat this"
 assert_success
 
@@ -186,7 +186,7 @@ assert_success
 test_case "Append to non-existent file"
 TEMP_FILE="$TEMP_DIR/newappend.txt"
 rm -f "$TEMP_FILE"
-"$RUSH_BINARY" -c "echo new >> $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo new >> $TEMP_FILE" 2>&1
 CONTENT=$(cat "$TEMP_FILE" 2>/dev/null || echo "")
 echo "$CONTENT" | grep -q "new"
 assert_success
@@ -194,7 +194,7 @@ assert_success
 # Test 18: Large output redirect
 test_case "Large output redirect"
 TEMP_FILE="$TEMP_DIR/large.txt"
-"$RUSH_BINARY" <<EOF > /dev/null 2>&1
+"$AUSH_BINARY" <<EOF > /dev/null 2>&1
 echo line1 > $TEMP_FILE
 echo line2 >> $TEMP_FILE
 echo line3 >> $TEMP_FILE
@@ -208,7 +208,7 @@ assert_success
 # Test 19: Redirect with conditional
 test_case "Redirect with conditional"
 TEMP_FILE="$TEMP_DIR/cond.txt"
-"$RUSH_BINARY" -c "echo first > $TEMP_FILE && echo second >> $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo first > $TEMP_FILE && echo second >> $TEMP_FILE" 2>&1
 CONTENT=$(cat "$TEMP_FILE")
 echo "$CONTENT" | grep -q "first" && echo "$CONTENT" | grep -q "second"
 assert_success
@@ -216,7 +216,7 @@ assert_success
 # Test 20: Redirect permissions
 test_case "File created with redirect"
 TEMP_FILE="$TEMP_DIR/perms.txt"
-"$RUSH_BINARY" -c "echo test > $TEMP_FILE" 2>&1
+"$AUSH_BINARY" -c "echo test > $TEMP_FILE" 2>&1
 [ -f "$TEMP_FILE" ] && [ -r "$TEMP_FILE" ]
 assert_success
 

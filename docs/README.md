@@ -1,9 +1,9 @@
-# Rush Documentation
+# AUSH Documentation
 
 ## Getting Started
 
 - [PERFORMANCE.md](PERFORMANCE.md) -- Performance characteristics and benchmarks
-- [benchmarking.md](benchmarking.md) -- How to benchmark rush
+- [benchmarking.md](benchmarking.md) -- How to benchmark AUSH
 - [pgo-build.md](pgo-build.md) -- Profile-guided optimization builds
 - [POSIX_COMPLIANCE_AUDIT.md](POSIX_COMPLIANCE_AUDIT.md) -- POSIX compliance status
 
@@ -38,7 +38,7 @@
 
 ## AI Agent Integration
 
-- [AI_AGENT_GUIDE.md](AI_AGENT_GUIDE.md) -- Guide for AI agents using rush
+- [AI_AGENT_GUIDE.md](AI_AGENT_GUIDE.md) -- Guide for AI agents using AUSH
 - [AI_AGENT_JSON_REFERENCE.md](AI_AGENT_JSON_REFERENCE.md) -- JSON output reference for agents
 
 ## Architecture

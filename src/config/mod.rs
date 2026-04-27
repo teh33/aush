@@ -1,6 +1,6 @@
-//! Configuration parsing for Rush shell
+//! Configuration parsing for AUSH shell
 //!
-//! This module provides configuration parsing from .rushrc files.
+//! This module provides configuration parsing from .aushrc files.
 //! Re-exports the config types from the daemon module for convenience.
 
 pub mod banner;

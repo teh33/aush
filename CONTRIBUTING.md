@@ -1,12 +1,12 @@
-# Contributing to Rush
+# Contributing to AUSH
 
-Thank you for your interest in contributing to Rush! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to AUSH! This document provides guidelines for contributing to the project.
 
 ## How to Report Bugs
 
-Please use [GitHub Issues](https://github.com/paiml/rush/issues) to report bugs. Include the following:
+Please use [GitHub Issues](https://github.com/opus-workshop/aush/issues) to report bugs. Include the following:
 
-- Rush version (`rush --version`)
+- AUSH version (`aush --version`)
 - Operating system and version
 - Steps to reproduce the issue
 - Expected vs actual behavior
@@ -53,7 +53,7 @@ Please ensure all tests pass before submitting a PR.
 
 ## Code Style
 
-Rush uses standard Rust tooling for code quality:
+AUSH uses standard Rust tooling for code quality:
 
 - **Formatting**: `cargo fmt` (enforced by `rustfmt`)
 - **Linting**: `cargo clippy`
@@ -67,7 +67,7 @@ cargo clippy -- -D warnings
 
 ## Architecture
 
-Rush is organized into several key modules:
+AUSH is organized into several key modules:
 
 | Module | Purpose |
 |--------|---------|

@@ -1,4 +1,4 @@
-use rush::signal::SignalHandler;
+use aush::signal::SignalHandler;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::thread;
@@ -41,20 +41,20 @@ fn test_exit_codes() {
 fn test_sigint_in_script() {
     // Create a test script that runs a long command
     let mut script = NamedTempFile::new().expect("Failed to create temp file");
-    writeln!(script, "#!/usr/bin/env rush").unwrap();
+    writeln!(script, "#!/usr/bin/env aush").unwrap();
     writeln!(script, "echo Starting").unwrap();
     writeln!(script, "sleep 10").unwrap();
     writeln!(script, "echo Finished").unwrap();
 
     let script_path = script.path().to_str().unwrap();
 
-    // Spawn rush with the script
+    // Spawn aush with the script
     let mut child = Command::new("cargo")
         .args(&["run", "--", script_path])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     // Wait a bit for the script to start
     thread::sleep(Duration::from_millis(500));
@@ -87,19 +87,19 @@ fn test_sigint_in_script() {
 fn test_no_orphaned_processes() {
     // Create a script that spawns a child process
     let mut script = NamedTempFile::new().expect("Failed to create temp file");
-    writeln!(script, "#!/usr/bin/env rush").unwrap();
+    writeln!(script, "#!/usr/bin/env aush").unwrap();
     writeln!(script, "sleep 30 &").unwrap();
     writeln!(script, "sleep 10").unwrap();
 
     let script_path = script.path().to_str().unwrap();
 
-    // Spawn rush with the script
+    // Spawn aush with the script
     let mut child = Command::new("cargo")
         .args(&["run", "--", script_path])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     let pid = child.id();
 
@@ -144,20 +144,20 @@ fn test_no_orphaned_processes() {
 fn test_signal_during_command_execution() {
     // Create a script with a command that takes time
     let mut script = NamedTempFile::new().expect("Failed to create temp file");
-    writeln!(script, "#!/usr/bin/env rush").unwrap();
+    writeln!(script, "#!/usr/bin/env aush").unwrap();
     writeln!(script, "echo Before long command").unwrap();
     writeln!(script, "sleep 15").unwrap();
     writeln!(script, "echo After long command").unwrap();
 
     let script_path = script.path().to_str().unwrap();
 
-    // Spawn rush with the script
+    // Spawn aush with the script
     let mut child = Command::new("cargo")
         .args(&["run", "--", script_path])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     // Wait for the command to start
     thread::sleep(Duration::from_millis(500));
@@ -217,7 +217,7 @@ fn test_command_flag_with_signal() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     // Wait a bit for the command to start
     thread::sleep(Duration::from_millis(500));
@@ -266,18 +266,18 @@ fn test_multiple_signals() {
 fn test_sighup_handling() {
     // Create a simple script
     let mut script = NamedTempFile::new().expect("Failed to create temp file");
-    writeln!(script, "#!/usr/bin/env rush").unwrap();
+    writeln!(script, "#!/usr/bin/env aush").unwrap();
     writeln!(script, "sleep 10").unwrap();
 
     let script_path = script.path().to_str().unwrap();
 
-    // Spawn rush with the script
+    // Spawn aush with the script
     let mut child = Command::new("cargo")
         .args(&["run", "--", script_path])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     // Wait for script to start
     thread::sleep(Duration::from_millis(500));

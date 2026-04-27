@@ -4,7 +4,7 @@ Command substitution allows you to capture the output of a command and use it as
 
 ## Syntax
 
-Rush supports two syntaxes for command substitution:
+AUSH supports two syntaxes for command substitution:
 
 ### `$()` syntax (recommended)
 ```bash
@@ -164,7 +164,7 @@ echo path: $(pwd)    # Works: path: /current/directory
 
 ## Comparison with Other Shells
 
-| Feature | Rush | Bash | Zsh |
+| Feature | AUSH | Bash | Zsh |
 |---------|------|------|-----|
 | `$()` syntax | ✓ | ✓ | ✓ |
 | Backticks | ✓ | ✓ | ✓ |

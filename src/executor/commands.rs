@@ -41,7 +41,7 @@ enum ApprovalMode {
 
 impl ApprovalMode {
     fn from_env() -> Self {
-        match brand::env_var("AUSH_APPROVAL_MODE", "RUSH_APPROVAL_MODE") {
+        match brand::env_var("AUSH_APPROVAL_MODE") {
             Some(value) => parse_approval_mode(&value),
             None => Self::High,
         }

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Master test runner for all Rush integration tests
+# Master test runner for all AUSH integration tests
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -13,7 +13,7 @@ TOTAL_FAILED=0
 FAILED_SUITES=""
 
 echo "========================================"
-echo "Rush Integration Test Suite"
+echo "AUSH Integration Test Suite"
 echo "========================================"
 echo ""
 

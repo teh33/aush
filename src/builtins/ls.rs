@@ -662,7 +662,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let file_path = dir.path().join("test.txt");
         let mut file = File::create(&file_path).unwrap();
-        file.write_all(b"Hello, Rush!").unwrap();
+        file.write_all(b"Hello, AUSH!").unwrap();
 
         let mut runtime = Runtime::new();
         runtime.set_cwd(dir.path().to_path_buf());
@@ -790,7 +790,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let file_path = dir.path().join("test.txt");
         let mut file = File::create(&file_path).unwrap();
-        file.write_all(b"Hello, Rush!").unwrap();
+        file.write_all(b"Hello, AUSH!").unwrap();
         drop(file);
 
         let mut runtime = Runtime::new();
@@ -804,7 +804,7 @@ mod tests {
 
         let entry = &json_output[0];
         assert_eq!(entry.name, "test.txt");
-        assert_eq!(entry.size, 12); // "Hello, Rush!" is 12 bytes
+        assert_eq!(entry.size, 12); // "Hello, AUSH!" is 12 bytes
         assert!(matches!(entry.file_type, FileType::File));
         assert!(!entry.permissions.is_empty());
         assert!(entry.modified_timestamp > 0);

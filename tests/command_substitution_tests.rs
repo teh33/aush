@@ -1,6 +1,6 @@
-use rush::executor::Executor;
-use rush::lexer::Lexer;
-use rush::parser::Parser;
+use aush::executor::Executor;
+use aush::lexer::Lexer;
+use aush::parser::Parser;
 
 #[test]
 fn test_basic_command_substitution() {
@@ -213,7 +213,7 @@ fn test_command_substitution_lexer_nesting() {
     // Should have: Identifier("echo"), CommandSubstitution("$(echo $(pwd))")
     assert_eq!(tokens.len(), 2);
 
-    if let rush::lexer::Token::CommandSubstitution(cmd) = &tokens[1] {
+    if let aush::lexer::Token::CommandSubstitution(cmd) = &tokens[1] {
         assert_eq!(cmd, "$(echo $(pwd))");
     } else {
         panic!("Expected CommandSubstitution token");
@@ -229,7 +229,7 @@ fn test_backtick_lexer() {
     // Should have: Identifier("echo"), BacktickSubstitution("`pwd`")
     assert_eq!(tokens.len(), 2);
 
-    if let rush::lexer::Token::BacktickSubstitution(cmd) = &tokens[1] {
+    if let aush::lexer::Token::BacktickSubstitution(cmd) = &tokens[1] {
         assert_eq!(cmd, "`pwd`");
     } else {
         panic!("Expected BacktickSubstitution token");
@@ -271,7 +271,7 @@ fn test_mixed_arguments_with_substitution() {
     assert!(output.contains("another"));
 }
 
-// --- Tests for command substitution inside strings (rush-onx.9) ---
+// --- Tests for command substitution inside strings (aush-onx.9) ---
 
 #[test]
 fn test_subst_in_double_quoted_string() {

@@ -338,7 +338,7 @@ pub struct DaemonServer {
     reload_config: Arc<AtomicBool>,
     /// Optional worker pool (if None, uses fork-per-request)
     worker_pool: Option<WorkerPool>,
-    /// Current daemon configuration from .aushrc or legacy .rushrc
+    /// Current daemon configuration from .aushrc
     config: DaemonConfig,
     /// Cached system stats for fast retrieval
     stats_cache: Arc<Mutex<StatsCache>>,
@@ -347,8 +347,8 @@ pub struct DaemonServer {
 impl DaemonServer {
     /// Create a new daemon server
     pub fn new(socket_path: PathBuf) -> Result<Self> {
-        // Load initial configuration from .aushrc or legacy .rushrc
-        let config = DaemonConfig::from_rushrc();
+        // Load initial configuration from .aushrc
+        let config = DaemonConfig::from_aushrc();
         eprintln!(
             "Loaded config: {} custom stats defined",
             config.custom_stats.len()
@@ -389,8 +389,7 @@ impl DaemonServer {
     fn create_daemon_dir() -> Result<PathBuf> {
         let home = dirs::home_dir().ok_or_else(|| anyhow!("Could not determine home directory"))?;
 
-        let daemon_dir =
-            crate::brand::first_existing_or_primary(home.join(".aush"), [home.join(".rush")]);
+        let daemon_dir = home.join(".aush");
 
         if !daemon_dir.exists() {
             fs::create_dir(&daemon_dir)?;
@@ -468,15 +467,15 @@ impl DaemonServer {
         Ok(())
     }
 
-    /// Reload configuration from .aushrc or legacy .rushrc
+    /// Reload configuration from .aushrc
     ///
-    /// Called when SIGHUP is received or via `aushd reload`/`rushd reload` command.
+    /// Called when SIGHUP is received or via `aushd reload`/`aushd reload` command.
     /// Updates custom stat entries: adds new, removes deleted, updates changed.
     pub fn reload_configuration(&mut self) {
-        eprintln!("Reloading configuration from .aushrc/.rushrc...");
+        eprintln!("Reloading configuration from .aushrc/.aushrc...");
 
         let old_config = std::mem::take(&mut self.config);
-        self.config = DaemonConfig::from_rushrc();
+        self.config = DaemonConfig::from_aushrc();
 
         // Log what changed
         let old_stats: std::collections::HashSet<_> =

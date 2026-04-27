@@ -17,11 +17,11 @@ pub use suggestions::{SuggestionConfig, SuggestionEngine};
 use crate::ai::client::{LlmClient, Message, Response};
 
 /// Maximum bytes captured from a command substitution before truncation.
-/// Configurable via AUSH_MAX_SUBST_OUTPUT with RUSH_MAX_SUBST_OUTPUT fallback. Default: 50MB.
+/// Configurable via AUSH_MAX_SUBST_OUTPUT with AUSH_MAX_SUBST_OUTPUT fallback. Default: 50MB.
 const DEFAULT_MAX_SUBSTITUTION_OUTPUT: usize = 50 * 1024 * 1024;
 
 fn max_substitution_output() -> usize {
-    crate::brand::env_var("AUSH_MAX_SUBST_OUTPUT", "RUSH_MAX_SUBST_OUTPUT")
+    crate::brand::env_var("AUSH_MAX_SUBST_OUTPUT")
         .and_then(|s| crate::run_api::parse_max_output(&s))
         .unwrap_or(DEFAULT_MAX_SUBSTITUTION_OUTPUT)
 }
@@ -195,7 +195,7 @@ impl Executor {
                 if accumulated_stderr.is_empty() || !accumulated_stderr.contains("output truncated")
                 {
                     accumulated_stderr
-                        .push_str("rush: warning: accumulated output truncated at 50MB\n");
+                        .push_str("aush: warning: accumulated output truncated at 50MB\n");
                 }
             }
 
@@ -321,7 +321,7 @@ impl Executor {
                 }
             }
             Err(_) => {
-                // No rush AI config — fall back to the pi subprocess if available
+                // No aush AI config — fall back to the pi subprocess if available
                 self.execute_pipe_ask_via_pi(full_prompt)
             }
         }
@@ -334,7 +334,7 @@ impl Executor {
         if let Err(e) = manager.ensure_running() {
             let error_msg = match e {
                 PiRpcError::SpawnFailed(_) => {
-                    "AI not configured. Run `rush ai setup` or install pi: npm install -g @mariozechner/pi-coding-agent".to_string()
+                    "AI not configured. Run `aush ai setup` or install pi: npm install -g @mariozechner/pi-coding-agent".to_string()
                 }
                 other => format!("Pi error: {}", other),
             };
@@ -531,7 +531,7 @@ impl Executor {
                                     if let Some(val) = self.runtime.get_variable("0") {
                                         result.push_str(&val);
                                     } else {
-                                        result.push_str("rush");
+                                        result.push_str("aush");
                                     }
                                 }
                             } else if let Some(value) = self.runtime.get_variable(&var_name) {
@@ -804,7 +804,7 @@ impl Executor {
                 output.pop();
             }
             eprintln!(
-                "rush: warning: command substitution output truncated at {} bytes",
+                "aush: warning: command substitution output truncated at {} bytes",
                 max
             );
         }
@@ -1076,7 +1076,7 @@ impl Executor {
                     if let Some(val) = self.runtime.get_variable("0") {
                         return Ok(val);
                     } else {
-                        return Ok("rush".to_string());
+                        return Ok("aush".to_string());
                     }
                 } else if var_name == "?" {
                     return Ok(self.runtime.get_last_exit_code().to_string());
@@ -1163,7 +1163,7 @@ impl Executor {
                     if let Some(val) = self.runtime.get_variable("0") {
                         return Ok(val);
                     } else {
-                        return Ok("rush".to_string());
+                        return Ok("aush".to_string());
                     }
                 } else if var_name == "?" {
                     return Ok(self.runtime.get_last_exit_code().to_string());
@@ -1212,7 +1212,7 @@ impl Executor {
                     if let Some(val) = self.runtime.get_variable("0") {
                         return Ok(val);
                     } else {
-                        return Ok("rush".to_string());
+                        return Ok("aush".to_string());
                     }
                 } else if let Ok(index) = expansion.name.parse::<usize>() {
                     // ${1}, ${2}, ${10}, etc. - positional parameters
@@ -1509,7 +1509,7 @@ impl Executor {
                 output.pop();
             }
             eprintln!(
-                "rush: warning: command substitution output truncated at {} bytes",
+                "aush: warning: command substitution output truncated at {} bytes",
                 max
             );
         }
@@ -1687,7 +1687,7 @@ impl Executor {
     }
 
     /// Source a file by executing its contents line by line
-    /// Used for .rushrc and .rush_profile files
+    /// Used for .aushrc and .aush_profile files
     pub fn source_file(&mut self, path: &std::path::Path) -> Result<()> {
         use std::fs;
         use std::io::{BufRead, BufReader};
@@ -1855,7 +1855,7 @@ fn resolve_argument_static(
                                 out.pop();
                             }
                             eprintln!(
-                                "rush: warning: command substitution output truncated at {} bytes",
+                                "aush: warning: command substitution output truncated at {} bytes",
                                 max
                             );
                         }
@@ -2030,7 +2030,7 @@ pub(crate) fn expand_command_substitutions_in_string_static(
                                 while !out.is_char_boundary(out.len()) {
                                     out.pop();
                                 }
-                                eprintln!("rush: warning: command substitution output truncated at {} bytes", max);
+                                eprintln!("aush: warning: command substitution output truncated at {} bytes", max);
                             }
                             result.push_str(out.trim_end());
                             i = j;
@@ -2082,7 +2082,7 @@ pub(crate) fn expand_command_substitutions_in_string_static(
                                 while !out.is_char_boundary(out.len()) {
                                     out.pop();
                                 }
-                                eprintln!("rush: warning: command substitution output truncated at {} bytes", max);
+                                eprintln!("aush: warning: command substitution output truncated at {} bytes", max);
                             }
                             result.push_str(out.trim_end());
                             i = j;
@@ -2164,8 +2164,8 @@ impl ExecutionResult {
         }
     }
 
-    // /// Create an error result from a typed RushError
-    // pub fn error_typed(error: crate::error::RushError) -> Self {
+    // /// Create an error result from a typed AUSHError
+    // pub fn error_typed(error: crate::error::AUSHError) -> Self {
     //     let stderr = if crate::error::should_output_json_errors() {
     //         error.to_json()
     //     } else {
@@ -2292,7 +2292,7 @@ fn render_json_value(v: &serde_json::Value, compact_json: bool) -> String {
         {
             // Convert array-of-objects to a Table and render
             use crate::executor::value::render::TableRenderer;
-            use crate::executor::value::{Table, Value as RushValue};
+            use crate::executor::value::{Table, Value as AUSHValue};
             use std::collections::HashMap;
 
             // Collect columns preserving first-seen order
@@ -2310,20 +2310,20 @@ fn render_json_value(v: &serde_json::Value, compact_json: bool) -> String {
             let mut table = Table::new(columns.clone());
             for item in items {
                 if let serde_json::Value::Object(map) = item {
-                    let mut row: HashMap<String, RushValue> = HashMap::new();
+                    let mut row: HashMap<String, AUSHValue> = HashMap::new();
                     for col in &columns {
                         let val = match map.get(col).unwrap_or(&serde_json::Value::Null) {
-                            serde_json::Value::String(s) => RushValue::String(s.clone()),
+                            serde_json::Value::String(s) => AUSHValue::String(s.clone()),
                             serde_json::Value::Number(n) => {
                                 if let Some(i) = n.as_i64() {
-                                    RushValue::Int(i)
+                                    AUSHValue::Int(i)
                                 } else {
-                                    RushValue::Float(n.as_f64().unwrap_or(0.0))
+                                    AUSHValue::Float(n.as_f64().unwrap_or(0.0))
                                 }
                             }
-                            serde_json::Value::Bool(b) => RushValue::Bool(*b),
-                            serde_json::Value::Null => RushValue::Null,
-                            other => RushValue::String(other.to_string()),
+                            serde_json::Value::Bool(b) => AUSHValue::Bool(*b),
+                            serde_json::Value::Null => AUSHValue::Null,
+                            other => AUSHValue::String(other.to_string()),
                         };
                         row.insert(col.clone(), val);
                     }
@@ -2530,7 +2530,7 @@ pub(crate) fn expand_redirect_target(input: &str, runtime: &Runtime) -> String {
                                             while !out.is_char_boundary(out.len()) {
                                                 out.pop();
                                             }
-                                            eprintln!("rush: warning: command substitution output truncated at {} bytes", max);
+                                            eprintln!("aush: warning: command substitution output truncated at {} bytes", max);
                                         }
                                         result.push_str(out.trim_end());
                                         i = j + 1;
@@ -3215,9 +3215,9 @@ mod substitution_cap_tests {
         assert!(DEFAULT_MAX_SUBSTITUTION_OUTPUT <= 100 * 1024 * 1024); // at most 100MB
 
         // Verify the function respects the env var
-        std::env::set_var("RUSH_MAX_SUBST_OUTPUT", "1KB");
+        std::env::set_var("AUSH_MAX_SUBST_OUTPUT", "1KB");
         assert_eq!(max_substitution_output(), 1024);
-        std::env::remove_var("RUSH_MAX_SUBST_OUTPUT");
+        std::env::remove_var("AUSH_MAX_SUBST_OUTPUT");
 
         // After removing, should return the default
         assert_eq!(max_substitution_output(), DEFAULT_MAX_SUBSTITUTION_OUTPUT);

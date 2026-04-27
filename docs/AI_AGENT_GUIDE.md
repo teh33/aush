@@ -1,10 +1,10 @@
-# Rush for AI Coding Agents
+# AUSH for AI Coding Agents
 
-A comprehensive guide for integrating Rush into AI coding assistants and automated workflows.
+A comprehensive guide for integrating AUSH into AI coding assistants and automated workflows.
 
 ## Table of Contents
 
-1. [Why Rush for AI Agents?](#why-rush-for-ai-agents)
+1. [Why AUSH for AI Agents?](#why-aush-for-ai-agents)
 2. [Quick Start](#quick-start)
 3. [Structured Git Operations](#structured-git-operations)
 4. [JSON Native Operations](#json-native-operations)
@@ -15,9 +15,9 @@ A comprehensive guide for integrating Rush into AI coding assistants and automat
 9. [Best Practices](#best-practices)
 10. [Migration from Bash](#migration-from-bash)
 
-## Why Rush for AI Agents?
+## Why AUSH for AI Agents?
 
-AI coding agents make hundreds or thousands of shell calls per task. Rush is specifically designed to make these operations:
+AI coding agents make hundreds or thousands of shell calls per task. AUSH is specifically designed to make these operations:
 
 - **10x faster**: Native Rust implementation with zero subprocess overhead for built-ins
 - **Structured output**: All commands support `--json` flag with well-defined schemas
@@ -28,7 +28,7 @@ AI coding agents make hundreds or thousands of shell calls per task. Rush is spe
 
 ### Performance Comparison
 
-| Operation | Rush | Bash+jq | Speedup |
+| Operation | AUSH | Bash+jq | Speedup |
 |-----------|------|---------|---------|
 | git_status 100x | 500ms | 2000ms | 4x |
 | find + filter | 10ms | 100ms | 10x |
@@ -44,7 +44,7 @@ For a typical AI agent task that:
 - Parses JSON (10x)
 - Makes HTTP requests (2x)
 
-**Total time**: 2-5 seconds in Rush vs 10-20 seconds in bash+external tools
+**Total time**: 2-5 seconds in AUSH vs 10-20 seconds in bash+external tools
 
 ## Quick Start
 
@@ -52,28 +52,28 @@ For a typical AI agent task that:
 
 ```bash
 # From source
-git clone https://github.com/yourusername/rush
-cd rush
+git clone https://github.com/opus-workshop/aush
+cd aush
 cargo install --path .
 
 # Or via cargo (when published)
-cargo install rush-shell
+cargo install aush
 ```
 
 ### First Steps
 
 ```bash
 # Enable JSON error format (recommended for agents)
-export RUSH_ERROR_FORMAT=json
+export AUSH_ERROR_FORMAT=json
 
 # Get repository status as JSON
-rush -c "git_status --json"
+aush -c "git_status --json"
 
 # Find and process files
-rush -c "find --json src/ -name '*.rs'"
+aush -c "find --json src/ -name '*.rs'"
 
 # Fetch API data
-rush -c "fetch --json https://api.github.com/repos/rust-lang/rust"
+aush -c "fetch --json https://api.github.com/repos/rust-lang/rust"
 ```
 
 ### Basic Agent Integration
@@ -83,17 +83,17 @@ import subprocess
 import json
 
 def run_rush(command):
-    """Run a Rush command and return parsed JSON output."""
+    """Run a AUSH command and return parsed JSON output."""
     result = subprocess.run(
-        ['rush', '-c', command],
+        ['aush', '-c', command],
         capture_output=True,
         text=True,
-        env={'RUSH_ERROR_FORMAT': 'json'}
+        env={'AUSH_ERROR_FORMAT': 'json'}
     )
 
     if result.returncode != 0:
         error = json.loads(result.stderr)
-        raise Exception(f"Rush error: {error}")
+        raise Exception(f"AUSH error: {error}")
 
     return json.loads(result.stdout)
 
@@ -112,7 +112,7 @@ All git operations return structured JSON with consistent schemas.
 Get repository status with all changes categorized:
 
 ```bash
-rush -c "git_status --json"
+aush -c "git_status --json"
 ```
 
 **Output:**
@@ -158,13 +158,13 @@ Get commit history with stats:
 
 ```bash
 # Last 10 commits
-rush -c "git_log --json -n 10"
+aush -c "git_log --json -n 10"
 
 # Commits since date
-rush -c "git_log --json --since '2 weeks ago'"
+aush -c "git_log --json --since '2 weeks ago'"
 
 # Filter by message
-rush -c "git_log --json --grep 'fix:'"
+aush -c "git_log --json --grep 'fix:'"
 ```
 
 **Output:**
@@ -197,16 +197,16 @@ Get detailed diff information:
 
 ```bash
 # Unstaged changes
-rush -c "git_diff --json"
+aush -c "git_diff --json"
 
 # Staged changes
-rush -c "git_diff --json --staged"
+aush -c "git_diff --json --staged"
 
 # Commit range
-rush -c "git_diff --json HEAD~1..HEAD"
+aush -c "git_diff --json HEAD~1..HEAD"
 
 # Specific file
-rush -c "git_diff --json src/main.rs"
+aush -c "git_diff --json src/main.rs"
 ```
 
 **Output:**
@@ -232,7 +232,7 @@ rush -c "git_diff --json src/main.rs"
             },
             {
               "type": "add",
-              "line": "    println!(\"Hello, Rush!\");"
+              "line": "    println!(\"Hello, AUSH!\");"
             },
             {
               "type": "delete",
@@ -259,7 +259,7 @@ rush -c "git_diff --json src/main.rs"
 
 ## JSON Native Operations
 
-Rush includes built-in JSON manipulation commands that are 10x faster than jq.
+AUSH includes built-in JSON manipulation commands that are 10x faster than jq.
 
 ### json_get
 
@@ -267,19 +267,19 @@ Extract values from JSON:
 
 ```bash
 # Get a field
-echo '{"name":"John","age":30}' | rush -c "json_get '.name'"
+echo '{"name":"John","age":30}' | aush -c "json_get '.name'"
 # Output: John
 
 # Get nested field
-echo '{"user":{"name":"John"}}' | rush -c "json_get '.user.name'"
+echo '{"user":{"name":"John"}}' | aush -c "json_get '.user.name'"
 # Output: John
 
 # Get array element
-echo '[1,2,3]' | rush -c "json_get '.[1]'"
+echo '[1,2,3]' | aush -c "json_get '.[1]'"
 # Output: 2
 
 # Iterate array
-echo '[{"id":1},{"id":2}]' | rush -c "json_get '.[].id'"
+echo '[{"id":1},{"id":2}]' | aush -c "json_get '.[].id'"
 # Output: 1
 #         2
 ```
@@ -290,15 +290,15 @@ Modify JSON values:
 
 ```bash
 # Set a field
-echo '{"name":"John"}' | rush -c "json_set '.age' 30"
+echo '{"name":"John"}' | aush -c "json_set '.age' 30"
 # Output: {"name":"John","age":30}
 
 # Set nested field
-echo '{}' | rush -c "json_set '.user.name' 'John'"
+echo '{}' | aush -c "json_set '.user.name' 'John'"
 # Output: {"user":{"name":"John"}}
 
 # Modify array element
-echo '[1,2,3]' | rush -c "json_set '.[1]' 99"
+echo '[1,2,3]' | aush -c "json_set '.[1]' 99"
 # Output: [1,99,3]
 ```
 
@@ -308,12 +308,12 @@ Filter and transform JSON (jq-compatible):
 
 ```bash
 # Filter array
-echo '[{"age":25},{"age":35}]' | rush -c "json_query '.[] | select(.age > 30)'"
+echo '[{"age":25},{"age":35}]' | aush -c "json_query '.[] | select(.age > 30)'"
 # Output: {"age":35}
 
 # Transform objects
 echo '{"users":[{"name":"John"},{"name":"Jane"}]}' | \
-  rush -c "json_query '.users[] | {name: .name, greeting: \"Hello \\(.name)!\"}'"
+  aush -c "json_query '.users[] | {name: .name, greeting: \"Hello \\(.name)!\"}'"
 # Output: {"name":"John","greeting":"Hello John!"}
 #         {"name":"Jane","greeting":"Hello Jane!"}
 ```
@@ -322,16 +322,16 @@ echo '{"users":[{"name":"John"},{"name":"Jane"}]}' | \
 
 ```bash
 # Get all modified file paths
-rush -c "git_status --json | json_get '.unstaged[].path'"
+aush -c "git_status --json | json_get '.unstaged[].path'"
 
 # Count staged files
-rush -c "git_status --json | json_get '.summary.staged_count'"
+aush -c "git_status --json | json_get '.summary.staged_count'"
 
 # Get commit messages from last 5 commits
-rush -c "git_log --json -n 5 | json_get '.[].message'"
+aush -c "git_log --json -n 5 | json_get '.[].message'"
 
 # Find commits by specific author
-rush -c "git_log --json | json_query '.[] | select(.author == \"John Doe\")'"
+aush -c "git_log --json | json_query '.[] | select(.author == \"John Doe\")'"
 ```
 
 ## File Operations with JSON
@@ -343,7 +343,7 @@ All file operation builtins support JSON output.
 List directory contents:
 
 ```bash
-rush -c "ls --json"
+aush -c "ls --json"
 ```
 
 **Output:**
@@ -378,13 +378,13 @@ Search for files:
 
 ```bash
 # Find all Rust files
-rush -c "find --json src/ -name '*.rs'"
+aush -c "find --json src/ -name '*.rs'"
 
 # Find large files
-rush -c "find --json . -size +1M"
+aush -c "find --json . -size +1M"
 
 # Find recently modified
-rush -c "find --json . -mtime -7d"
+aush -c "find --json . -mtime -7d"
 ```
 
 **Output:**
@@ -406,13 +406,13 @@ Search file contents:
 
 ```bash
 # Search for pattern
-rush -c "grep --json 'TODO' src/**/*.rs"
+aush -c "grep --json 'TODO' src/**/*.rs"
 
 # Case-insensitive
-rush -c "grep --json -i 'fixme' src/**/*.rs"
+aush -c "grep --json -i 'fixme' src/**/*.rs"
 
 # With context lines
-rush -c "grep --json -C 2 'error' src/main.rs"
+aush -c "grep --json -C 2 'error' src/main.rs"
 ```
 
 **Output:**
@@ -444,13 +444,13 @@ Built-in HTTP client with JSON support.
 
 ```bash
 # GET request
-rush -c "fetch --json https://api.github.com/repos/rust-lang/rust"
+aush -c "fetch --json https://api.github.com/repos/rust-lang/rust"
 
 # POST request with JSON body
-rush -c "fetch --json -X POST https://api.example.com/data -d '{\"key\":\"value\"}'"
+aush -c "fetch --json -X POST https://api.example.com/data -d '{\"key\":\"value\"}'"
 
 # Custom headers
-rush -c "fetch --json -H 'Authorization: Bearer token123' https://api.example.com/user"
+aush -c "fetch --json -H 'Authorization: Bearer token123' https://api.example.com/user"
 ```
 
 ### Response Format
@@ -476,21 +476,21 @@ rush -c "fetch --json -H 'Authorization: Bearer token123' https://api.example.co
 
 ```bash
 # Extract specific field from API response
-rush -c "fetch --json https://api.github.com/repos/rust-lang/rust | json_get '.body.stargazers_count'"
+aush -c "fetch --json https://api.github.com/repos/rust-lang/rust | json_get '.body.stargazers_count'"
 
 # Check HTTP status
-rush -c "fetch --json https://example.com | json_get '.status'"
+aush -c "fetch --json https://example.com | json_get '.status'"
 
 # Download file
-rush -c "fetch -o output.zip https://example.com/file.zip"
+aush -c "fetch -o output.zip https://example.com/file.zip"
 
 # Timeout control
-rush -c "fetch --timeout 10 https://slow-api.example.com"
+aush -c "fetch --timeout 10 https://slow-api.example.com"
 ```
 
 ## Error Handling
 
-Rush provides structured error information when `RUSH_ERROR_FORMAT=json` is set.
+AUSH provides structured error information when `AUSH_ERROR_FORMAT=json` is set.
 
 ### Error Response Schema
 
@@ -525,12 +525,12 @@ import subprocess
 import json
 
 def safe_rush_command(cmd):
-    """Execute Rush command with proper error handling."""
+    """Execute AUSH command with proper error handling."""
     result = subprocess.run(
-        ['rush', '-c', cmd],
+        ['aush', '-c', cmd],
         capture_output=True,
         text=True,
-        env={'RUSH_ERROR_FORMAT': 'json'}
+        env={'AUSH_ERROR_FORMAT': 'json'}
     )
 
     if result.returncode != 0:
@@ -564,16 +564,16 @@ def safe_rush_command(cmd):
 
 Instead of multiple calls:
 ```bash
-# SLOW: Multiple Rush invocations
-rush -c "git_status --json" > status.json
-rush -c "git_log --json -n 10" > log.json
-rush -c "git_diff --json --staged" > diff.json
+# SLOW: Multiple AUSH invocations
+aush -c "git_status --json" > status.json
+aush -c "git_log --json -n 10" > log.json
+aush -c "git_diff --json --staged" > diff.json
 ```
 
 Do this:
 ```bash
-# FAST: Single Rush session
-rush -c "
+# FAST: Single AUSH session
+aush -c "
   git_status --json > status.json
   git_log --json -n 10 > log.json
   git_diff --json --staged > diff.json
@@ -585,30 +585,30 @@ rush -c "
 Instead of:
 ```bash
 # SLOW: Multiple JSON parse cycles
-files=$(rush -c "find --json src/ -name '*.rs'")
+files=$(aush -c "find --json src/ -name '*.rs'")
 for file in $files; do
-  rush -c "grep --json 'TODO' $file"
+  aush -c "grep --json 'TODO' $file"
 done
 ```
 
 Do this:
 ```bash
 # FAST: Single pipeline
-rush -c "find --json src/ -name '*.rs' | json_get '.[].path' | xargs grep --json 'TODO'"
+aush -c "find --json src/ -name '*.rs' | json_get '.[].path' | xargs grep --json 'TODO'"
 ```
 
 ### Minimize Context Switching
 
-Keep Rush session alive for interactive agents:
+Keep AUSH session alive for interactive agents:
 ```python
 import subprocess
 import json
 
-class RushSession:
+class AUSHSession:
     def __init__(self):
-        # Start persistent Rush session
+        # Start persistent AUSH session
         self.process = subprocess.Popen(
-            ['rush'],
+            ['aush'],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -632,26 +632,26 @@ class RushSession:
 
 ```bash
 # GOOD: Structured output
-rush -c "git_status --json | json_get '.unstaged[].path'"
+aush -c "git_status --json | json_get '.unstaged[].path'"
 
 # BAD: Parsing text output
-rush -c "git status | grep modified | awk '{print $2}'"
+aush -c "git status | grep modified | awk '{print $2}'"
 ```
 
 ### 2. Set Environment Variables
 
 ```bash
 # Set in agent initialization
-export RUSH_ERROR_FORMAT=json  # Structured errors
-export RUSH_COLOR=never        # Disable colors in JSON mode
-export RUSH_PAGER=cat          # Disable pager for automated use
+export AUSH_ERROR_FORMAT=json  # Structured errors
+export AUSH_COLOR=never        # Disable colors in JSON mode
+export AUSH_PAGER=cat          # Disable pager for automated use
 ```
 
 ### 3. Validate Input
 
 ```bash
 # Check if in git repository before git operations
-if rush -c "git_status --json" 2>/dev/null; then
+if aush -c "git_status --json" 2>/dev/null; then
   # Proceed with git operations
 fi
 ```
@@ -674,18 +674,18 @@ def get_modified_files():
 
 ```bash
 # Always set timeout for fetch operations
-rush -c "fetch --timeout 10 --json https://api.example.com/data"
+aush -c "fetch --timeout 10 --json https://api.example.com/data"
 ```
 
 ### 6. Combine Operations
 
 ```bash
 # GOOD: Single pipeline
-rush -c "find --json src/ -name '*.rs' | json_query '.[] | select(.size > 1000) | .path'"
+aush -c "find --json src/ -name '*.rs' | json_query '.[] | select(.size > 1000) | .path'"
 
 # BAD: Multiple commands
-files=$(rush -c "find --json src/ -name '*.rs'")
-rush -c "echo '$files' | json_query '.[] | select(.size > 1000) | .path'"
+files=$(aush -c "find --json src/ -name '*.rs'")
+aush -c "echo '$files' | json_query '.[] | select(.size > 1000) | .path'"
 ```
 
 ### 7. Cache When Appropriate
@@ -709,7 +709,7 @@ class GitAwareAgent:
 
 ## Migration from Bash
 
-Common patterns translated from bash+jq to Rush.
+Common patterns translated from bash+jq to AUSH.
 
 ### Check Git Status
 
@@ -718,9 +718,9 @@ Common patterns translated from bash+jq to Rush.
 git status --porcelain | grep "^M" | cut -c 4-
 ```
 
-**Rush:**
+**AUSH:**
 ```bash
-rush -c "git_status --json | json_get '.unstaged[] | select(.status == \"modified\") | .path'"
+aush -c "git_status --json | json_get '.unstaged[] | select(.status == \"modified\") | .path'"
 ```
 
 ### Find TODO Comments
@@ -730,9 +730,9 @@ rush -c "git_status --json | json_get '.unstaged[] | select(.status == \"modifie
 find src -name '*.rs' -exec grep -n "TODO" {} + | cut -d: -f1,2
 ```
 
-**Rush:**
+**AUSH:**
 ```bash
-rush -c "grep --json 'TODO' src/**/*.rs | json_get '.[] | \"\\(.file):\\(.line_number)\"'"
+aush -c "grep --json 'TODO' src/**/*.rs | json_get '.[] | \"\\(.file):\\(.line_number)\"'"
 ```
 
 ### Get Recent Commits
@@ -742,9 +742,9 @@ rush -c "grep --json 'TODO' src/**/*.rs | json_get '.[] | \"\\(.file):\\(.line_n
 git log -n 10 --pretty=format:'%h %s' | cat
 ```
 
-**Rush:**
+**AUSH:**
 ```bash
-rush -c "git_log --json -n 10 | json_get '.[] | \"\\(.short_hash) \\(.message)\"'"
+aush -c "git_log --json -n 10 | json_get '.[] | \"\\(.short_hash) \\(.message)\"'"
 ```
 
 ### Fetch API Data
@@ -754,9 +754,9 @@ rush -c "git_log --json -n 10 | json_get '.[] | \"\\(.short_hash) \\(.message)\"
 curl -s https://api.github.com/repos/rust-lang/rust | jq '.stargazers_count'
 ```
 
-**Rush:**
+**AUSH:**
 ```bash
-rush -c "fetch --json https://api.github.com/repos/rust-lang/rust | json_get '.body.stargazers_count'"
+aush -c "fetch --json https://api.github.com/repos/rust-lang/rust | json_get '.body.stargazers_count'"
 ```
 
 ### Count Lines of Code
@@ -766,9 +766,9 @@ rush -c "fetch --json https://api.github.com/repos/rust-lang/rust | json_get '.b
 find src -name '*.rs' -exec wc -l {} + | tail -1 | awk '{print $1}'
 ```
 
-**Rush:**
+**AUSH:**
 ```bash
-rush -c "find --json src -name '*.rs' | json_query '[.[].size] | add'"
+aush -c "find --json src -name '*.rs' | json_query '[.[].size] | add'"
 ```
 
 ### List Large Files
@@ -778,36 +778,36 @@ rush -c "find --json src -name '*.rs' | json_query '[.[].size] | add'"
 find . -type f -size +1M -exec ls -lh {} + | awk '{print $9, $5}'
 ```
 
-**Rush:**
+**AUSH:**
 ```bash
-rush -c "find --json . -size +1M | json_get '.[] | \"\\(.path) \\(.size)\"'"
+aush -c "find --json . -size +1M | json_get '.[] | \"\\(.path) \\(.size)\"'"
 ```
 
 ## Example Workflows
 
 See the [examples/](../examples/) directory for complete working examples:
 
-- `commit_message_generator.rush` - Generate intelligent commit messages
-- `find_todos.rush` - Find and categorize TODO comments
-- `dependency_check.rush` - Check for outdated dependencies
-- `code_review_prep.rush` - Prepare code review summaries
-- `test_coverage_analyzer.rush` - Analyze test coverage
-- `dead_code_finder.rush` - Find unused code
-- `security_audit.rush` - Basic security checks
-- `performance_profiler.rush` - Profile git operations
-- `branch_cleaner.rush` - Clean up merged branches
-- `changelog_generator.rush` - Generate changelogs
+- `commit_message_generator.aush` - Generate intelligent commit messages
+- `find_todos.aush` - Find and categorize TODO comments
+- `dependency_check.aush` - Check for outdated dependencies
+- `code_review_prep.aush` - Prepare code review summaries
+- `test_coverage_analyzer.aush` - Analyze test coverage
+- `dead_code_finder.aush` - Find unused code
+- `security_audit.aush` - Basic security checks
+- `performance_profiler.aush` - Profile git operations
+- `branch_cleaner.aush` - Clean up merged branches
+- `changelog_generator.aush` - Generate changelogs
 
 ## Resources
 
 - [JSON Schema Reference](AI_AGENT_JSON_REFERENCE.md) - Complete JSON schemas
-- [Rush Performance Guide](PERFORMANCE.md) - Performance optimization
-- [Rush Architecture](daemon-architecture.md) - How Rush works internally
+- [AUSH Performance Guide](PERFORMANCE.md) - Performance optimization
+- [AUSH Architecture](daemon-architecture.md) - How AUSH works internally
 - [Examples Directory](../examples/) - Working example scripts
 
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/yourusername/rush/issues
-- Documentation: https://rush-shell.dev/docs
-- Examples: https://github.com/yourusername/rush/tree/main/examples
+- GitHub Issues: https://github.com/opus-workshop/aush/issues
+- Documentation: https://aush.dev/docs
+- Examples: https://github.com/opus-workshop/aush/tree/main/examples

@@ -16,7 +16,7 @@ use crate::executor::Executor;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 
-/// Parse a `--max-output` / `AUSH_MAX_OUTPUT` / `RUSH_MAX_OUTPUT` value string into a byte count.
+/// Parse a `--max-output` / `AUSH_MAX_OUTPUT` / `AUSH_MAX_OUTPUT` value string into a byte count.
 ///
 /// Supported formats:
 /// - `50KB`, `50kb`, `50k`  → 50 * 1024 bytes
@@ -67,7 +67,7 @@ pub struct RunOptions {
     /// `RunResult::timed_out` is set to `true`.
     pub timeout: Option<u64>,
     /// Request JSON output from built-in commands that support it
-    /// (sets `RUSH_JSON=1` in the execution environment).
+    /// (sets `AUSH_JSON=1` in the execution environment).
     pub json_output: bool,
     /// Maximum total output bytes (stdout + stderr combined). Output is
     /// truncated per-stream once the combined budget is exceeded, and
@@ -94,7 +94,7 @@ pub struct RunResult {
 ///
 /// # Example
 /// ```
-/// use rush::{run, RunOptions};
+/// use aush::{run, RunOptions};
 /// let result = run("echo hello", &RunOptions::default()).unwrap();
 /// assert_eq!(result.exit_code, 0);
 /// assert!(result.stdout.contains("hello"));
@@ -167,13 +167,13 @@ fn execute_inner(command: &str, options: &RunOptions) -> Result<RunResult> {
     if options.json_output {
         executor.runtime_mut().set_agent_mode(true);
         executor.runtime_mut().set_env("AUSH_JSON", "1");
-        executor.runtime_mut().set_env("RUSH_JSON", "1");
+        executor.runtime_mut().set_env("AUSH_JSON", "1");
     }
 
     // Resolve effective max_output_bytes: RunOptions takes priority, then
-    // AUSH_MAX_OUTPUT with RUSH_MAX_OUTPUT fallback.
+    // AUSH_MAX_OUTPUT with AUSH_MAX_OUTPUT fallback.
     let max_output_bytes = options.max_output_bytes.or_else(|| {
-        crate::brand::env_var("AUSH_MAX_OUTPUT", "RUSH_MAX_OUTPUT")
+        crate::brand::env_var("AUSH_MAX_OUTPUT")
             .and_then(|v| parse_max_output(&v))
     });
 

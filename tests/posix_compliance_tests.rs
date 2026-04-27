@@ -17,21 +17,21 @@ fn project_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
 
-/// Get the Rush binary path
+/// Get the AUSH binary path
 fn rush_binary() -> PathBuf {
     let mut path = project_root();
     path.push("target");
     path.push("release");
-    path.push("rush");
+    path.push("aush");
     path
 }
 
-/// Build Rush in release mode if not already built
+/// Build AUSH in release mode if not already built
 fn ensure_rush_binary() -> Result<(), String> {
     let binary = rush_binary();
 
     if !binary.exists() {
-        eprintln!("Building Rush binary in release mode...");
+        eprintln!("Building AUSH binary in release mode...");
         let status = Command::new("cargo")
             .args(&["build", "--release"])
             .current_dir(project_root())
@@ -39,7 +39,7 @@ fn ensure_rush_binary() -> Result<(), String> {
             .map_err(|e| format!("Failed to run cargo build: {}", e))?;
 
         if !status.success() {
-            return Err("Failed to build Rush binary".to_string());
+            return Err("Failed to build AUSH binary".to_string());
         }
     }
 
@@ -62,7 +62,7 @@ fn run_shellspec(args: &[&str]) -> Result<std::process::Output, std::io::Error> 
     Command::new("shellspec")
         .args(args)
         .current_dir(posix_dir)
-        .env("RUSH_BINARY", rush_binary())
+        .env("AUSH_BINARY", rush_binary())
         .output()
 }
 
@@ -289,7 +289,7 @@ fn test_run_posix_script() {
     let status = Command::new("bash")
         .arg(&run_script)
         .current_dir(&posix_dir)
-        .env("RUSH_BINARY", rush_binary())
+        .env("AUSH_BINARY", rush_binary())
         .status()
         .expect("Failed to run test script");
 

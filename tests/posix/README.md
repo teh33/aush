@@ -1,6 +1,6 @@
 # POSIX Compliance Test Suite
 
-This directory contains comprehensive POSIX compliance tests for the Rush shell.
+This directory contains comprehensive POSIX compliance tests for the AUSH shell.
 
 ## Quick Start
 

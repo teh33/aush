@@ -52,7 +52,7 @@ impl PerfStats {
         let execute_ns = self.execute_time_ns.load(Ordering::Relaxed);
         let total_ns = lex_ns + parse_ns + expand_ns + execute_ns;
 
-        eprintln!("\n📊 Rush Performance Stats ({} commands):", count);
+        eprintln!("\n📊 AUSH Performance Stats ({} commands):", count);
         eprintln!("  Lex:     {:6.2}µs ({:5.1}%)", lex_ns as f64 / count as f64 / 1000.0, lex_ns as f64 / total_ns as f64 * 100.0);
         eprintln!("  Parse:   {:6.2}µs ({:5.1}%)", parse_ns as f64 / count as f64 / 1000.0, parse_ns as f64 / total_ns as f64 * 100.0);
         eprintln!("  Expand:  {:6.2}µs ({:5.1}%)", expand_ns as f64 / count as f64 / 1000.0, expand_ns as f64 / total_ns as f64 * 100.0);

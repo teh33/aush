@@ -1,4 +1,4 @@
-//! AI / LLM integration for Rush
+//! AI / LLM integration for AUSH
 //!
 //! This module provides a provider-agnostic LLM client used by the shell's
 //! agent features (`?` prefix, `|?` pipe operator).
@@ -6,7 +6,7 @@
 //! # Quick start
 //!
 //! ```no_run
-//! use rush::ai::client::{LlmClient, Message};
+//! use aush::ai::client::{LlmClient, Message};
 //!
 //! let client = LlmClient::from_config().unwrap();
 //! let messages = vec![Message::user("List files in the current directory")];
@@ -15,7 +15,7 @@
 //!
 //! # Configuration
 //!
-//! Reads `~/.rushrc`. If missing, defaults to Ollama on localhost.
+//! Reads `~/.aushrc`. If missing, defaults to Ollama on localhost.
 //! ```toml
 //! provider = "ollama"
 //! model = "qwen2.5-coder:7b"

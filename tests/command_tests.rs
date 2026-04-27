@@ -1,5 +1,5 @@
-use rush::executor::Executor;
-use rush::parser::ast::{Argument, Command, FunctionDef, Statement};
+use aush::executor::Executor;
+use aush::parser::ast::{Argument, Command, FunctionDef, Statement};
 
 #[test]
 fn test_command_basic_echo() {
@@ -392,7 +392,7 @@ fn test_command_p_flag_uses_default_path() {
 
     let result = executor.execute(vec![cmd]).unwrap();
     // With -p, it might find ls in default PATH if it's a builtin or external
-    // Since ls is a builtin in rush, it should report as builtin
+    // Since ls is a builtin in aush, it should report as builtin
     assert!(result.stdout().contains("ls") || result.stdout().contains("builtin"));
     assert_eq!(result.exit_code, 0);
 }

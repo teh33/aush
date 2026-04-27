@@ -1,13 +1,13 @@
-//! Daemon configuration parsing from .aushrc or legacy .rushrc
+//! Daemon configuration parsing from .aushrc
 //!
 //! Parses banner settings and custom stat definitions:
-//! - AUSH_BANNER_STYLE / RUSH_BANNER_STYLE (block, line, minimal, none)
-//! - AUSH_BANNER_COLOR / RUSH_BANNER_COLOR (cyan, green, etc.)
-//! - AUSH_BANNER_SHOW / RUSH_BANNER_SHOW (always, first, never)
-//! - AUSH_BANNER_STATS / RUSH_BANNER_STATS (space-separated stat names)
-//! - AUSH_STAT_<name> / RUSH_STAT_<name>="command"
-//! - AUSH_STAT_<name>_INTERVAL / RUSH_STAT_<name>_INTERVAL=seconds
-//! - AUSH_STAT_<name>_TIMEOUT / RUSH_STAT_<name>_TIMEOUT=seconds
+//! - AUSH_BANNER_STYLE / AUSH_BANNER_STYLE (block, line, minimal, none)
+//! - AUSH_BANNER_COLOR / AUSH_BANNER_COLOR (cyan, green, etc.)
+//! - AUSH_BANNER_SHOW / AUSH_BANNER_SHOW (always, first, never)
+//! - AUSH_BANNER_STATS / AUSH_BANNER_STATS (space-separated stat names)
+//! - AUSH_STAT_<name> / AUSH_STAT_<name>="command"
+//! - AUSH_STAT_<name>_INTERVAL / AUSH_STAT_<name>_INTERVAL=seconds
+//! - AUSH_STAT_<name>_TIMEOUT / AUSH_STAT_<name>_TIMEOUT=seconds
 
 use std::collections::HashMap;
 use std::fs;
@@ -56,7 +56,7 @@ impl BannerShow {
     }
 }
 
-/// Banner configuration from .aushrc or legacy .rushrc
+/// Banner configuration from .aushrc
 #[derive(Debug, Clone, Default)]
 pub struct BannerConfig {
     /// Display style (block, line, minimal, none)
@@ -69,10 +69,10 @@ pub struct BannerConfig {
     pub stats: Vec<String>,
 }
 
-/// Custom stat definition from .aushrc or legacy .rushrc
+/// Custom stat definition from .aushrc
 #[derive(Debug, Clone)]
 pub struct CustomStatConfig {
-    /// Stat name (from AUSH_STAT_<name> or RUSH_STAT_<name>)
+    /// Stat name (from AUSH_STAT_<name> or AUSH_STAT_<name>)
     pub name: String,
     /// Shell command to execute
     pub command: String,
@@ -101,23 +101,23 @@ pub struct DaemonConfig {
 }
 
 impl DaemonConfig {
-    /// Parse configuration from .aushrc or legacy .rushrc file
-    pub fn from_rushrc() -> Self {
+    /// Parse configuration from .aushrc file
+    pub fn from_aushrc() -> Self {
         let config_path = Self::config_path();
         Self::from_file(&config_path).unwrap_or_default()
     }
 
-    /// Get the path to .aushrc, falling back to existing .rushrc
+    /// Get the path to .aushrc
     pub fn config_path() -> PathBuf {
         let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-        crate::brand::first_existing_or_primary(home.join(".aushrc"), [home.join(".rushrc")])
+        home.join(".aushrc")
     }
 
-    /// Get the legacy path to .rushrc
-    pub fn rushrc_path() -> PathBuf {
+    /// Get the path to .aushrc
+    pub fn aushrc_path() -> PathBuf {
         dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join(".rushrc")
+            .join(".aushrc")
     }
 
     /// Parse configuration from a specific file
@@ -148,37 +148,36 @@ impl DaemonConfig {
                 let value = unquote(&value);
 
                 match key.as_str() {
-                    "AUSH_BANNER_STYLE" | "RUSH_BANNER_STYLE" => {
+                    "AUSH_BANNER_STYLE" => {
                         config.banner.style = BannerStyle::from_str(&value);
                     }
-                    "AUSH_BANNER_COLOR" | "RUSH_BANNER_COLOR" => {
+                    "AUSH_BANNER_COLOR" => {
                         config.banner.color = value;
                     }
-                    "AUSH_BANNER_SHOW" | "RUSH_BANNER_SHOW" => {
+                    "AUSH_BANNER_SHOW" => {
                         config.banner.show = BannerShow::from_str(&value);
                     }
-                    "AUSH_BANNER_STATS" | "RUSH_BANNER_STATS" => {
+                    "AUSH_BANNER_STATS" => {
                         config.banner.stats =
                             value.split_whitespace().map(|s| s.to_string()).collect();
                     }
-                    _ if key.starts_with("AUSH_STAT_") || key.starts_with("RUSH_STAT_") => {
+                    _ if key.starts_with("AUSH_STAT_") => {
                         let suffix = key
                             .strip_prefix("AUSH_STAT_")
-                            .or_else(|| key.strip_prefix("RUSH_STAT_"))
                             .expect("stat prefix checked above");
 
                         if let Some(name) = suffix.strip_suffix("_INTERVAL") {
-                            // AUSH_STAT_<name>_INTERVAL / RUSH_STAT_<name>_INTERVAL
+                            // AUSH_STAT_<name>_INTERVAL
                             if let Ok(secs) = value.parse::<u64>() {
                                 stat_intervals.insert(name.to_lowercase(), secs);
                             }
                         } else if let Some(name) = suffix.strip_suffix("_TIMEOUT") {
-                            // AUSH_STAT_<name>_TIMEOUT / RUSH_STAT_<name>_TIMEOUT
+                            // AUSH_STAT_<name>_TIMEOUT / AUSH_STAT_<name>_TIMEOUT
                             if let Ok(secs) = value.parse::<u64>() {
                                 stat_timeouts.insert(name.to_lowercase(), secs);
                             }
                         } else {
-                            // AUSH_STAT_<name> / RUSH_STAT_<name>="command"
+                            // AUSH_STAT_<name> / AUSH_STAT_<name>="command"
                             let name = suffix.to_lowercase();
                             stat_commands.insert(name, value);
                         }
@@ -270,10 +269,10 @@ mod tests {
     #[test]
     fn test_parse_banner_config() {
         let content = r#"
-RUSH_BANNER_STYLE="minimal"
-RUSH_BANNER_COLOR="green"
-RUSH_BANNER_SHOW="first"
-RUSH_BANNER_STATS="host uptime memory"
+AUSH_BANNER_STYLE="minimal"
+AUSH_BANNER_COLOR="green"
+AUSH_BANNER_SHOW="first"
+AUSH_BANNER_STATS="host uptime memory"
 "#;
         let config = DaemonConfig::parse(content);
 
@@ -286,10 +285,10 @@ RUSH_BANNER_STATS="host uptime memory"
     #[test]
     fn test_parse_custom_stats() {
         let content = r#"
-RUSH_STAT_weather="curl -s wttr.in"
-RUSH_STAT_weather_INTERVAL=300
-RUSH_STAT_weather_TIMEOUT=5
-RUSH_STAT_todos="wc -l < ~/todo.txt"
+AUSH_STAT_weather="curl -s wttr.in"
+AUSH_STAT_weather_INTERVAL=300
+AUSH_STAT_weather_TIMEOUT=5
+AUSH_STAT_todos="wc -l < ~/todo.txt"
 "#;
         let config = DaemonConfig::parse(content);
 
@@ -309,8 +308,8 @@ RUSH_STAT_todos="wc -l < ~/todo.txt"
     #[test]
     fn test_parse_with_export() {
         let content = r#"
-export RUSH_BANNER_STYLE="line"
-export RUSH_STAT_test="echo hello"
+export AUSH_BANNER_STYLE="line"
+export AUSH_STAT_test="echo hello"
 "#;
         let config = DaemonConfig::parse(content);
 
@@ -322,9 +321,9 @@ export RUSH_STAT_test="echo hello"
     fn test_parse_comments() {
         let content = r#"
 # This is a comment
-RUSH_BANNER_STYLE="block"
+AUSH_BANNER_STYLE="block"
 # Another comment
-RUSH_STAT_test="echo hello"
+AUSH_STAT_test="echo hello"
 "#;
         let config = DaemonConfig::parse(content);
 

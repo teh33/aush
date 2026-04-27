@@ -1,4 +1,4 @@
-//! Variable expansion and resolution for the Rush shell executor.
+//! Variable expansion and resolution for the AUSH shell executor.
 //!
 //! This module handles all forms of shell variable expansion including:
 //! - Simple variable expansion ($VAR, ${VAR})
@@ -15,12 +15,12 @@ use std::sync::atomic::{AtomicU64, Ordering};
 static PROC_SUB_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 /// Maximum bytes captured from a command substitution before truncation.
-/// Configurable via AUSH_MAX_SUBST_OUTPUT with fallback to RUSH_MAX_SUBST_OUTPUT.
+/// Configurable via AUSH_MAX_SUBST_OUTPUT with fallback to AUSH_MAX_SUBST_OUTPUT.
 /// Default: 50MB.
 const DEFAULT_MAX_SUBSTITUTION_OUTPUT: usize = 50 * 1024 * 1024;
 
 fn max_substitution_output() -> usize {
-    crate::brand::env_var("AUSH_MAX_SUBST_OUTPUT", "RUSH_MAX_SUBST_OUTPUT")
+    crate::brand::env_var("AUSH_MAX_SUBST_OUTPUT")
         .and_then(|s| crate::run_api::parse_max_output(&s))
         .unwrap_or(DEFAULT_MAX_SUBSTITUTION_OUTPUT)
 }
@@ -144,7 +144,7 @@ impl Executor {
                                     if let Some(val) = self.runtime.get_variable("0") {
                                         result.push_str(&val);
                                     } else {
-                                        result.push_str("rush");
+                                        result.push_str("aush");
                                     }
                                 }
                             } else if let Some(value) = self.runtime.get_variable(&var_name) {
@@ -389,7 +389,7 @@ impl Executor {
         let mut output = result.stdout();
         let max = max_substitution_output();
         if truncate_output(&mut output, max) {
-            eprintln!("rush: warning: command substitution output truncated at {} bytes", max);
+            eprintln!("aush: warning: command substitution output truncated at {} bytes", max);
         }
         Ok(output)
     }
@@ -414,7 +414,7 @@ impl Executor {
             "0" => Some(
                 self.runtime
                     .get_variable("0")
-                    .unwrap_or_else(|| "rush".to_string()),
+                    .unwrap_or_else(|| "aush".to_string()),
             ),
             _ => None,
         }
@@ -510,7 +510,7 @@ impl Executor {
 
         // Create a unique FIFO in /tmp
         let id = PROC_SUB_COUNTER.fetch_add(1, Ordering::Relaxed);
-        let fifo_path = format!("/tmp/rush_procsub_{}_{}", std::process::id(), id);
+        let fifo_path = format!("/tmp/aush_procsub_{}_{}", std::process::id(), id);
         let c_path = std::ffi::CString::new(fifo_path.as_str())
             .map_err(|_| anyhow!("Invalid FIFO path"))?;
         let ret = unsafe { libc::mkfifo(c_path.as_ptr(), 0o600) };
@@ -525,7 +525,7 @@ impl Executor {
         if is_input {
             // <(cmd): child runs cmd, stdout goes to FIFO
             // Use sh to handle the redirect so the child process blocks on FIFO open
-            // (not the parent). spawn() forks immediately — the child blocks, not rush.
+            // (not the parent). spawn() forks immediately — the child blocks, not aush.
             let shell_cmd = format!("{} > '{}'", command, fifo_path);
             std::process::Command::new("sh")
                 .arg("-c")
@@ -768,7 +768,7 @@ impl Executor {
         let mut output = result.stdout().trim_end().to_string();
         let max = max_substitution_output();
         if truncate_output(&mut output, max) {
-            eprintln!("rush: warning: command substitution output truncated at {} bytes", max);
+            eprintln!("aush: warning: command substitution output truncated at {} bytes", max);
         }
         Ok(output)
     }
@@ -1271,9 +1271,9 @@ mod substitution_cap_tests {
 
     #[test]
     fn test_command_substitution_output_cap_env() {
-        std::env::set_var("RUSH_MAX_SUBST_OUTPUT", "1KB");
+        std::env::set_var("AUSH_MAX_SUBST_OUTPUT", "1KB");
         assert_eq!(max_substitution_output(), 1024);
-        std::env::remove_var("RUSH_MAX_SUBST_OUTPUT");
+        std::env::remove_var("AUSH_MAX_SUBST_OUTPUT");
     }
 
     #[test]

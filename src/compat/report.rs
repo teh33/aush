@@ -1,11 +1,11 @@
 //! Bash compatibility report generator
 //!
 //! Generates human-readable compatibility reports showing which bash features
-//! are supported, have warnings, or are unsupported in Rush.
+//! are supported, have warnings, or are unsupported in AUSH.
 
 use super::analyzer::AnalysisResult;
 use super::database::CompatDatabase;
-use super::features::RushSupportStatus;
+use super::features::AUSHSupportStatus;
 use super::migrate::{MigrationEngine, MigrationSuggestion};
 
 /// A single issue found during compatibility analysis
@@ -79,16 +79,16 @@ impl CompatibilityReport {
                         workaround: feature.workaround.map(|s| s.to_string()),
                     };
 
-                    match feature.rush_status {
-                        RushSupportStatus::Supported => {
+                    match feature.aush_status {
+                        AUSHSupportStatus::Supported => {
                             supported.issues.push(issue);
                             supported.feature_count += 1;
                         }
-                        RushSupportStatus::Planned => {
+                        AUSHSupportStatus::Planned => {
                             warnings.issues.push(issue);
                             warnings.feature_count += 1;
                         }
-                        RushSupportStatus::NotSupported => {
+                        AUSHSupportStatus::NotSupported => {
                             unsupported.issues.push(issue);
                             unsupported.feature_count += 1;
                         }

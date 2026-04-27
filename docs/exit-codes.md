@@ -1,10 +1,10 @@
-# Exit Code Propagation in Rush
+# Exit Code Propagation in AUSH
 
-This document describes how exit codes work in the Rush shell, including the `$?` special variable and conditional operators.
+This document describes how exit codes work in the AUSH shell, including the `$?` special variable and conditional operators.
 
 ## Overview
 
-Rush implements POSIX-compliant exit code handling, allowing scripts to make decisions based on command success or failure. Every command execution sets the `$?` variable to reflect the exit status.
+AUSH implements POSIX-compliant exit code handling, allowing scripts to make decisions based on command success or failure. Every command execution sets the `$?` variable to reflect the exit status.
 
 ## The `$?` Special Variable
 
@@ -34,7 +34,7 @@ echo $?  # Outputs: non-zero (typically 1)
 
 ## Conditional Operators
 
-Rush supports two conditional operators for controlling execution flow based on exit codes.
+AUSH supports two conditional operators for controlling execution flow based on exit codes.
 
 ### The `&&` Operator (Conditional AND)
 

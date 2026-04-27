@@ -1,9 +1,9 @@
 use nix::unistd::{getpgrp, Pid};
-use rush::executor::Executor;
-use rush::lexer::Lexer;
-use rush::parser::Parser;
-use rush::runtime::Runtime;
-use rush::terminal::TerminalControl;
+use aush::executor::Executor;
+use aush::lexer::Lexer;
+use aush::parser::Parser;
+use aush::runtime::Runtime;
+use aush::terminal::TerminalControl;
 
 #[test]
 fn test_terminal_control_creation() {
@@ -91,7 +91,7 @@ fn test_terminal_error_recovery() {
 #[test]
 fn test_job_pgid_field() {
     // Test that jobs have pgid field set correctly
-    use rush::jobs::JobManager;
+    use aush::jobs::JobManager;
 
     let job_manager = JobManager::new();
     let job_id = job_manager.add_job(12345, "test command".to_string());

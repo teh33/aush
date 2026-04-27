@@ -5,8 +5,8 @@
 set -e
 
 AUSH="${AUSH:-./target/release/aush}"
-if [ ! -x "$AUSH" ] && [ -x ./target/release/rush ]; then
-    AUSH=./target/release/rush
+if [ ! -x "$AUSH" ] && [ -x ./target/release/aush ]; then
+    AUSH=./target/release/aush
 fi
 RUSH="$AUSH"
 ZSH="/bin/zsh"
@@ -24,24 +24,24 @@ echo "   Runs per test: $RUNS"
 echo ""
 
 # Create named pipes for communication
-RUSH_IN=$(mktemp -u)
-RUSH_OUT=$(mktemp -u)
+AUSH_IN=$(mktemp -u)
+AUSH_OUT=$(mktemp -u)
 ZSH_IN=$(mktemp -u)
 ZSH_OUT=$(mktemp -u)
 
-mkfifo "$RUSH_IN" "$RUSH_OUT" "$ZSH_IN" "$ZSH_OUT"
+mkfifo "$AUSH_IN" "$AUSH_OUT" "$ZSH_IN" "$ZSH_OUT"
 
 # Cleanup function
 cleanup() {
-    rm -f "$RUSH_IN" "$RUSH_OUT" "$ZSH_IN" "$ZSH_OUT"
+    rm -f "$AUSH_IN" "$AUSH_OUT" "$ZSH_IN" "$ZSH_OUT"
     # Kill background shells if they exist
     jobs -p | xargs -r kill 2>/dev/null || true
 }
 trap cleanup EXIT
 
 # Start persistent shell sessions
-$RUSH < "$RUSH_IN" > "$RUSH_OUT" 2>&1 &
-RUSH_PID=$!
+$RUSH < "$AUSH_IN" > "$AUSH_OUT" 2>&1 &
+AUSH_PID=$!
 
 $ZSH < "$ZSH_IN" > "$ZSH_OUT" 2>&1 &
 ZSH_PID=$!
@@ -84,13 +84,13 @@ run_test() {
 
     printf "  %-35s" "$name:"
 
-    local rush_time=$(time_in_shell "$RUSH_IN" "$RUSH_OUT" "$cmd")
-    printf " Rush: %7.2fms" "$rush_time"
+    local aush_time=$(time_in_shell "$AUSH_IN" "$AUSH_OUT" "$cmd")
+    printf " AUSH: %7.2fms" "$aush_time"
 
     local zsh_time=$(time_in_shell "$ZSH_IN" "$ZSH_OUT" "$cmd")
     printf "  Zsh: %7.2fms" "$zsh_time"
 
-    local speedup=$(python3 -c "print($zsh_time / $rush_time)")
+    local speedup=$(python3 -c "print($zsh_time / $aush_time)")
     printf "  →  %.2fx" "$speedup"
 
     if [ $(python3 -c "print(1 if $speedup > 1.0 else 0)") -eq 1 ]; then

@@ -3,7 +3,7 @@ use std::fs;
 use std::process::Command;
 
 fn rush_binary() -> String {
-    env::var("CARGO_BIN_EXE_rush").unwrap_or_else(|_| "target/debug/rush".to_string())
+    env::var("CARGO_BIN_EXE_aush").unwrap_or_else(|_| "target/debug/aush".to_string())
 }
 
 #[test]
@@ -12,12 +12,12 @@ fn test_shell_variable_set() {
         .arg("-c")
         .arg("echo $SHELL")
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        stdout.contains("rush"),
-        "SHELL should contain 'rush': {}",
+        stdout.contains("aush"),
+        "SHELL should contain 'aush': {}",
         stdout
     );
 }
@@ -28,7 +28,7 @@ fn test_ppid_variable() {
         .arg("-c")
         .arg("echo $PPID")
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
@@ -47,7 +47,7 @@ fn test_ppid_readonly() {
         .arg("-c")
         .arg("PPID=123")
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
@@ -65,7 +65,7 @@ fn test_shlvl_increments() {
         .arg("-c")
         .arg("echo $SHLVL")
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
     assert_eq!(stdout, "1", "SHLVL should be 1 in first shell");
@@ -78,7 +78,7 @@ fn test_shlvl_increments_in_subshell() {
         .arg("-c")
         .arg("(echo $SHLVL)")
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
     assert_eq!(stdout, "2", "SHLVL should be 2 in subshell");
@@ -91,7 +91,7 @@ fn test_shlvl_nested_subshells() {
         .arg("-c")
         .arg("(( echo $SHLVL ))")
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
     assert_eq!(stdout, "3", "SHLVL should be 3 in nested subshell");
@@ -103,7 +103,7 @@ fn test_pwd_variable() {
         .arg("-c")
         .arg("echo $PWD")
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
@@ -127,7 +127,7 @@ fn test_pwd_updates_with_cd() {
         .arg("-c")
         .arg(&script)
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
     assert_eq!(
@@ -150,7 +150,7 @@ fn test_oldpwd_tracks_previous_directory() {
         .arg(&script)
         .current_dir(&original_dir)
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
     assert_eq!(
@@ -180,7 +180,7 @@ fn test_cd_dash_uses_oldpwd() {
         .arg("-c")
         .arg(&script)
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
@@ -216,7 +216,7 @@ fn test_cd_dash_prints_directory() {
         .arg("-c")
         .arg(&script)
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
@@ -238,7 +238,7 @@ fn test_cd_dash_without_oldpwd() {
         .arg("-c")
         .arg("cd -")
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
@@ -272,7 +272,7 @@ fn test_oldpwd_chain() {
         .arg("-c")
         .arg(&script)
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
     assert_eq!(
@@ -304,7 +304,7 @@ fn test_pwd_stays_in_sync() {
         .arg("-c")
         .arg(&script)
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
     assert_eq!(
@@ -322,7 +322,7 @@ fn test_all_standard_variables_present() {
         .arg("-c")
         .arg("echo $SHELL; echo $PPID; echo $SHLVL; echo $PWD")
         .output()
-        .expect("Failed to execute rush");
+        .expect("Failed to execute aush");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let lines: Vec<&str> = stdout.trim().lines().collect();
@@ -331,8 +331,8 @@ fn test_all_standard_variables_present() {
     // Check if at least the binary path is present
     let shell = lines.get(0).unwrap_or(&"");
     assert!(
-        shell.contains("rush") || shell.is_empty(),
-        "SHELL should contain rush binary path or be empty: {}",
+        shell.contains("aush") || shell.is_empty(),
+        "SHELL should contain aush binary path or be empty: {}",
         shell
     );
 

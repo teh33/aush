@@ -15,7 +15,7 @@ AUSH is a POSIX-compatible shell built in Rust with three things your current sh
 
 **AI agent built in** — prefix any query with `?` and AUSH sends it to the LLM, shows you the command, and asks to run it. Works with Ollama (local), OpenAI, or Anthropic. No wrapper scripts.
 
-**Lua extensions** — register custom builtins, prompt segments, completions, and shell hooks in `~/.aush/lua/`. Legacy `~/.aush/lua/` remains supported during the rename. No recompile.
+**Lua extensions** — register custom builtins, prompt segments, completions, and shell hooks in `~/.aush/lua/`. No recompile.
 
 Oh, and it's still a shell. Your existing scripts run unchanged.
 
@@ -35,11 +35,11 @@ grep --json 'TODO' src/**/*.rs | count
 
 # Register a custom builtin in Lua
 # ~/.aush/lua/weather.lua
-rush.register_builtin("weather", {
+aush.register_builtin("weather", {
     description = "Current weather",
     run = function(args)
         local city = args[1] or "London"
-        local data = rush.exec_structured("fetch https://wttr.in/" .. city .. "?format=j1")
+        local data = aush.exec_structured("fetch https://wttr.in/" .. city .. "?format=j1")
         return { text = data.current_condition[1].temp_C .. "°C in " .. city }
     end
 })
@@ -55,7 +55,7 @@ rush.register_builtin("weather", {
 cargo install aush
 ```
 
-During the migration, the crates.io package is `aush` and installs `aush` as the primary command plus a legacy `rush` executable for existing scripts.
+The crates.io package is `aush` and installs `aush` as the primary command.
 
 To install directly from git:
 
@@ -119,13 +119,13 @@ The `?` prefix sends your natural language query to the LLM with shell context (
 
 ## Lua extensions
 
-Scripts in `~/.aush/lua/` load at startup in alphabetical order. Legacy `~/.aush/lua/` is still supported during the migration.
+Scripts in `~/.aush/lua/` load at startup in alphabetical order.
 
 ```lua
 -- ~/.aush/lua/myconfig.lua
 
 -- Custom builtin
-rush.register_builtin("greet", {
+aush.register_builtin("greet", {
     description = "Say hello",
     run = function(args)
         return { text = "Hello, " .. (args[1] or "world") }
@@ -133,8 +133,8 @@ rush.register_builtin("greet", {
 })
 
 -- Prompt segment
-rush.register_prompt("git_branch", function()
-    local branch = rush.exec("git rev-parse --abbrev-ref HEAD 2>/dev/null")
+aush.register_prompt("git_branch", function()
+    local branch = aush.exec("git rev-parse --abbrev-ref HEAD 2>/dev/null")
     if branch ~= "" then
         return " " .. branch
     end
@@ -146,12 +146,12 @@ aush.on("precmd", function(exit_code, elapsed_ms)
 end)
 
 -- Custom completion
-rush.register_completion("deploy", function(args)
+aush.register_completion("deploy", function(args)
     return { "staging", "production", "preview" }
 end)
 ```
 
-The full API surface: `rush.exec()`, `rush.exec_structured()`, `rush.json_parse()`, `rush.json_encode()`, `rush.env.get/set()`, `rush.cwd()`.
+The full API surface: `aush.exec()`, `aush.exec_structured()`, `aush.json_parse()`, `aush.json_encode()`, `aush.env.get/set()`, `aush.cwd()`.
 
 ---
 
@@ -219,7 +219,7 @@ For workloads with many rapid calls, the daemon mode cuts startup to **0.4ms**:
 
 ```bash
 aushd start          # keep AUSH warm in the background
-aush -c "ls"         # legacy binary remains supported during migration
+aush -c "ls"         # Run a command
 aushd stop
 ```
 

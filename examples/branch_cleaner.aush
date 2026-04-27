@@ -1,9 +1,9 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Find and list branches that have been merged
-# Usage: ./branch_cleaner.rush
+# Usage: ./branch_cleaner.aush
 
 set -e
-export RUSH_ERROR_FORMAT=json
+export AUSH_ERROR_FORMAT=json
 
 # Check if in git repo
 if ! git_status --json > /dev/null 2>&1; then
@@ -22,7 +22,7 @@ echo "**Current branch:** $current_branch"
 echo ""
 
 # Get all local branches
-# Note: This uses external git command since rush doesn't have git branch builtin yet
+# Note: This uses external git command since aush doesn't have git branch builtin yet
 branches=$(git branch --format='%(refname:short)' 2>/dev/null)
 
 echo "## Local Branches"

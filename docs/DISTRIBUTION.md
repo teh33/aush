@@ -70,9 +70,9 @@ When a release is triggered:
 Each release includes:
 
 ```
-aush-{platform}.tar.gz          # Primary `aush` binary plus legacy `rush` executable during migration
-aush-{platform}-daemon.tar.gz   # Legacy-named daemon helper (`rushd`)
-aush-{platform}-full.tar.gz     # `aush`, legacy `rush`, and `rushd`
+aush-{platform}.tar.gz          # Primary `aush` binary
+aush-{platform}-daemon.tar.gz   # Daemon helper (`aushd`)
+aush-{platform}-full.tar.gz     # `aush` and `aushd`
 aush-{platform}-SHA256SUMS.txt  # Checksums
 SHA256SUMS.txt                  # All checksums combined
 ```
@@ -91,9 +91,7 @@ Typical sizes (uncompressed / compressed):
 
 ## Compatibility During Rebrand
 
-Release archives use `aush-*` names and install `aush` as the primary executable. During migration, archives also include a legacy `rush` executable so existing scripts continue to work while users update automation and login-shell settings. New documentation and packaging should prefer `aush`.
-
-The daemon helper remains `rushd` for this phase; rename it only in a separate compatibility-planned release. Homebrew installs `rushd` when it is present in the selected archive.
+Release archives use `aush-*` names and install `aush` as the primary executable. Homebrew installs `aushd` when it is present in the selected archive.
 
 ## Homebrew Distribution
 

@@ -25,8 +25,7 @@ class Aush < Formula
 
   def install
     bin.install "aush"
-    bin.install "rush" if File.exist?("rush")
-    bin.install "rushd" if File.exist?("rushd")
+    bin.install "aushd" if File.exist?("aushd")
   end
 
   def caveats
@@ -40,8 +39,8 @@ class Aush < Formula
         chsh -s #{HOMEBREW_PREFIX}/bin/aush
 
       For daemon mode (faster startup):
-        rushd start    # Start the daemon; daemon helper keeps legacy name for this migration phase
-        rushd stop     # Stop the daemon
+        aushd start    # Start the daemon
+        aushd stop     # Stop the daemon
     EOS
   end
 

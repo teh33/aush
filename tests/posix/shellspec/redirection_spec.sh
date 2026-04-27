@@ -7,39 +7,39 @@ Describe 'POSIX I/O Redirection'
 
   Describe 'output redirection'
     It 'redirects stdout with >'
-      When call rush_c "echo test > /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo test > /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "test"
       The status should be success
     End
 
     It 'truncates existing file with >'
-      When call rush_c "echo old > /tmp/rush_test_$$; echo new > /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo old > /tmp/aush_test_$$; echo new > /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "new"
       The status should be success
     End
 
     It 'appends with >>'
-      When call rush_c "echo a > /tmp/rush_test_$$; echo b >> /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo a > /tmp/aush_test_$$; echo b >> /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should include "a"
       The output should include "b"
       The status should be success
     End
 
     It 'redirects stderr with 2>'
-      When call rush_c "sh -c 'echo error >&2' 2> /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "sh -c 'echo error >&2' 2> /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "error"
       The status should be success
     End
 
     It 'appends stderr with 2>>'
-      When call rush_c "sh -c 'echo e1 >&2' 2> /tmp/rush_test_$$; sh -c 'echo e2 >&2' 2>> /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "sh -c 'echo e1 >&2' 2> /tmp/aush_test_$$; sh -c 'echo e2 >&2' 2>> /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should include "e1"
       The output should include "e2"
       The status should be success
     End
 
     It 'redirects both stdout and stderr with &>'
-      When call rush_c "{ echo out; sh -c 'echo err >&2'; } &> /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "{ echo out; sh -c 'echo err >&2'; } &> /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should include "out"
       The output should include "err"
       The status should be success
@@ -60,13 +60,13 @@ Describe 'POSIX I/O Redirection'
 
   Describe 'input redirection'
     It 'redirects stdin with <'
-      When call rush_c "echo content > /tmp/rush_test_$$; cat < /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo content > /tmp/aush_test_$$; cat < /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "content"
       The status should be success
     End
 
     It 'reads from file'
-      When call rush_c "echo test > /tmp/rush_test_$$; read VAR < /tmp/rush_test_$$; echo \$VAR; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo test > /tmp/aush_test_$$; read VAR < /tmp/aush_test_$$; echo \$VAR; rm -f /tmp/aush_test_$$"
       The output should equal "test"
       The status should be success
     End
@@ -138,12 +138,12 @@ EOF"
 
   Describe 'redirection ordering'
     It 'processes redirections left to right'
-      When call rush_c "echo test > /tmp/rush_test_$$ 2>&1 1>/dev/null; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo test > /tmp/aush_test_$$ 2>&1 1>/dev/null; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The status should be success
     End
 
     It 'applies redirections before command execution'
-      When call rush_c "echo test > /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo test > /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "test"
       The status should be success
     End
@@ -151,13 +151,13 @@ EOF"
 
   Describe 'redirection with builtins'
     It 'redirects builtin output'
-      When call rush_c "echo test > /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo test > /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "test"
       The status should be success
     End
 
     It 'redirects builtin input'
-      When call rush_c "echo test > /tmp/rush_test_$$; read VAR < /tmp/rush_test_$$; echo \$VAR; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo test > /tmp/aush_test_$$; read VAR < /tmp/aush_test_$$; echo \$VAR; rm -f /tmp/aush_test_$$"
       The output should equal "test"
       The status should be success
     End
@@ -165,13 +165,13 @@ EOF"
 
   Describe 'redirection with pipelines'
     It 'redirects pipeline output'
-      When call rush_c "echo test | cat > /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo test | cat > /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "test"
       The status should be success
     End
 
     It 'redirects pipeline input'
-      When call rush_c "echo test > /tmp/rush_test_$$; cat < /tmp/rush_test_$$ | cat; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo test > /tmp/aush_test_$$; cat < /tmp/aush_test_$$ | cat; rm -f /tmp/aush_test_$$"
       The output should equal "test"
       The status should be success
     End
@@ -179,12 +179,12 @@ EOF"
 
   Describe 'noclobber option'
     It 'prevents overwriting files with >| when noclobber is set'
-      When call rush_c "set -C && echo old > /tmp/rush_test_$$ && echo new > /tmp/rush_test_$$"
+      When call rush_c "set -C && echo old > /tmp/aush_test_$$ && echo new > /tmp/aush_test_$$"
       The status should be failure
     End
 
     It 'allows overwriting with >| when noclobber is set'
-      When call rush_c "set -C && echo old > /tmp/rush_test_$$ && echo new >| /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "set -C && echo old > /tmp/aush_test_$$ && echo new >| /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "new"
       The status should be success
     End

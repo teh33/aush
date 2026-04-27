@@ -1,37 +1,37 @@
 #!/bin/bash
-# POSIX Compliance Test Runner for Rush Shell
+# POSIX Compliance Test Runner for AUSH Shell
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 AUSH_BINARY="${PROJECT_ROOT}/target/release/aush"
-if [[ ! -f "$AUSH_BINARY" && -f "${PROJECT_ROOT}/target/release/rush" ]]; then
-    AUSH_BINARY="${PROJECT_ROOT}/target/release/rush"
+if [[ ! -f "$AUSH_BINARY" && -f "${PROJECT_ROOT}/target/release/aush" ]]; then
+    AUSH_BINARY="${PROJECT_ROOT}/target/release/aush"
 fi
-RUSH_BINARY="$AUSH_BINARY"
+AUSH_BINARY="$AUSH_BINARY"
 
 echo "╔════════════════════════════════════════════════════════════════╗"
-echo "║          POSIX Compliance Test Suite for Rush Shell           ║"
+echo "║          POSIX Compliance Test Suite for AUSH Shell           ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
 
 # Check if aush binary exists
-if [[ ! -f "$RUSH_BINARY" ]]; then
-    echo "Warning: AUSH binary not found at $RUSH_BINARY"
-    echo "Building rush..."
+if [[ ! -f "$AUSH_BINARY" ]]; then
+    echo "Warning: AUSH binary not found at $AUSH_BINARY"
+    echo "Building aush..."
     cd "$PROJECT_ROOT"
     cargo build --release || {
-        echo "Failed to build rush"
+        echo "Failed to build aush"
         exit 1
     }
 fi
 
-echo "AUSH binary: $RUSH_BINARY"
+echo "AUSH binary: $AUSH_BINARY"
 echo ""
 
 # Export for tests
-export RUSH_BINARY
+export AUSH_BINARY
 export PATH="${PROJECT_ROOT}/target/release:$PATH"
 
 # Run ShellSpec tests

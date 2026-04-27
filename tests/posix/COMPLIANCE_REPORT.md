@@ -1,13 +1,13 @@
-# POSIX Compliance Report for Rush Shell
+# POSIX Compliance Report for AUSH Shell
 
 **Generated**: 2026-01-25
-**Rush Version**: 0.1.0
+**AUSH Version**: 0.1.0
 **Test Suite Version**: 1.0.0
-**Bead**: rush-dgr.30
+**Bead**: aush-dgr.30
 
 ## Executive Summary
 
-This report documents the POSIX compliance status of the Rush shell based on comprehensive testing across all major POSIX shell feature areas.
+This report documents the POSIX compliance status of the AUSH shell based on comprehensive testing across all major POSIX shell feature areas.
 
 ### Overall Compliance
 
@@ -46,7 +46,7 @@ This report documents the POSIX compliance status of the Rush shell based on com
 ### Test Execution Environment
 
 - **Platform**: macOS Darwin 24.5.0 (adaptable to Linux/Unix)
-- **Shell**: Rush 0.1.0
+- **Shell**: AUSH 0.1.0
 - **Test Runner**: ShellSpec with custom helpers
 - **Automation**: Shell script orchestration
 
@@ -456,7 +456,7 @@ This report documents the POSIX compliance status of the Rush shell based on com
 
 ### Ready for Execution
 
-All test files are complete and ready to run once Rush binary builds successfully:
+All test files are complete and ready to run once AUSH binary builds successfully:
 
 1. ✅ `builtins_spec.sh` - 50+ tests
 2. ✅ `control_flow_spec.sh` - 40+ tests
@@ -468,7 +468,7 @@ All test files are complete and ready to run once Rush binary builds successfull
 
 ### Pending Execution
 
-**Status**: Waiting for Rush binary compilation to complete
+**Status**: Waiting for AUSH binary compilation to complete
 **Blocker**: Filesystem issues in target directory
 **Resolution**: Clean rebuild or use existing binary
 
@@ -561,7 +561,7 @@ When bugs are found:
 
 ## Comparison with Other Shells
 
-### Expected Rush Performance
+### Expected AUSH Performance
 
 Based on feature implementation:
 
@@ -570,10 +570,10 @@ Based on feature implementation:
 | dash | 98% | Minimal POSIX reference |
 | bash --posix | 95% | Some bash-isms remain |
 | zsh | 93% | Many extensions |
-| **Rush** | **89-92%** (estimated) | Modern implementation |
+| **AUSH** | **89-92%** (estimated) | Modern implementation |
 | ksh93 | 96% | POSIX plus extensions |
 
-Rush aims to be:
+AUSH aims to be:
 - More compliant than feature-rich shells (zsh)
 - As compliant as modern POSIX shells (bash)
 - Approaching reference implementations (dash)
@@ -597,7 +597,7 @@ Rush aims to be:
 
 ## Conclusion
 
-The POSIX test suite for Rush is **comprehensive, well-structured, and ready for execution**. With 250+ tests covering all major POSIX shell features, the suite provides:
+The POSIX test suite for AUSH is **comprehensive, well-structured, and ready for execution**. With 250+ tests covering all major POSIX shell features, the suite provides:
 
 1. **Thorough validation** of POSIX compliance
 2. **Regression prevention** through automated testing
@@ -608,12 +608,12 @@ The POSIX test suite for Rush is **comprehensive, well-structured, and ready for
 **Target**: 90%+
 **Status**: On track to meet target
 
-The test suite represents a significant achievement in ensuring Rush's POSIX compliance and provides a solid foundation for future development and maintenance.
+The test suite represents a significant achievement in ensuring AUSH's POSIX compliance and provides a solid foundation for future development and maintenance.
 
 ---
 
 **Next Steps**:
-1. Resolve Rush binary compilation
+1. Resolve AUSH binary compilation
 2. Execute full test suite
 3. Analyze and categorize failures
 4. Fix critical issues

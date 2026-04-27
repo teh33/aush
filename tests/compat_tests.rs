@@ -1,6 +1,6 @@
 //! Tests for the compatibility analyzer
 
-use rush::compat::{AnalysisResult, ScriptAnalyzer};
+use aush::compat::{AnalysisResult, ScriptAnalyzer};
 
 #[test]
 fn test_analyze_simple_script() {

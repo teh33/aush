@@ -366,25 +366,6 @@ units:
   kind: task
   feature: false
   has_decisions: false
-- id: '24.5'
-  title: Clean AUSH release testing documentation
-  status: open
-  priority: 1
-  parent: '24'
-  dependencies:
-  - '24.4'
-  labels:
-  - aush
-  - release
-  - docs
-  updated_at: '2026-04-27T03:37:50.843232Z'
-  has_verify: true
-  verify: cd /Users/asher/rush && ! rg -n 'opus-workshop/rush|brew install rush|brew tap opus-workshop/rush|rush-(macos|linux)' docs/RELEASE_TESTING.md && rg -n 'opus-workshop/aush|brew install aush|aush-(macos|linux)|legacy `rush`' docs/RELEASE_TESTING.md
-  created_at: '2026-04-27T03:37:50.843232Z'
-  attempts: 0
-  kind: task
-  feature: false
-  has_decisions: false
 - id: '24.6'
   title: Run AUSH alpha release gate
   status: open
@@ -397,12 +378,50 @@ units:
   - aush
   - release
   - verify
-  updated_at: '2026-04-27T03:37:56.861412Z'
+  updated_at: '2026-04-27T04:26:48.394641Z'
   has_verify: true
   verify: cd /Users/asher/rush && cargo test && cargo build --release --bins && tests/smoke_test.sh ./target/release/aush
   created_at: '2026-04-27T03:37:56.861412Z'
   attempts: 0
   kind: task
+  feature: false
+  has_decisions: false
+- id: '24.7'
+  title: Complete full AUSH rebrand with no Rush compatibility surface
+  status: in_progress
+  priority: 1
+  parent: '24'
+  labels:
+  - aush
+  - rebrand
+  - breaking-change
+  - release
+  updated_at: '2026-04-27T04:34:41.709224Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build --bins && cargo test --no-run && cargo publish --dry-run --allow-dirty 2>&1 | tee /tmp/aush-full-rebrand-publish.log && rg -n 'Packaging aush|Verifying aush' /tmp/aush-full-rebrand-publish.log && ! rg -n 'name = "rush"|name = "aushd"|target/.*/rush\b|legacy `aush` executable|aushd' Cargo.toml README.md docs homebrew .github Makefile scripts tests benches
+  created_at: '2026-04-27T03:46:30.765147Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '24.8'
+  title: Make AUSH safe to use as Asher's login shell
+  status: open
+  priority: 1
+  parent: '24'
+  labels:
+  - aush
+  - login-shell
+  - stability
+  - release-gate
+  - macos
+  updated_at: '2026-04-27T04:31:41.643823Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && cargo build --release --bins && cargo test --test login_shell_tests && tests/integration/login_shell_test.sh && tests/integration/job_control_test.sh && tests/integration/signal_test.sh
+  created_at: '2026-04-27T04:31:41.643823Z'
+  attempts: 0
+  kind: epic
   feature: false
   has_decisions: false
 - id: '25'
@@ -414,14 +433,14 @@ units:
   - aush
   - architecture
   - rush
-  updated_at: '2026-04-24T08:54:03.854936Z'
+  updated_at: '2026-04-27T04:35:24.998778Z'
   has_verify: true
   verify: cd /Users/asher/rush && test -d benches && true
   created_at: '2026-04-24T08:47:16.442724Z'
   attempts: 0
   kind: epic
   feature: false
-  has_decisions: false
+  has_decisions: true
 - id: '25.1'
   title: Create initial Rush-native benchmark workload scripts
   status: open

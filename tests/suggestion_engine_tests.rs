@@ -1,12 +1,12 @@
 //! Tests for the suggestion engine for command and flag typos
 //!
-//! This module tests the rush suggestion engine that provides:
+//! This module tests the aush suggestion engine that provides:
 //! - Command typo detection (e.g., 'lss' → 'ls')
 //! - Flag typo detection (e.g., '--hlep' → '--help')
 //! - Context-aware suggestions using history and current directory
 //! - Configurable suggestion thresholds
 
-use rush::executor::SuggestionEngine;
+use aush::executor::SuggestionEngine;
 use std::path::Path;
 
 #[test]
@@ -88,7 +88,7 @@ fn test_format_suggestions_displays_all_parts() {
     let engine = SuggestionEngine::new();
 
     // Import the Suggestion and SuggestionKind types
-    use rush::correction::{Suggestion, SuggestionKind};
+    use aush::correction::{Suggestion, SuggestionKind};
 
     let suggestions = vec![
         Suggestion {
@@ -181,7 +181,7 @@ fn test_disabled_suggestions_returns_empty() {
 
 #[test]
 fn test_suggestions_respects_score_threshold() {
-    use rush::executor::SuggestionConfig;
+    use aush::executor::SuggestionConfig;
 
     let config = SuggestionConfig {
         enabled: true,
@@ -202,7 +202,7 @@ fn test_suggestions_respects_score_threshold() {
 
 #[test]
 fn test_suggestions_limited_by_max_display() {
-    use rush::executor::SuggestionConfig;
+    use aush::executor::SuggestionConfig;
 
     let config = SuggestionConfig {
         enabled: true,

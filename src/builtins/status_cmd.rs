@@ -10,7 +10,7 @@ use std::io::IsTerminal;
 ///   status is-interactive   — exit 0 if interactive, 1 otherwise
 ///   status is-login         — exit 0 if login shell, 1 otherwise
 ///   status filename         — print the current script filename ($0)
-///   status line-number      — print the current line number (always 0 in rush)
+///   status line-number      — print the current line number (always 0 in aush)
 pub fn builtin_status(args: &[String], runtime: &mut Runtime) -> Result<ExecutionResult> {
     let subcommand = args.first().map(|s| s.as_str()).unwrap_or("");
 
@@ -19,7 +19,7 @@ pub fn builtin_status(args: &[String], runtime: &mut Runtime) -> Result<Executio
             // Print a brief summary of the shell status.
             let interactive = is_interactive();
             let login = is_login();
-            let filename = runtime.get_variable("0").unwrap_or_else(|| "rush".to_string());
+            let filename = runtime.get_variable("0").unwrap_or_else(|| "aush".to_string());
 
             let mut out = String::new();
             out.push_str(&format!(
@@ -52,12 +52,12 @@ pub fn builtin_status(args: &[String], runtime: &mut Runtime) -> Result<Executio
         }
 
         "filename" => {
-            let name = runtime.get_variable("0").unwrap_or_else(|| "rush".to_string());
+            let name = runtime.get_variable("0").unwrap_or_else(|| "aush".to_string());
             Ok(ExecutionResult::success(format!("{}\n", name)))
         }
 
         "line-number" => {
-            // Rush does not track line numbers at runtime; return 0 as a safe default.
+            // AUSH does not track line numbers at runtime; return 0 as a safe default.
             Ok(ExecutionResult::success("0\n".to_string()))
         }
 
@@ -72,13 +72,13 @@ fn is_interactive() -> bool {
 
 /// Returns true when the shell was started as a login shell.
 /// Checks process argv[0] for a leading '-' (POSIX convention) or the
-/// AUSH_LOGIN or legacy RUSH_LOGIN environment variable.
+/// AUSH_LOGIN environment variable.
 fn is_login() -> bool {
     std::env::args()
         .next()
         .map(|a| a.starts_with('-'))
         .unwrap_or(false)
-        || crate::brand::env_flag("AUSH_LOGIN", "RUSH_LOGIN", "1")
+        || crate::brand::env_flag("AUSH_LOGIN", "1")
 }
 
 #[cfg(test)]

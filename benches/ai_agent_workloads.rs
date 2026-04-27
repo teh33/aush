@@ -1,8 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use rush::executor::Executor;
-use rush::lexer::Lexer;
-use rush::parser::Parser;
-use rush::runtime::Runtime;
+use aush::executor::Executor;
+use aush::lexer::Lexer;
+use aush::parser::Parser;
+use aush::runtime::Runtime;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -22,7 +22,7 @@ fn setup_git_repo() -> TempDir {
 
     // Configure git
     Command::new("git")
-        .args(&["config", "user.email", "bench@rush.sh"])
+        .args(&["config", "user.email", "bench@aush.sh"])
         .current_dir(repo_path)
         .output()
         .unwrap();
@@ -124,7 +124,7 @@ fn setup_test_files() -> TempDir {
     temp_dir
 }
 
-/// Execute a Rush command
+/// Execute a AUSH command
 fn execute_command(cmd: &str, cwd: &PathBuf) -> String {
     let tokens = Lexer::tokenize(cmd).unwrap();
     let mut parser = Parser::new(tokens);
@@ -373,7 +373,7 @@ fn bench_parallel_operations(c: &mut Criterion) {
 }
 
 /// Benchmark 8: Builtin Command Overhead
-/// Measure the overhead of Rush's builtin system
+/// Measure the overhead of AUSH's builtin system
 fn bench_builtin_overhead(c: &mut Criterion) {
     let temp_dir = TempDir::new().unwrap();
     let test_path = temp_dir.path().to_path_buf();

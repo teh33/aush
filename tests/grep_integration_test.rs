@@ -2,9 +2,9 @@ use std::env;
 use std::path::PathBuf;
 use std::process::Command;
 
-use rush::builtins::Builtins;
-use rush::executor::Output;
-use rush::runtime::Runtime;
+use aush::builtins::Builtins;
+use aush::executor::Output;
+use aush::runtime::Runtime;
 use std::fs;
 use tempfile::TempDir;
 
@@ -427,7 +427,7 @@ fn test_grep_quiet_cli_stdin_regression() {
             child.stdin.as_mut().unwrap().write_all(b"hello\n")?;
             child.wait_with_output()
         })
-        .expect("failed to run rush");
+        .expect("failed to run aush");
 
     assert_eq!(output.status.code(), Some(0));
     assert!(output.stdout.is_empty());

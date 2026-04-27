@@ -7,7 +7,7 @@ fn rush_binary() -> String {
     let mut path = std::env::current_dir().unwrap();
     path.push("target");
     path.push("release");
-    path.push("rush");
+    path.push("aush");
     path.to_string_lossy().to_string()
 }
 
@@ -39,11 +39,11 @@ fn test_c_flag_pwd() {
 fn test_c_flag_cat() {
     // Create a test file
     let test_content = "test content\nline 2\n";
-    std::fs::write("/tmp/rush_test_cat.txt", test_content).unwrap();
+    std::fs::write("/tmp/aush_test_cat.txt", test_content).unwrap();
 
     let output = Command::new(rush_binary())
         .arg("-c")
-        .arg("cat /tmp/rush_test_cat.txt")
+        .arg("cat /tmp/aush_test_cat.txt")
         .output()
         .expect("Failed to execute");
 
@@ -51,7 +51,7 @@ fn test_c_flag_cat() {
     assert_eq!(String::from_utf8_lossy(&output.stdout), test_content);
 
     // Cleanup
-    std::fs::remove_file("/tmp/rush_test_cat.txt").ok();
+    std::fs::remove_file("/tmp/aush_test_cat.txt").ok();
 }
 
 #[test]
@@ -115,7 +115,7 @@ fn test_help_flag() {
 
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Rush v0.1.0"));
+    assert!(stdout.contains("AUSH v0.1.0"));
     assert!(stdout.contains("Usage:"));
     assert!(stdout.contains("-c"));
 }
@@ -129,7 +129,7 @@ fn test_h_flag() {
 
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Rush v0.1.0"));
+    assert!(stdout.contains("AUSH v0.1.0"));
 }
 
 #[test]
@@ -148,11 +148,11 @@ fn test_c_flag_find() {
 #[test]
 fn test_c_flag_grep() {
     // Create a test file
-    std::fs::write("/tmp/rush_test_grep.txt", "line 1\nFOUND\nline 3\n").unwrap();
+    std::fs::write("/tmp/aush_test_grep.txt", "line 1\nFOUND\nline 3\n").unwrap();
 
     let output = Command::new(rush_binary())
         .arg("-c")
-        .arg("grep FOUND /tmp/rush_test_grep.txt")
+        .arg("grep FOUND /tmp/aush_test_grep.txt")
         .output()
         .expect("Failed to execute");
 
@@ -161,5 +161,5 @@ fn test_c_flag_grep() {
     assert!(stdout.contains("FOUND"));
 
     // Cleanup
-    std::fs::remove_file("/tmp/rush_test_grep.txt").ok();
+    std::fs::remove_file("/tmp/aush_test_grep.txt").ok();
 }

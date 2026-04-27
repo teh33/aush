@@ -1,6 +1,6 @@
 # Tab Completion System
 
-The Rush shell features an advanced tab completion system that provides context-aware suggestions for commands, paths, flags, and special contexts like git branches, cargo commands, and npm scripts.
+The AUSH shell features an advanced tab completion system that provides context-aware suggestions for commands, paths, flags, and special contexts like git branches, cargo commands, and npm scripts.
 
 ## Features
 
@@ -152,7 +152,7 @@ A generic cache entry with:
 
 ### Integration
 
-The completion system integrates with Rush through:
+The completion system integrates with AUSH through:
 
 1. **Reedline Integration**: Implements the `reedline::Completer` trait
 2. **Shared State**: Uses `Arc<RwLock<Runtime>>` to share state with the executor
@@ -164,9 +164,9 @@ Creating a completer:
 
 ```rust
 use std::sync::{Arc, RwLock};
-use rush::completion::Completer;
-use rush::builtins::Builtins;
-use rush::runtime::Runtime;
+use aush::completion::Completer;
+use aush::builtins::Builtins;
+use aush::runtime::Runtime;
 
 let builtins = Arc::new(Builtins::new());
 let runtime = Arc::new(RwLock::new(Runtime::new()));

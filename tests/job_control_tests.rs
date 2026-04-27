@@ -1,6 +1,6 @@
-use rush::executor::Executor;
-use rush::lexer::Lexer;
-use rush::parser::Parser;
+use aush::executor::Executor;
+use aush::lexer::Lexer;
+use aush::parser::Parser;
 use std::thread;
 use std::time::Duration;
 
@@ -13,7 +13,7 @@ fn test_background_command_syntax() {
     assert_eq!(statements.len(), 1);
     // Verify it's a BackgroundCommand
     match &statements[0] {
-        rush::parser::ast::Statement::BackgroundCommand(_) => {}
+        aush::parser::ast::Statement::BackgroundCommand(_) => {}
         _ => panic!("Expected BackgroundCommand"),
     }
 }
@@ -174,7 +174,7 @@ fn test_job_completion_detection() {
     // Check job status
     let jobs = executor.runtime_mut().job_manager().list_jobs();
     assert_eq!(jobs.len(), 1);
-    assert_eq!(jobs[0].status, rush::jobs::JobStatus::Done);
+    assert_eq!(jobs[0].status, aush::jobs::JobStatus::Done);
 }
 
 #[test]
@@ -218,16 +218,16 @@ fn test_background_with_conditional_and() {
 fn test_ampersand_token_parsing() {
     // Make sure & is parsed separately from &&
     let tokens = Lexer::tokenize("cmd1 && cmd2").unwrap();
-    assert!(tokens.iter().any(|t| matches!(t, rush::lexer::Token::And)));
+    assert!(tokens.iter().any(|t| matches!(t, aush::lexer::Token::And)));
     assert!(!tokens
         .iter()
-        .any(|t| matches!(t, rush::lexer::Token::Ampersand)));
+        .any(|t| matches!(t, aush::lexer::Token::Ampersand)));
 
     let tokens = Lexer::tokenize("cmd1 &").unwrap();
     assert!(tokens
         .iter()
-        .any(|t| matches!(t, rush::lexer::Token::Ampersand)));
-    assert!(!tokens.iter().any(|t| matches!(t, rush::lexer::Token::And)));
+        .any(|t| matches!(t, aush::lexer::Token::Ampersand)));
+    assert!(!tokens.iter().any(|t| matches!(t, aush::lexer::Token::And)));
 }
 
 #[test]

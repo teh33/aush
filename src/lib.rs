@@ -1,4 +1,4 @@
-// Library interface for Rush shell
+// Library interface for AUSH shell
 // This allows benchmarks and tests to access internal modules
 
 // Many modules expose APIs that are not yet wired up to the REPL but are

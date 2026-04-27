@@ -1,4 +1,4 @@
-//! Loop and conditional execution for the Rush shell executor.
+//! Loop and conditional execution for the AUSH shell executor.
 //!
 //! This module handles control flow constructs:
 //! - If/elif/else statements

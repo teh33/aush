@@ -1,6 +1,6 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Analyze file statistics in a directory
-# Usage: ./file_stats.rush [directory]
+# Usage: ./file_stats.aush [directory]
 
 set -e
 

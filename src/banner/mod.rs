@@ -88,7 +88,7 @@ pub enum BannerShow {
     /// Show banner every time
     #[default]
     Always,
-    /// Show banner only on first shell (no parent AUSH process, including legacy Rush)
+    /// Show banner only on first shell (no parent AUSH process, )
     First,
     /// Never show banner
     Never,
@@ -105,7 +105,7 @@ impl BannerShow {
     }
 }
 
-/// Banner configuration loaded from .aushrc or legacy .rushrc
+/// Banner configuration loaded from .aushrc
 #[derive(Debug, Clone)]
 pub struct BannerConfig {
     /// Display style
@@ -130,21 +130,21 @@ impl Default for BannerConfig {
 }
 
 impl BannerConfig {
-    /// Load banner config from environment variables (set by sourcing .aushrc or .rushrc)
+    /// Load banner config from environment variables (set by sourcing .aushrc or .aushrc)
     pub fn from_env() -> Self {
-        let style = crate::brand::env_var("AUSH_BANNER_STYLE", "RUSH_BANNER_STYLE")
+        let style = crate::brand::env_var("AUSH_BANNER_STYLE")
             .map(|s| BannerStyle::from_str(&s))
             .unwrap_or_default();
 
-        let color = crate::brand::env_var("AUSH_BANNER_COLOR", "RUSH_BANNER_COLOR")
+        let color = crate::brand::env_var("AUSH_BANNER_COLOR")
             .map(|s| BannerColor::from_str(&s))
             .unwrap_or_default();
 
-        let show = crate::brand::env_var("AUSH_BANNER_SHOW", "RUSH_BANNER_SHOW")
+        let show = crate::brand::env_var("AUSH_BANNER_SHOW")
             .map(|s| BannerShow::from_str(&s))
             .unwrap_or_default();
 
-        let stats = crate::brand::env_var("AUSH_BANNER_STATS", "RUSH_BANNER_STATS")
+        let stats = crate::brand::env_var("AUSH_BANNER_STATS")
             .map(|s| s.split_whitespace().map(|s| s.to_string()).collect())
             .unwrap_or_default();
 
@@ -163,7 +163,7 @@ impl BannerConfig {
             BannerShow::Never => false,
             BannerShow::First => {
                 // Look for shell nesting environment variables.
-                crate::brand::env_var("AUSH_LEVEL", "RUSH_LEVEL")
+                crate::brand::env_var("AUSH_LEVEL")
                     .map(|v| v.parse::<i32>().unwrap_or(0) == 0)
                     .unwrap_or(true)
             }
@@ -261,13 +261,13 @@ fn display_stats(config: &BannerConfig, stats: &StatsData) {
 
 /// Increment shell nesting environment variables for nested shell detection
 pub fn increment_shell_level() {
-    let level = crate::brand::env_var("AUSH_LEVEL", "RUSH_LEVEL")
+    let level = crate::brand::env_var("AUSH_LEVEL")
         .and_then(|v| v.parse::<i32>().ok())
         .unwrap_or(0);
     let next_level = (level + 1).to_string();
 
     env::set_var("AUSH_LEVEL", &next_level);
-    env::set_var("RUSH_LEVEL", next_level);
+    env::set_var("AUSH_LEVEL", next_level);
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-//! Stats collection module for Rush shell
+//! Stats collection module for AUSH shell
 //!
 //! Collects system statistics using direct syscalls (no subprocess calls).
 //! Platform-specific implementations for macOS and Linux.

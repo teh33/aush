@@ -1,31 +1,31 @@
 # ShellSpec Helper Functions
 # Shared utilities for POSIX compliance testing
 
-# Get the rush binary path
+# Get the aush binary path
 rush_binary() {
-    if [ -n "${RUSH_BINARY:-}" ]; then
-        echo "$RUSH_BINARY"
+    if [ -n "${AUSH_BINARY:-}" ]; then
+        echo "$AUSH_BINARY"
     else
-        echo "../../target/release/rush"
+        echo "../../target/release/aush"
     fi
 }
 
-# Run a rush command
-rush() {
+# Run a aush command
+aush() {
     "$(rush_binary)" "$@"
 }
 
-# Run rush with -c flag (command string)
+# Run aush with -c flag (command string)
 rush_c() {
     "$(rush_binary)" -c "$1"
 }
 
-# Check if rush binary exists
+# Check if aush binary exists
 rush_exists() {
     [ -f "$(rush_binary)" ]
 }
 
-# Get rush version
+# Get aush version
 rush_version() {
     "$(rush_binary)" --version 2>&1 || echo "unknown"
 }

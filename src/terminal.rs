@@ -351,7 +351,7 @@ mod tests {
 
     #[test]
     fn test_git_branch_in_repo() {
-        // We're running in the rush repo, so this should find a branch
+        // We're running in the aush repo, so this should find a branch
         if let Ok(cwd) = std::env::current_dir() {
             let branch = git_branch_fast(&cwd);
             // May be None in CI with detached HEAD, but should be Some locally

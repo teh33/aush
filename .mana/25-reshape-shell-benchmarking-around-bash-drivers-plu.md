@@ -5,7 +5,7 @@ slug: reshape-shell-benchmarking-around-bash-drivers-plu
 status: open
 priority: 1
 created_at: '2026-04-24T08:47:16.442724Z'
-updated_at: '2026-04-24T08:54:03.854936Z'
+updated_at: '2026-04-27T04:35:24.998778Z'
 notes: |-
   ---
   2026-04-24T08:54:03.854929+00:00
@@ -28,6 +28,10 @@ notes: |-
   - Treat `scripts/benchmark.sh` as a compatibility benchmark fixture now.
   - If `shellbench.sh` is provided, ingest it the same way and build a combined punch list of blockers.
   - Prioritize compatibility fixes before broad benchmark-driver refactoring.
+
+  ---
+  2026-04-27T04:33:44.482127+00:00
+  User wants to continue AUSH benchmark suite with two explicit goals: (1) validate compatibility with agentic language / POSIX shell workflows, especially scripts agents naturally emit; (2) prove AUSH is as fast or faster than bash and zsh. Benchmark suite should likely combine correctness gates and performance comparisons, not only microbenchmarks. Existing benchmark work includes benches/aush_suite.sh, benches/aush_smoke_fast.sh, benches/interactive_benchmark.sh, benches/session_benchmark.sh, docs/benchmarking.md, benches/README.md, Criterion benches, and POSIX compliance tests under tests/posix.
 labels:
 - benchmarks
 - aush
@@ -35,6 +39,8 @@ labels:
 - rush
 verify: cd /Users/asher/rush && test -d benches && true
 kind: epic
+decisions:
+- 'Benchmark suite purpose: mixed release gate, reporting artifact, and regression tool. Compatibility suite is the release gate. Performance suite serves reporting and regression tracking against bash/zsh.'
 ---
 
 Context:

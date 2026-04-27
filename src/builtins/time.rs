@@ -64,9 +64,9 @@ struct ShellTiming {
 /// For comparison mode:
 ///   Command: echo hello
 ///
-///   Rush:  0.001s
-///   Bash:  0.002s (2.0x faster in Rush)
-///   Zsh:   0.0015s (1.5x faster in Rush)
+///   AUSH:  0.001s
+///   Bash:  0.002s (2.0x faster in AUSH)
+///   Zsh:   0.0015s (1.5x faster in AUSH)
 ///
 /// Examples:
 ///   time echo hello
@@ -190,7 +190,7 @@ pub fn builtin_time(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
 fn builtin_time_compare(args: &[String], runtime: &mut Runtime) -> Result<ExecutionResult> {
     let command_string = args.join(" ");
 
-    // Run the command in Rush first
+    // Run the command in AUSH first
     let rush_timing = time_command_in_rush(&command_string, runtime)?;
 
     // Run in bash if available
@@ -215,7 +215,7 @@ fn builtin_time_compare(args: &[String], runtime: &mut Runtime) -> Result<Execut
     })
 }
 
-/// Time a command by executing it in Rush
+/// Time a command by executing it in AUSH
 fn time_command_in_rush(command: &str, runtime: &mut Runtime) -> Result<ShellTiming> {
     use crate::executor::Executor;
     use crate::lexer::Lexer;
@@ -224,12 +224,12 @@ fn time_command_in_rush(command: &str, runtime: &mut Runtime) -> Result<ShellTim
     let start = Instant::now();
 
     // Tokenize and parse
-    let tokens = Lexer::tokenize(command).map_err(|e| anyhow!("Rush timing error: {}", e))?;
+    let tokens = Lexer::tokenize(command).map_err(|e| anyhow!("AUSH timing error: {}", e))?;
 
     let mut parser = Parser::new(tokens);
     let statements = parser
         .parse()
-        .map_err(|e| anyhow!("Rush timing error: {}", e))?;
+        .map_err(|e| anyhow!("AUSH timing error: {}", e))?;
 
     // Create executor and execute
     let mut executor = Executor::new_embedded();
@@ -239,7 +239,7 @@ fn time_command_in_rush(command: &str, runtime: &mut Runtime) -> Result<ShellTim
         Ok(_result) => {
             let elapsed = start.elapsed();
             Ok(ShellTiming {
-                shell: "Rush".to_string(),
+                shell: "AUSH".to_string(),
                 elapsed,
                 success: true,
             })
@@ -247,7 +247,7 @@ fn time_command_in_rush(command: &str, runtime: &mut Runtime) -> Result<ShellTim
         Err(_) => {
             let elapsed = start.elapsed();
             Ok(ShellTiming {
-                shell: "Rush".to_string(),
+                shell: "AUSH".to_string(),
                 elapsed,
                 success: false,
             })
@@ -309,7 +309,7 @@ fn capitalize_shell_name(shell: &str) -> String {
 /// Format comparison results across multiple shells
 fn format_comparison_results(
     command: &str,
-    rush: &ShellTiming,
+    aush: &ShellTiming,
     bash: Option<&ShellTiming>,
     zsh: Option<&ShellTiming>,
 ) -> String {
@@ -317,21 +317,21 @@ fn format_comparison_results(
 
     output.push_str(&format!("Command: {}\n\n", command));
 
-    // Display Rush timing
-    output.push_str(&format!("Rush:  {}\n", format_duration_short(rush.elapsed)));
+    // Display AUSH timing
+    output.push_str(&format!("AUSH:  {}\n", format_duration_short(aush.elapsed)));
 
     // Display Bash timing with speedup ratio if available
     if let Some(bash_timing) = bash {
         let speedup = if bash_timing.elapsed.as_secs_f64() > 0.0 {
-            rush.elapsed.as_secs_f64() / bash_timing.elapsed.as_secs_f64()
+            aush.elapsed.as_secs_f64() / bash_timing.elapsed.as_secs_f64()
         } else {
             1.0
         };
 
         let speedup_text = if speedup > 1.0 {
-            format!(" ({:.1}x faster in Rush)", speedup)
+            format!(" ({:.1}x faster in AUSH)", speedup)
         } else if speedup < 1.0 {
-            format!(" ({:.1}x slower in Rush)", 1.0 / speedup)
+            format!(" ({:.1}x slower in AUSH)", 1.0 / speedup)
         } else {
             String::new()
         };
@@ -346,15 +346,15 @@ fn format_comparison_results(
     // Display Zsh timing with speedup ratio if available
     if let Some(zsh_timing) = zsh {
         let speedup = if zsh_timing.elapsed.as_secs_f64() > 0.0 {
-            rush.elapsed.as_secs_f64() / zsh_timing.elapsed.as_secs_f64()
+            aush.elapsed.as_secs_f64() / zsh_timing.elapsed.as_secs_f64()
         } else {
             1.0
         };
 
         let speedup_text = if speedup > 1.0 {
-            format!(" ({:.1}x faster in Rush)", speedup)
+            format!(" ({:.1}x faster in AUSH)", speedup)
         } else if speedup < 1.0 {
-            format!(" ({:.1}x slower in Rush)", 1.0 / speedup)
+            format!(" ({:.1}x slower in AUSH)", 1.0 / speedup)
         } else {
             String::new()
         };
@@ -764,8 +764,8 @@ mod tests {
 
         // Should contain command in output
         assert!(result.stdout().contains("Command: echo hello"));
-        // Should contain Rush timing
-        assert!(result.stdout().contains("Rush:"));
+        // Should contain AUSH timing
+        assert!(result.stdout().contains("AUSH:"));
     }
 
     #[test]
@@ -783,21 +783,21 @@ mod tests {
 
     #[test]
     fn test_format_comparison_results_basic() {
-        let rush = ShellTiming {
-            shell: "Rush".to_string(),
+        let aush = ShellTiming {
+            shell: "AUSH".to_string(),
             elapsed: std::time::Duration::from_millis(1),
             success: true,
         };
 
-        let output = format_comparison_results("echo hello", &rush, None, None);
+        let output = format_comparison_results("echo hello", &aush, None, None);
         assert!(output.contains("Command: echo hello"));
-        assert!(output.contains("Rush:"));
+        assert!(output.contains("AUSH:"));
     }
 
     #[test]
     fn test_format_comparison_results_with_bash() {
-        let rush = ShellTiming {
-            shell: "Rush".to_string(),
+        let aush = ShellTiming {
+            shell: "AUSH".to_string(),
             elapsed: std::time::Duration::from_millis(2),
             success: true,
         };
@@ -808,12 +808,12 @@ mod tests {
             success: true,
         };
 
-        let output = format_comparison_results("echo hello", &rush, Some(&bash), None);
+        let output = format_comparison_results("echo hello", &aush, Some(&bash), None);
         assert!(output.contains("Command: echo hello"));
-        assert!(output.contains("Rush:"));
+        assert!(output.contains("AUSH:"));
         assert!(output.contains("Bash:"));
-        // Should show 0.5x or slower in Rush
-        assert!(output.contains("0.5") || output.contains("slower in Rush"));
+        // Should show 0.5x or slower in AUSH
+        assert!(output.contains("0.5") || output.contains("slower in AUSH"));
     }
 
     #[test]

@@ -23,7 +23,7 @@ use anyhow::{anyhow, Result};
 /// exit code 0 if the final result is non-zero, 1 if it is zero (matching
 /// bash semantics — lets `let` be used as a condition).
 ///
-/// Rush already has `$(( ))` arithmetic expansion; `let` is syntactic sugar
+/// AUSH already has `$(( ))` arithmetic expansion; `let` is syntactic sugar
 /// for the same engine.
 pub fn builtin_let(args: &[String], runtime: &mut Runtime) -> Result<ExecutionResult> {
     if args.is_empty() {
@@ -61,7 +61,7 @@ pub fn builtin_let(args: &[String], runtime: &mut Runtime) -> Result<ExecutionRe
 
 /// Key-binding builtin (bash readline).
 ///
-/// Rush uses reedline for line editing, which has its own keybinding system
+/// AUSH uses reedline for line editing, which has its own keybinding system
 /// configured separately. This stub exists for script compatibility — scripts
 /// that call `bind` won't fail, but the bindings have no effect.
 pub fn builtin_bind(args: &[String], _runtime: &mut Runtime) -> Result<ExecutionResult> {
@@ -73,7 +73,7 @@ pub fn builtin_bind(args: &[String], _runtime: &mut Runtime) -> Result<Execution
 
     // For anything else (e.g. bind '"\t": complete') silently succeed.
     // Reedline handles keybindings through its own config; bash bind calls
-    // are a no-op in Rush.
+    // are a no-op in AUSH.
     Ok(ExecutionResult::success(String::new()))
 }
 
@@ -117,7 +117,7 @@ pub fn builtin_suspend(_args: &[String], _runtime: &mut Runtime) -> Result<Execu
 /// Usage: enable [-n] [-a] [NAME...]
 ///
 /// In bash this can shadow external commands by enabling builtins or load
-/// dynamic builtin modules. Rush's builtin table is static (compiled in),
+/// dynamic builtin modules. AUSH's builtin table is static (compiled in),
 /// so this is a forward-compatible stub: `-n` (disable) and plain enable
 /// are accepted without error so scripts don't fail, but no builtins are
 /// actually toggled. Use this as a foundation when a dynamic builtin plugin
@@ -154,13 +154,13 @@ pub fn builtin_enable(args: &[String], _runtime: &mut Runtime) -> Result<Executi
         let mut sorted = b.builtin_names();
         sorted.sort();
         for name in &sorted {
-            // In Rush all builtins are always enabled; mirror bash's output format.
+            // In AUSH all builtins are always enabled; mirror bash's output format.
             output.push_str(&format!("enable {}\n", name));
         }
         return Ok(ExecutionResult::success(output));
     }
 
-    // Acknowledge the request but note that Rush has a static builtin table.
+    // Acknowledge the request but note that AUSH has a static builtin table.
     // Scripts calling `enable -n something` to disable a builtin won't get the
     // actual disable effect, but they also won't fail with an error.
     let _ = disable;
@@ -272,7 +272,7 @@ pub fn builtin_newgrp(args: &[String], _runtime: &mut Runtime) -> Result<Executi
 /// Usage: logout [N]
 ///
 /// Identical to `exit` — terminates the shell with exit code N (default 0).
-/// In bash, `logout` only works in a login shell; Rush accepts it everywhere
+/// In bash, `logout` only works in a login shell; AUSH accepts it everywhere
 /// for simplicity (matching zsh behavior).
 pub fn builtin_logout(args: &[String], runtime: &mut Runtime) -> Result<ExecutionResult> {
     super::exit_builtin::builtin_exit(args, runtime)

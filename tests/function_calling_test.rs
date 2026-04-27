@@ -1,5 +1,5 @@
-use rush::executor::Executor;
-use rush::parser::ast::*;
+use aush::executor::Executor;
+use aush::parser::ast::*;
 
 #[test]
 fn test_simple_function_call_no_params() {

@@ -1,6 +1,6 @@
-# Rush `find` Builtin
+# AUSH `find` Builtin
 
-A high-performance file search builtin for the Rush shell, designed to be 3-10x faster than GNU find while offering better defaults for modern development workflows.
+A high-performance file search builtin for the AUSH shell, designed to be 3-10x faster than GNU find while offering better defaults for modern development workflows.
 
 ## Features
 
@@ -161,7 +161,7 @@ find --no-ignore -name ".env"
 
 Benchmark results on a project with ~1000 files:
 
-| Operation | GNU find | Rush find | Speedup |
+| Operation | GNU find | AUSH find | Speedup |
 |-----------|----------|-----------|---------|
 | List all files | 12ms | 3ms | 4x faster |
 | Pattern match | 15ms | 4ms | 3.75x faster |
@@ -252,7 +252,7 @@ cargo bench --bench builtins -- find
 cargo bench --bench builtins
 ```
 
-The benchmark creates a realistic directory structure with 1000+ files and compares Rush find against GNU find.
+The benchmark creates a realistic directory structure with 1000+ files and compares AUSH find against GNU find.
 
 ## Future Enhancements
 
@@ -275,4 +275,4 @@ To extend the find builtin:
 4. Add comprehensive tests
 5. Update this documentation
 
-See `/Users/asher/knowledge/rush/src/builtins/find.rs` for implementation.
+See `/Users/asher/knowledge/aush/src/builtins/find.rs` for implementation.

@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use std::io::IsTerminal;
 
 /// Parse a hex color (#rrggbb) from an env var into a nu_ansi_term Color.
-fn parse_env_color(primary: &str, legacy: &str) -> Option<Color> {
-    let val = crate::brand::env_var(primary, legacy)?;
+fn parse_env_color(name: &str) -> Option<Color> {
+    let val = crate::brand::env_var(name)?;
     let hex = val.strip_prefix('#').unwrap_or(&val);
     if hex.len() != 6 {
         return None;
@@ -41,13 +41,13 @@ impl TableRenderer {
         // Detect if we're in a TTY for color support
         let use_colors = std::io::stdout().is_terminal()
             && std::env::var("NO_COLOR").is_err()
-            && crate::brand::env_var("AUSH_NO_COLOR", "RUSH_NO_COLOR").is_none();
+            && crate::brand::env_var("AUSH_NO_COLOR").is_none();
 
         // Get terminal width
         let max_width = terminal_size::terminal_size().map(|(w, _)| w.0 as usize);
 
         // Get table style from environment
-        let style = match crate::brand::env_var("AUSH_TABLE_STYLE", "RUSH_TABLE_STYLE").as_deref() {
+        let style = match crate::brand::env_var("AUSH_TABLE_STYLE").as_deref() {
             Some("ascii") => TableStyle::Ascii,
             Some("minimal") => TableStyle::Minimal,
             _ => TableStyle::Unicode,
@@ -136,7 +136,7 @@ impl TableRenderer {
             .map(|(col, &width)| {
                 let padded = format!("{:width$}", col, width = width);
                 if self.use_colors {
-                    let color = parse_env_color("AUSH_COLOR_HEADER", "RUSH_COLOR_HEADER")
+                    let color = parse_env_color("AUSH_COLOR_HEADER")
                         .unwrap_or(Color::Cyan);
                     color.bold().paint(&padded).to_string()
                 } else {

@@ -1,6 +1,6 @@
-use rush::executor::{ExecutionResult, Executor};
-use rush::lexer::Lexer;
-use rush::parser::Parser;
+use aush::executor::{ExecutionResult, Executor};
+use aush::lexer::Lexer;
+use aush::parser::Parser;
 
 /// Test basic subshell execution
 #[test]

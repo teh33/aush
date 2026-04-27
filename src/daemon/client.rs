@@ -157,15 +157,12 @@ impl DaemonClient {
     pub fn auto_start_daemon() -> Result<()> {
         use std::process::Command;
 
-        // Get the path to rushd binary
+        // Get the path to aushd binary
         let exe_path = env::current_exe()?;
         let exe_dir = exe_path
             .parent()
             .ok_or_else(|| anyhow!("Cannot determine executable directory"))?;
         let daemon_path = exe_dir.join("aushd");
-        let legacy_daemon_path = exe_dir.join("rushd");
-        let daemon_path =
-            crate::brand::first_existing_or_primary(daemon_path, [legacy_daemon_path]);
 
         // Start the daemon in the background
         Command::new(&daemon_path)

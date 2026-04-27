@@ -1,12 +1,12 @@
 # Command History System
 
-This document describes the comprehensive command history system implemented for the Rush shell.
+This document describes the comprehensive command history system implemented for the AUSH shell.
 
 ## Overview
 
-The Rush shell includes a powerful command history system with the following features:
+The AUSH shell includes a powerful command history system with the following features:
 
-- **Persistent storage** at `~/.rush_history`
+- **Persistent storage** at `~/.aush_history`
 - **Fuzzy search** using the SkimMatcherV2 algorithm
 - **Deduplication** (consecutive and optionally all duplicates)
 - **Timestamp tracking** for each command
@@ -63,11 +63,11 @@ The system supports backward compatibility with plain text history files.
 History is automatically:
 - Loaded on shell startup
 - Appended after each command execution
-- Saved to `~/.rush_history`
+- Saved to `~/.aush_history`
 
 ```rust
 let mut history = History::new();
-history.load()?;  // Load from ~/.rush_history
+history.load()?;  // Load from ~/.aush_history
 history.add("git status".to_string())?;  // Auto-appends to file
 ```
 
@@ -335,7 +335,7 @@ Potential improvements for future versions:
 Here's a complete configuration example:
 
 ```rust
-use rush::history::{History, HistoryConfig};
+use aush::history::{History, HistoryConfig};
 
 let mut config = HistoryConfig {
     max_size: 5000,

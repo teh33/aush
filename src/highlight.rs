@@ -1,4 +1,4 @@
-//! Syntax highlighting for the Rush interactive prompt.
+//! Syntax highlighting for the AUSH interactive prompt.
 //!
 //! Implements `reedline::Highlighter` to color command line input live:
 //! - Commands: green if found (builtin or on PATH), red if not found
@@ -19,11 +19,11 @@ use reedline::{Highlighter, StyledText};
 use crate::builtins::Builtins;
 use crate::lexer::Token;
 
-pub struct RushHighlighter {
+pub struct AUSHHighlighter {
     builtins: Arc<Builtins>,
 }
 
-impl RushHighlighter {
+impl AUSHHighlighter {
     pub fn new(builtins: Arc<Builtins>) -> Self {
         Self { builtins }
     }
@@ -64,7 +64,7 @@ impl RushHighlighter {
     }
 }
 
-impl Highlighter for RushHighlighter {
+impl Highlighter for AUSHHighlighter {
     fn highlight(&self, line: &str, _cursor: usize) -> StyledText {
         let mut styled = StyledText::new();
 

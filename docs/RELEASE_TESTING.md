@@ -1,6 +1,6 @@
-# Rush Release Testing Guide
+# AUSH Release Testing Guide
 
-This guide provides step-by-step instructions for testing Rush installations on clean machines before release publication.
+This guide provides step-by-step instructions for testing AUSH installations on clean machines before release publication.
 
 ## Pre-Release Checklist
 
@@ -17,6 +17,7 @@ Before releasing a new version, complete these tests:
 - [ ] Homebrew formula works with new release
 - [ ] README installation instructions verified
 - [ ] Documentation is up-to-date
+- [ ] Explicit approval received before publishing, tagging, pushing, or updating external registries
 
 ## Platform-Specific Tests
 
@@ -26,94 +27,99 @@ Before releasing a new version, complete these tests:
 
 ```bash
 # Create test directory
-mkdir -p ~/rush-test-intel
-cd ~/rush-test-intel
+mkdir -p ~/aush-test-intel
+cd ~/aush-test-intel
 
 # Download the binary
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-macos-x86_64.tar.gz
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-macos-x86_64.tar.gz
 
 # Download checksums
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-macos-x86_64-SHA256SUMS.txt
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-macos-x86_64-SHA256SUMS.txt
 
 # Verify checksum
-shasum -a 256 -c rush-macos-x86_64-SHA256SUMS.txt
+shasum -a 256 -c aush-macos-x86_64-SHA256SUMS.txt
 ```
 
 Expected output:
 ```
-rush-macos-x86_64.tar.gz: OK
+aush-macos-x86_64.tar.gz: OK
 ```
 
 #### 2. Extract and Install
 
 ```bash
 # Extract
-tar xzf rush-macos-x86_64.tar.gz
-chmod +x rush
+tar xzf aush-macos-x86_64.tar.gz
+chmod +x aush
 
 # Test basic execution
-./rush -c 'echo "Rush on macOS Intel"'
+./aush -c 'echo "AUSH on macOS Intel"'
 ```
 
 Expected output:
 ```
-Rush on macOS Intel
+AUSH on macOS Intel
 ```
 
 #### 3. Install to System PATH
 
 ```bash
 # Install to /usr/local/bin (may need sudo)
-sudo cp rush /usr/local/bin/rush
+sudo cp aush /usr/local/bin/aush
 
 # Test from PATH
-rush -c 'pwd'
+aush -c 'pwd'
 ```
 
 #### 4. Functionality Tests
 
 ```bash
 # Variables
-rush -c 'export TEST=hello && echo $TEST'
+aush -c 'export TEST=hello && echo $TEST'
 # Expected: hello
 
 # Arithmetic
-rush -c 'x=5; echo $((x + 3))'
+aush -c 'x=5; echo $((x + 3))'
 # Expected: 8
 
 # Conditionals
-rush -c 'if [ 1 -eq 1 ]; then echo "true"; fi'
+aush -c 'if [ 1 -eq 1 ]; then echo "true"; fi'
 # Expected: true
 
 # Loops
-rush -c 'for i in 1 2 3; do echo $i; done'
+aush -c 'for i in 1 2 3; do echo $i; done'
 # Expected: 1\n2\n3
 
 # Pipes
-rush -c 'echo -e "apple\nbanana" | grep apple'
+aush -c 'echo -e "apple\nbanana" | grep apple'
 # Expected: apple
 ```
 
 #### 5. Daemon Mode Test
 
 ```bash
+# Test the daemon archive if downloaded separately
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-macos-x86_64-daemon.tar.gz
+tar xzf aush-macos-x86_64-daemon.tar.gz
+chmod +x aushd
+
 # Start daemon
-rushd start
+aushd start
 
 # Test command execution with daemon
-rush -c 'echo "Using daemon"'
+aush -c 'echo "Using daemon"'
 
 # Stop daemon
-rushd stop
+aushd stop
 ```
 
 #### 6. Setting as Default Shell (Optional)
 
 ```bash
 # Add to allowed shells
-echo "/usr/local/bin/rush" | sudo tee -a /etc/shells
+echo "/usr/local/bin/aush" | sudo tee -a /etc/shells
 
-# Change to rush (temporary test only!)
+# Change to aush (temporary test only!)
 # Don't do this on production machines
 ```
 
@@ -123,13 +129,13 @@ Follow the same steps as Intel, but with:
 
 ```bash
 # Step 1: Download ARM binary
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-macos-aarch64.tar.gz
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-macos-aarch64-SHA256SUMS.txt
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-macos-aarch64.tar.gz
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-macos-aarch64-SHA256SUMS.txt
 ```
 
 Verify that the binary is ARM-compiled:
 ```bash
-file rush
+file aush
 # Expected: Mach-O 64-bit executable arm64
 ```
 
@@ -139,49 +145,49 @@ file rush
 
 ```bash
 # Create test directory
-mkdir -p ~/rush-test-linux
-cd ~/rush-test-linux
+mkdir -p ~/aush-test-linux
+cd ~/aush-test-linux
 
 # Download the binary
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-linux-x86_64.tar.gz
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-linux-x86_64.tar.gz
 
 # Download checksums
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-linux-x86_64-SHA256SUMS.txt
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-linux-x86_64-SHA256SUMS.txt
 
 # Verify checksum
-sha256sum -c rush-linux-x86_64-SHA256SUMS.txt
+sha256sum -c aush-linux-x86_64-SHA256SUMS.txt
 ```
 
 Expected output:
 ```
-rush-linux-x86_64.tar.gz: OK
+aush-linux-x86_64.tar.gz: OK
 ```
 
 #### 2. Extract and Install
 
 ```bash
 # Extract
-tar xzf rush-linux-x86_64.tar.gz
-chmod +x rush
+tar xzf aush-linux-x86_64.tar.gz
+chmod +x aush
 
 # Test basic execution
-./rush -c 'echo "Rush on Linux"'
+./aush -c 'echo "AUSH on Linux"'
 ```
 
 Expected output:
 ```
-Rush on Linux
+AUSH on Linux
 ```
 
 #### 3. Verify Architecture
 
 ```bash
 # Check binary info
-file rush
+file aush
 # Expected: ELF 64-bit LSB pie executable, x86-64, dynamically linked
 
 # Check dependencies
-ldd rush
+ldd aush
 # Should show normal glibc dependencies (or none for musl)
 ```
 
@@ -189,46 +195,51 @@ ldd rush
 
 ```bash
 # Install
-sudo mv rush /usr/local/bin/rush
+sudo mv aush /usr/local/bin/aush
 
 # Verify
-which rush
-# Expected: /usr/local/bin/rush
+which aush
+# Expected: /usr/local/bin/aush
 
-rush -c 'echo "System-wide installation works"'
+aush -c 'echo "System-wide installation works"'
 ```
 
 #### 5. Functionality Tests
 
 ```bash
 # Variables
-rush -c 'export TEST=linux && echo $TEST'
+aush -c 'export TEST=linux && echo $TEST'
 # Expected: linux
 
 # String manipulation
-rush -c 'str="hello world"; echo ${str#hello}'
+aush -c 'str="hello world"; echo ${str#hello}'
 # Expected: ' world'
 
 # Command substitution
-rush -c 'echo "Home: $(cd ~ && pwd)"'
+aush -c 'echo "Home: $(cd ~ && pwd)"'
 # Expected: Home: /home/username
 
 # Background jobs
-rush -c 'sleep 1 & echo "Background job started"'
+aush -c 'sleep 1 & echo "Background job started"'
 ```
 
 #### 6. Daemon Mode Test
 
 ```bash
+# Test the daemon archive if downloaded separately
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-linux-x86_64-daemon.tar.gz
+tar xzf aush-linux-x86_64-daemon.tar.gz
+chmod +x aushd
+
 # Start daemon
-rushd start
+aushd start
 
 # Test multiple quick commands
-time rush -c 'ls -la /' > /dev/null
+time aush -c 'ls -la /' > /dev/null
 # Should be very fast (~0.4ms with daemon)
 
 # Stop
-rushd stop
+aushd stop
 ```
 
 ### Static Linux (musl) Testing
@@ -237,15 +248,15 @@ The musl variant should work on any Linux system without dependencies:
 
 ```bash
 # Download musl variant
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/rush-linux-x86_64-musl.tar.gz
-tar xzf rush-linux-x86_64-musl.tar.gz
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/aush-linux-x86_64-musl.tar.gz
+tar xzf aush-linux-x86_64-musl.tar.gz
 
 # Verify it's static
-ldd ./rush
+ldd ./aush
 # Expected: "not a dynamic executable" or "statically linked"
 
 # Test on different systems
-./rush -c 'echo "Works without libc"'
+./aush -c 'echo "Works without libc"'
 ```
 
 ## Homebrew Testing
@@ -254,17 +265,17 @@ ldd ./rush
 
 ```bash
 # Add tap
-brew tap opus-workshop/rush https://github.com/opus-workshop/rush
+brew tap opus-workshop/aush https://github.com/opus-workshop/aush
 
 # Install
-brew install rush
+brew install aush
 
 # Verify installation
-which rush
-# Expected: /usr/local/bin/rush (or similar brew path)
+which aush
+# Expected: /usr/local/bin/aush (or similar brew path)
 
 # Test
-rush -c 'echo "Installed via Homebrew"'
+aush -c 'echo "Installed via Homebrew"'
 ```
 
 ### Update Homebrew Formula
@@ -274,11 +285,11 @@ After each release, verify the Homebrew formula works:
 ```bash
 # The formula automatically downloads the latest release
 # To test with a specific version, temporarily edit:
-# /usr/local/Cellar/rush/*/Homebrew/Formula/rush.rb
+# /usr/local/Cellar/aush/*/Homebrew/Formula/aush.rb
 
 # Test uninstall/reinstall
-brew uninstall rush
-brew install rush
+brew uninstall aush
+brew install aush
 ```
 
 ## Checksum Aggregation Testing
@@ -287,7 +298,7 @@ Verify the combined checksum file works:
 
 ```bash
 # Download combined checksums
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/SHA256SUMS.txt
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/SHA256SUMS.txt
 
 # Verify all files
 sha256sum -c SHA256SUMS.txt --ignore-missing
@@ -295,10 +306,10 @@ sha256sum -c SHA256SUMS.txt --ignore-missing
 
 Expected output:
 ```
-rush-linux-x86_64.tar.gz: OK
-rush-linux-x86_64-musl.tar.gz: OK
-rush-macos-x86_64.tar.gz: OK
-rush-macos-aarch64.tar.gz: OK
+aush-linux-x86_64.tar.gz: OK
+aush-linux-x86_64-musl.tar.gz: OK
+aush-macos-x86_64.tar.gz: OK
+aush-macos-aarch64.tar.gz: OK
 ```
 
 ## Signature Testing
@@ -307,10 +318,10 @@ Current releases don't include GPG signatures, but future releases might. When a
 
 ```bash
 # Download public key
-curl https://github.com/opus-workshop/rush.gpg | gpg --import
+curl https://github.com/opus-workshop/aush.gpg | gpg --import
 
 # Verify signature
-gpg --verify rush-*.tar.gz.sig rush-*.tar.gz
+gpg --verify aush-*.tar.gz.sig aush-*.tar.gz
 ```
 
 ## Regression Testing
@@ -319,14 +330,14 @@ For each release, verify these features still work:
 
 ```bash
 # POSIX compatibility
-rush -c '
+aush -c '
   # Comments work
   x=10
   [ $x -gt 5 ] && echo "Arithmetic comparison"
 
   # Functions
   greet() { echo "Hello $1"; }
-  greet "Rush"
+  greet "AUSH"
 
   # Case statement
   case $x in
@@ -338,7 +349,7 @@ rush -c '
 
 ```bash
 # Built-in commands
-rush -c '
+aush -c '
   # File operations
   echo "test" | cat
 
@@ -359,7 +370,7 @@ rush -c '
 
 ```bash
 # Performance baseline
-time rush -c 'echo "startup test"'
+time aush -c 'echo "startup test"'
 # Should be <10ms for cold start
 ```
 
@@ -369,21 +380,22 @@ Test that errors are handled gracefully:
 
 ```bash
 # Non-existent command
-rush -c 'nonexistent_command 2>&1'
+aush -c 'nonexistent_command 2>&1'
 # Should show appropriate error
 
 # Syntax error
-rush -c 'if [ 1; then echo test' 2>&1
+aush -c 'if [ 1; then echo test' 2>&1
 # Should show parse error
 
 # Exit code
-rush -c 'exit 42'
+aush -c 'exit 42'
 echo $?
 # Should output 42
 ```
 
 ## Documentation Verification
 
+- [ ] `aushd` daemon archive or full archive verified where daemon mode is tested
 - [ ] README.md installation section is accurate
 - [ ] docs/INSTALLATION.md is up-to-date
 - [ ] Release notes are clear and helpful
@@ -396,18 +408,18 @@ Record these metrics for each release:
 
 ```bash
 # Startup time (cold)
-time rush -c 'echo startup' > /dev/null
+time aush -c 'echo startup' > /dev/null
 
 # Startup time (daemon)
-rushd start
-time rush -c 'echo daemon' > /dev/null
-rushd stop
+aushd start
+time aush -c 'echo daemon' > /dev/null
+aushd stop
 
 # Memory usage
-rush -c 'ps aux | grep rush'
+aush -c 'ps aux | grep aush'
 
 # Binary size
-ls -lh /usr/local/bin/rush
+ls -lh /usr/local/bin/aush
 ```
 
 ## Test Summary Template
@@ -473,13 +485,13 @@ The GitHub Actions workflow automatically tests releases, but manual testing on 
 
 ```bash
 # Check quarantine attribute
-xattr -l rush
+xattr -l aush
 
 # Remove if quarantined
-xattr -d com.apple.quarantine rush
+xattr -d com.apple.quarantine aush
 
 # Try running again
-./rush -c 'echo test'
+./aush -c 'echo test'
 ```
 
 ### Checksum mismatch
@@ -487,10 +499,10 @@ xattr -d com.apple.quarantine rush
 ```bash
 # Re-download files (might be incomplete)
 rm *.tar.gz *.txt
-curl -LO https://github.com/opus-workshop/rush/releases/latest/download/...
+curl -LO https://github.com/opus-workshop/aush/releases/latest/download/...
 
 # Try different hash tool
-md5 rush-*.tar.gz
+md5 aush-*.tar.gz
 ```
 
 ### Daemon port in use
@@ -500,7 +512,7 @@ md5 rush-*.tar.gz
 lsof -i :9090  # Default daemon port
 
 # Kill existing daemon
-pkill -f rushd
+pkill -f aushd
 ```
 
 ## Sign-Off
@@ -530,7 +542,7 @@ EOF
 
 ## Next Steps
 
-After successful testing:
+After successful testing and explicit approval:
 1. Merge any final fixes to main branch
 2. Create release tag: `git tag v0.x.x && git push origin v0.x.x`
 3. Wait for GitHub Actions to build and publish

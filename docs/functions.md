@@ -1,8 +1,8 @@
-# User-Defined Functions in Rush
+# User-Defined Functions in AUSH
 
 ## Overview
 
-Rush supports user-defined functions with parameters, local scoping, and recursion. Functions are first-class constructs that can call other functions and return values through their stdout.
+AUSH supports user-defined functions with parameters, local scoping, and recursion. Functions are first-class constructs that can call other functions and return values through their stdout.
 
 ## Implementation Details
 
@@ -86,7 +86,7 @@ This prevents stack overflow from infinite recursion.
 
 ### Simple Function (No Parameters)
 
-```rush
+```sh
 fn greet() {
     echo "Hello, World!"
 }
@@ -96,7 +96,7 @@ greet  # Output: Hello, World!
 
 ### Function with Parameters
 
-```rush
+```sh
 fn say(message) {
     echo $message
 }
@@ -106,7 +106,7 @@ say "Hello"  # Output: Hello
 
 ### Multiple Parameters
 
-```rush
+```sh
 fn add(a, b) {
     # In a real implementation, this would do math
     echo "$a + $b"
@@ -117,7 +117,7 @@ add 5 10  # Output: 5 + 10
 
 ### Functions Calling Other Functions
 
-```rush
+```sh
 fn helper() {
     echo "Helper function"
 }
@@ -135,7 +135,7 @@ main
 
 ### Recursive Functions
 
-```rush
+```sh
 fn countdown(n) {
     echo $n
     if [ $n -gt 0 ]; then
@@ -155,7 +155,7 @@ countdown 5
 
 ### Scope Isolation
 
-```rush
+```sh
 x="global"
 
 fn test_scope(x) {
@@ -168,7 +168,7 @@ echo $x             # Output: global
 
 ### Local Variables Don't Leak
 
-```rush
+```sh
 fn set_local() {
     local_var="I'm local"
 }
@@ -181,7 +181,7 @@ echo $local_var  # Output: (empty - variable doesn't exist)
 
 Functions return values through their stdout. The last statement's exit code is used as the function's exit code.
 
-```rush
+```sh
 fn get_value() {
     echo "42"
 }
@@ -192,7 +192,7 @@ echo $result  # Output: 42
 
 All statements' stdout is accumulated:
 
-```rush
+```sh
 fn multi_output() {
     echo "line1"
     echo "line2"

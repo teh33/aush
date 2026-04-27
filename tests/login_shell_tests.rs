@@ -6,7 +6,7 @@ use tempfile::TempDir;
 #[test]
 fn test_source_builtin() {
     let temp_dir = TempDir::new().unwrap();
-    let config_file = temp_dir.path().join("test_config.rush");
+    let config_file = temp_dir.path().join("test_config.aush");
 
     // Create a config file
     let mut file = fs::File::create(&config_file).unwrap();
@@ -14,7 +14,7 @@ fn test_source_builtin() {
     drop(file);
 
     // Test sourcing the file
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
         .arg(format!("source {}", config_file.display()))
         .output()
@@ -27,7 +27,7 @@ fn test_source_builtin() {
 #[test]
 fn test_dot_builtin() {
     let temp_dir = TempDir::new().unwrap();
-    let config_file = temp_dir.path().join("test_config.rush");
+    let config_file = temp_dir.path().join("test_config.aush");
 
     // Create a config file
     let mut file = fs::File::create(&config_file).unwrap();
@@ -35,7 +35,7 @@ fn test_dot_builtin() {
     drop(file);
 
     // Test sourcing the file with dot command (POSIX syntax)
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
         .arg(format!(". {}", config_file.display()))
         .output()
@@ -50,9 +50,9 @@ fn test_dot_builtin() {
 
 #[test]
 fn test_dot_nonexistent_file() {
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
-        .arg(". /nonexistent/file.rush")
+        .arg(". /nonexistent/file.aush")
         .output()
         .unwrap();
 
@@ -64,7 +64,7 @@ fn test_dot_nonexistent_file() {
 fn test_source_with_tilde() {
     // Create a test file in temp directory
     let home = dirs::home_dir().unwrap();
-    let test_file = home.join(".rush_test_source");
+    let test_file = home.join(".aush_test_source");
 
     // Create test file
     let mut file = fs::File::create(&test_file).unwrap();
@@ -72,9 +72,9 @@ fn test_source_with_tilde() {
     drop(file);
 
     // Test sourcing with ~ expansion
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
-        .arg("source ~/.rush_test_source")
+        .arg("source ~/.aush_test_source")
         .output()
         .unwrap();
 
@@ -90,9 +90,9 @@ fn test_source_with_tilde() {
 
 #[test]
 fn test_source_nonexistent_file() {
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
-        .arg("source /nonexistent/file.rush")
+        .arg("source /nonexistent/file.aush")
         .output()
         .unwrap();
 
@@ -102,7 +102,7 @@ fn test_source_nonexistent_file() {
 
 #[test]
 fn test_environment_variables_set() {
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
         .arg("echo $SHELL")
         .output()
@@ -110,12 +110,12 @@ fn test_environment_variables_set() {
 
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("rush"), "SHELL should contain 'rush'");
+    assert!(stdout.contains("aush"), "SHELL should contain 'aush'");
 }
 
 #[test]
 fn test_term_variable_set() {
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
         .arg("echo $TERM")
         .output()
@@ -128,7 +128,7 @@ fn test_term_variable_set() {
 
 #[test]
 fn test_user_variable_set() {
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
         .arg("echo $USER")
         .output()
@@ -141,7 +141,7 @@ fn test_user_variable_set() {
 
 #[test]
 fn test_home_variable_set() {
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
         .arg("echo $HOME")
         .output()
@@ -155,16 +155,16 @@ fn test_home_variable_set() {
 #[test]
 fn test_login_flag() {
     let home = dirs::home_dir().unwrap();
-    let profile_file = home.join(".rush_profile_test");
+    let profile_file = home.join(".aush_profile_test");
 
     // Create test profile
     let mut file = fs::File::create(&profile_file).unwrap();
     writeln!(file, "echo from_profile").unwrap();
     drop(file);
 
-    // Temporarily rename .rush_profile
-    let real_profile = home.join(".rush_profile");
-    let backup = home.join(".rush_profile.backup");
+    // Temporarily rename .aush_profile
+    let real_profile = home.join(".aush_profile");
+    let backup = home.join(".aush_profile.backup");
     let had_profile = real_profile.exists();
     if had_profile {
         fs::rename(&real_profile, &backup).ok();
@@ -174,7 +174,7 @@ fn test_login_flag() {
     fs::rename(&profile_file, &real_profile).unwrap();
 
     // Test with --login flag
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("--login")
         .arg("-c")
         .arg("echo test")
@@ -196,41 +196,41 @@ fn test_login_flag() {
 #[test]
 fn test_no_rc_flag() {
     let home = dirs::home_dir().unwrap();
-    let rushrc = home.join(".rushrc_test");
+    let aushrc = home.join(".aushrc_test");
 
-    // Create test rushrc
-    let mut file = fs::File::create(&rushrc).unwrap();
+    // Create test aushrc
+    let mut file = fs::File::create(&aushrc).unwrap();
     writeln!(file, "echo should_not_load").unwrap();
     drop(file);
 
-    // Temporarily rename .rushrc
-    let real_rushrc = home.join(".rushrc");
-    let backup = home.join(".rushrc.backup");
-    let had_rushrc = real_rushrc.exists();
-    if had_rushrc {
-        fs::rename(&real_rushrc, &backup).ok();
+    // Temporarily rename .aushrc
+    let real_aushrc = home.join(".aushrc");
+    let backup = home.join(".aushrc.backup");
+    let had_aushrc = real_aushrc.exists();
+    if had_aushrc {
+        fs::rename(&real_aushrc, &backup).ok();
     }
 
-    // Move test rushrc to real location
-    fs::rename(&rushrc, &real_rushrc).unwrap();
+    // Move test aushrc to real location
+    fs::rename(&aushrc, &real_aushrc).unwrap();
 
     // Test with --no-rc flag
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("--no-rc")
         .arg("-c")
         .arg("echo test_output")
         .output()
         .unwrap();
 
-    // Restore original rushrc
-    fs::remove_file(&real_rushrc).ok();
-    if had_rushrc {
-        fs::rename(&backup, &real_rushrc).ok();
+    // Restore original aushrc
+    fs::remove_file(&real_aushrc).ok();
+    if had_aushrc {
+        fs::rename(&backup, &real_aushrc).ok();
     }
 
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    // Should not contain rushrc output
+    // Should not contain aushrc output
     assert!(!stdout.contains("should_not_load"));
     // Should contain the command output
     assert!(stdout.contains("test_output"));
@@ -239,7 +239,7 @@ fn test_no_rc_flag() {
 #[test]
 fn test_source_with_comments() {
     let temp_dir = TempDir::new().unwrap();
-    let config_file = temp_dir.path().join("test_comments.rush");
+    let config_file = temp_dir.path().join("test_comments.aush");
 
     // Create a config file with comments
     let mut file = fs::File::create(&config_file).unwrap();
@@ -252,7 +252,7 @@ fn test_source_with_comments() {
     drop(file);
 
     // Test sourcing the file
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
         .arg(format!("source {}", config_file.display()))
         .output()
@@ -268,7 +268,7 @@ fn test_source_with_comments() {
 #[test]
 fn test_source_with_error_continues() {
     let temp_dir = TempDir::new().unwrap();
-    let config_file = temp_dir.path().join("test_error.rush");
+    let config_file = temp_dir.path().join("test_error.aush");
 
     // Create a config file with an error in the middle
     let mut file = fs::File::create(&config_file).unwrap();
@@ -278,7 +278,7 @@ fn test_source_with_error_continues() {
     drop(file);
 
     // Test sourcing the file - should continue after error
-    let output = Command::new(env!("CARGO_BIN_EXE_rush"))
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
         .arg(format!("source {}", config_file.display()))
         .output()

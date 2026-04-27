@@ -1,4 +1,4 @@
-//! Visual error formatter for Rush shell
+//! Visual error formatter for AUSH shell
 //!
 //! This module provides rich, contextual error messages with:
 //! - Source code highlighting with line/column markers
@@ -7,7 +7,7 @@
 //! - Stack traces for nested command/function calls
 //! - Common typo suggestions
 
-use crate::error::{help_db, CommandContext, RushError, SourceLocation};
+use crate::error::{help_db, CommandContext, AUSHError, SourceLocation};
 
 /// ANSI color codes for terminal output
 pub mod ansi {
@@ -25,7 +25,7 @@ pub struct ErrorFormatter;
 
 impl ErrorFormatter {
     /// Format an error with all available context
-    pub fn format_error(error: &RushError) -> String {
+    pub fn format_error(error: &AUSHError) -> String {
         let mut output = String::new();
 
         // Error header with type
@@ -59,7 +59,7 @@ impl ErrorFormatter {
     }
 
     /// Format the error header with type and message
-    fn format_error_header(error: &RushError) -> String {
+    fn format_error_header(error: &AUSHError) -> String {
         let error_type = Self::classify_error(&error.error_code);
         let color = match error_type {
             ErrorType::Syntax => ansi::RED,
@@ -226,7 +226,7 @@ impl ErrorFormatter {
     }
 
     /// Format error as simple text (for non-TTY output)
-    pub fn format_plain(error: &RushError) -> String {
+    pub fn format_plain(error: &AUSHError) -> String {
         let mut output = String::new();
         output.push_str(&format!("error [{}]: {}", error.error_code, error.message));
 
@@ -279,7 +279,7 @@ mod tests {
 
     #[test]
     fn test_format_error_header() {
-        let error = RushError::new("SYNTAX_ERROR", "Expected identifier", 1);
+        let error = AUSHError::new("SYNTAX_ERROR", "Expected identifier", 1);
         let formatted = ErrorFormatter::format_error(&error);
         assert!(formatted.contains("SYNTAX_ERROR"));
         assert!(formatted.contains("Expected identifier"));
@@ -289,11 +289,11 @@ mod tests {
     fn test_format_with_source_location() {
         let location = SourceLocation::new(5, 10)
             .with_line_content("let x = invalid".to_string())
-            .with_filename("test.rush".to_string());
-        let error = RushError::new("PARSE_ERROR", "Invalid syntax", 1).with_location(location);
+            .with_filename("test.aush".to_string());
+        let error = AUSHError::new("PARSE_ERROR", "Invalid syntax", 1).with_location(location);
 
         let formatted = ErrorFormatter::format_error(&error);
-        assert!(formatted.contains("test.rush:5:10"));
+        assert!(formatted.contains("test.aush:5:10"));
         assert!(formatted.contains("let x = invalid"));
         assert!(formatted.contains("^"));
     }
@@ -302,7 +302,7 @@ mod tests {
     fn test_format_with_command_context() {
         let ctx =
             CommandContext::new("echo").with_args(vec!["hello".to_string(), "world".to_string()]);
-        let error = RushError::new("EXECUTION_ERROR", "Failed", 1).with_command_context(ctx);
+        let error = AUSHError::new("EXECUTION_ERROR", "Failed", 1).with_command_context(ctx);
 
         let formatted = ErrorFormatter::format_error(&error);
         assert!(formatted.contains("Context:"));
@@ -314,7 +314,7 @@ mod tests {
     fn test_format_with_function_stack() {
         let ctx = CommandContext::new("cmd")
             .with_function_stack(vec!["main".to_string(), "helper".to_string()]);
-        let error = RushError::new("RUNTIME_ERROR", "Error", 1).with_command_context(ctx);
+        let error = AUSHError::new("RUNTIME_ERROR", "Error", 1).with_command_context(ctx);
 
         let formatted = ErrorFormatter::format_error(&error);
         assert!(formatted.contains("Stack:"));
@@ -324,7 +324,7 @@ mod tests {
 
     #[test]
     fn test_format_with_additional_context() {
-        let error = RushError::new("ERROR", "Test", 1).with_context(serde_json::json!({
+        let error = AUSHError::new("ERROR", "Test", 1).with_context(serde_json::json!({
             "file": "/tmp/test.txt",
             "reason": "Permission denied"
         }));
@@ -339,12 +339,12 @@ mod tests {
     fn test_format_plain_text() {
         let location = SourceLocation::new(3, 5)
             .with_line_content("invalid code".to_string())
-            .with_filename("script.rush".to_string());
-        let error = RushError::new("SYNTAX_ERROR", "Bad syntax", 1).with_location(location);
+            .with_filename("script.aush".to_string());
+        let error = AUSHError::new("SYNTAX_ERROR", "Bad syntax", 1).with_location(location);
 
         let formatted = ErrorFormatter::format_plain(&error);
         assert!(formatted.contains("error [SYNTAX_ERROR]"));
-        assert!(formatted.contains("script.rush:3:5"));
+        assert!(formatted.contains("script.aush:3:5"));
         assert!(!formatted.contains("\x1b[")); // No ANSI codes
     }
 
@@ -378,14 +378,14 @@ mod tests {
 
     #[test]
     fn test_ansi_codes_present_in_formatted() {
-        let error = RushError::new("ERROR", "Test error", 1);
+        let error = AUSHError::new("ERROR", "Test error", 1);
         let formatted = ErrorFormatter::format_error(&error);
         assert!(formatted.contains("\x1b[")); // Contains ANSI escape codes
     }
 
     #[test]
     fn test_plain_format_no_ansi_codes() {
-        let error = RushError::new("ERROR", "Test error", 1);
+        let error = AUSHError::new("ERROR", "Test error", 1);
         let formatted = ErrorFormatter::format_plain(&error);
         assert!(!formatted.contains("\x1b[")); // No ANSI escape codes
     }
@@ -394,13 +394,13 @@ mod tests {
     fn test_complete_error_with_all_context() {
         let location = SourceLocation::new(10, 15)
             .with_line_content("undefined_var=$unknown".to_string())
-            .with_filename("main.rush".to_string());
+            .with_filename("main.aush".to_string());
 
         let ctx = CommandContext::new("assignment")
             .with_args(vec!["undefined_var".to_string()])
             .with_function_stack(vec!["setup".to_string(), "init".to_string()]);
 
-        let error = RushError::new("RUNTIME_ERROR", "Variable not found", 1)
+        let error = AUSHError::new("RUNTIME_ERROR", "Variable not found", 1)
             .with_location(location)
             .with_command_context(ctx)
             .with_context(serde_json::json!({
@@ -409,7 +409,7 @@ mod tests {
             }));
 
         let formatted = ErrorFormatter::format_error(&error);
-        assert!(formatted.contains("main.rush:10:15"));
+        assert!(formatted.contains("main.aush:10:15"));
         assert!(formatted.contains("undefined_var=$unknown"));
         assert!(formatted.contains("assignment"));
         assert!(formatted.contains("setup"));
@@ -419,7 +419,7 @@ mod tests {
 
     #[test]
     fn test_format_error_with_help_text() {
-        let error = RushError::new(
+        let error = AUSHError::new(
             "FILE_NOT_FOUND",
             "missing.txt: No such file or directory",
             1,
@@ -433,7 +433,7 @@ mod tests {
 
     #[test]
     fn test_format_error_without_help_text() {
-        let error = RushError::new("CUSTOM_ERROR", "Custom error message", 1);
+        let error = AUSHError::new("CUSTOM_ERROR", "Custom error message", 1);
         let formatted = ErrorFormatter::format_error(&error);
         assert!(formatted.contains("CUSTOM_ERROR"));
         assert!(formatted.contains("Custom error message"));

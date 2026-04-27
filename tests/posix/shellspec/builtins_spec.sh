@@ -220,43 +220,43 @@ Describe 'POSIX Builtin Commands'
   # read builtin
   Describe 'read'
     It 'reads input into variable'
-      When call sh -c "echo 'test input' | rush -c 'read VAR && echo \$VAR'"
+      When call sh -c "echo 'test input' | aush -c 'read VAR && echo \$VAR'"
       The output should equal "test input"
       The status should be success
     End
 
     It 'reads multiple variables'
-      When call sh -c "echo 'a b c' | rush -c 'read X Y Z && echo \$X \$Y \$Z'"
+      When call sh -c "echo 'a b c' | aush -c 'read X Y Z && echo \$X \$Y \$Z'"
       The output should equal "a b c"
       The status should be success
     End
 
     It 'assigns remainder to last variable'
-      When call sh -c "echo 'one two three four' | rush -c 'read A B && echo \"\$A|\$B\"'"
+      When call sh -c "echo 'one two three four' | aush -c 'read A B && echo \"\$A|\$B\"'"
       The output should equal "one|two three four"
       The status should be success
     End
 
     It 'uses REPLY when no variable given'
-      When call sh -c "echo 'default' | rush -c 'read && echo \$REPLY'"
+      When call sh -c "echo 'default' | aush -c 'read && echo \$REPLY'"
       The output should equal "default"
       The status should be success
     End
 
     It 'uses -r flag for raw mode (preserves backslashes)'
-      When call sh -c "printf 'hello\\\\nworld\\n' | rush -c 'read -r VAR && echo \"\$VAR\"'"
+      When call sh -c "printf 'hello\\\\nworld\\n' | aush -c 'read -r VAR && echo \"\$VAR\"'"
       The output should equal 'hello\nworld'
       The status should be success
     End
 
     It 'processes backslashes without -r flag'
-      When call sh -c "printf 'hello\\\\nworld\\n' | rush -c 'read VAR && echo \"\$VAR\"'"
+      When call sh -c "printf 'hello\\\\nworld\\n' | aush -c 'read VAR && echo \"\$VAR\"'"
       The output should equal "hellonworld"
       The status should be success
     End
 
     It 'returns 1 on EOF'
-      When call sh -c "printf '' | rush -c 'read VAR; echo \$?'"
+      When call sh -c "printf '' | aush -c 'read VAR; echo \$?'"
       The output should equal "1"
     End
 

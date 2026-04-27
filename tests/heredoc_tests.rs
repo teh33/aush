@@ -1,7 +1,7 @@
-use rush::executor::Executor;
-use rush::lexer::{HereDocData, Lexer, Token};
-use rush::parser::ast::*;
-use rush::parser::Parser;
+use aush::executor::Executor;
+use aush::lexer::{HereDocData, Lexer, Token};
+use aush::parser::ast::*;
+use aush::parser::Parser;
 
 // ──────────────────────────────────────────────
 // Lexer tests

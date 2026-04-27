@@ -1,7 +1,7 @@
 // Terminal signal handling tests for POSIX compliance
 // Tests SIGTSTP, SIGTTIN, SIGTTOU handling
 
-use rush::signal::SignalHandler;
+use aush::signal::SignalHandler;
 use signal_hook::consts::{SIGTSTP, SIGTTIN, SIGTTOU};
 
 #[test]
@@ -34,15 +34,15 @@ fn test_terminal_signal_exit_codes() {
     let handler = SignalHandler::new();
 
     // Test SIGTSTP exit code (128 + 20 = 148)
-    rush::signal::SIGNAL_NUMBER.store(SIGTSTP, Ordering::SeqCst);
+    aush::signal::SIGNAL_NUMBER.store(SIGTSTP, Ordering::SeqCst);
     assert_eq!(handler.exit_code(), 148);
 
     // Test SIGTTIN exit code (128 + 21 = 149)
-    rush::signal::SIGNAL_NUMBER.store(SIGTTIN, Ordering::SeqCst);
+    aush::signal::SIGNAL_NUMBER.store(SIGTTIN, Ordering::SeqCst);
     assert_eq!(handler.exit_code(), 149);
 
     // Test SIGTTOU exit code (128 + 22 = 150)
-    rush::signal::SIGNAL_NUMBER.store(SIGTTOU, Ordering::SeqCst);
+    aush::signal::SIGNAL_NUMBER.store(SIGTTOU, Ordering::SeqCst);
     assert_eq!(handler.exit_code(), 150);
 
     // Reset
@@ -58,7 +58,7 @@ fn test_terminal_stop_reset() {
     assert!(handler.setup().is_ok());
 
     // Simulate SIGTSTP
-    rush::signal::TERMINAL_STOP.store(true, Ordering::SeqCst);
+    aush::signal::TERMINAL_STOP.store(true, Ordering::SeqCst);
     assert!(handler.terminal_stop());
 
     // Reset should clear the flag
@@ -87,7 +87,7 @@ fn test_sigttou_handling() {
 
 #[cfg(test)]
 mod job_control_tests {
-    use rush::jobs::{JobManager, JobStatus};
+    use aush::jobs::{JobManager, JobStatus};
 
     #[test]
     fn test_job_stopped_status() {
@@ -207,7 +207,7 @@ mod integration_tests {
     fn test_jobs_command_in_script() {
         // Create a test script that demonstrates job control
         let mut script = NamedTempFile::new().expect("Failed to create temp file");
-        writeln!(script, "#!/usr/bin/env rush").unwrap();
+        writeln!(script, "#!/usr/bin/env aush").unwrap();
         writeln!(script, "sleep 100 &").unwrap();
         writeln!(script, "jobs").unwrap();
 
@@ -229,7 +229,7 @@ mod integration_tests {
     fn test_background_job_tracking() {
         // Create a script with multiple background jobs
         let mut script = NamedTempFile::new().expect("Failed to create temp file");
-        writeln!(script, "#!/usr/bin/env rush").unwrap();
+        writeln!(script, "#!/usr/bin/env aush").unwrap();
         writeln!(script, "sleep 50 &").unwrap();
         writeln!(script, "sleep 60 &").unwrap();
         writeln!(script, "sleep 70 &").unwrap();

@@ -1,5 +1,5 @@
-use rush::lexer::{Lexer, Token};
-use rush::parser::Parser;
+use aush::lexer::{Lexer, Token};
+use aush::parser::Parser;
 
 fn main() {
     let input = "cat <<EOF

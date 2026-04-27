@@ -11,8 +11,8 @@
 set -u
 
 AUSH="${1:-./target/release/aush}"
-if [[ ! -x "$AUSH" && -x ./target/release/rush ]]; then
-    AUSH=./target/release/rush
+if [[ ! -x "$AUSH" && -x ./target/release/aush ]]; then
+    AUSH=./target/release/aush
 fi
 PASS=0
 FAIL=0

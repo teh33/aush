@@ -1,9 +1,9 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Generate intelligent commit messages from git diff
-# Usage: ./commit_message_generator.rush
+# Usage: ./commit_message_generator.aush
 
 set -e
-export RUSH_ERROR_FORMAT=json
+export AUSH_ERROR_FORMAT=json
 
 # Check if in git repository
 if ! git_status --json > /dev/null 2>&1; then

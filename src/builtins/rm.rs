@@ -12,11 +12,11 @@ struct RmOptions {
     recursive: bool,
     /// Ignore nonexistent files and arguments, never prompt (-f, --force)
     force: bool,
-    /// Answer yes to Rush-specific confirmation prompts (-y, --yes)
+    /// Answer yes to AUSH-specific confirmation prompts (-y, --yes)
     yes: bool,
     /// Prompt before every removal (-i)
     interactive: bool,
-    /// Prompt once before recursive removal (Rush extension) (--rush-confirm-recursive)
+    /// Prompt once before recursive removal (AUSH extension) (--aush-confirm-recursive)
     confirm_recursive: bool,
     /// Remove empty directories (-d, --dir)
     dir: bool,
@@ -53,7 +53,7 @@ impl RmOptions {
                 opts.yes = true;
             } else if arg == "--interactive" {
                 opts.interactive = true;
-            } else if arg == "--rush-confirm-recursive" {
+            } else if arg == "--aush-confirm-recursive" {
                 opts.confirm_recursive = true;
             } else if arg == "--dir" {
                 opts.dir = true;
@@ -457,17 +457,17 @@ Options:
   -r, -R, --recursive  remove directories and their contents recursively
   -d, --dir         remove empty directories
   -v, --verbose     explain what is being done
-  -y, --yes         answer yes to Rush-specific confirmation prompts
-  --rush-confirm-recursive
-                    prompt once before recursive removal (Rush extension)
+  -y, --yes         answer yes to AUSH-specific confirmation prompts
+  --aush-confirm-recursive
+                    prompt once before recursive removal (AUSH extension)
   --help            display this help and exit
 
 RUSH EXTENSIONS:
   GNU/POSIX-style `rm -r` does not prompt by default.
-  To enable Rush's recursive summary confirmation, use:
-    --rush-confirm-recursive
+  To enable AUSH's recursive summary confirmation, use:
+    --aush-confirm-recursive
 
-  To skip that Rush-specific confirmation:
+  To skip that AUSH-specific confirmation:
     - Use -y or --yes
     - Use -f or --force
     - Pipe input (non-interactive mode defaults to No)
@@ -481,8 +481,8 @@ Examples:
   rm -r dir                Remove directory recursively
   rm -rf dir               Remove directory without prompts
   rm -i *.txt              Interactively remove all .txt files
-  rm --rush-confirm-recursive dir
-                           Remove directory recursively with Rush confirmation
+  rm --aush-confirm-recursive dir
+                           Remove directory recursively with AUSH confirmation
   rm -v file1 file2        Remove files verbosely
 ";
 
@@ -857,10 +857,10 @@ mod tests {
         assert!(opts.yes);
         assert_eq!(opts.paths, vec!["dir"]);
 
-        // Test Rush-specific recursive confirmation flag
+        // Test AUSH-specific recursive confirmation flag
         let opts = RmOptions::parse(&[
             "--recursive".to_string(),
-            "--rush-confirm-recursive".to_string(),
+            "--aush-confirm-recursive".to_string(),
             "dir".to_string(),
         ])
         .unwrap();
@@ -888,7 +888,7 @@ mod tests {
         opts.recursive = true;
         assert!(!opts.needs_confirmation());
 
-        // Rush-specific recursive confirmation requires the extension flag
+        // AUSH-specific recursive confirmation requires the extension flag
         opts.confirm_recursive = true;
         assert!(opts.needs_confirmation());
 
@@ -940,7 +940,7 @@ mod tests {
         let result = builtin_rm(
             &[
                 "-r".to_string(),
-                "--rush-confirm-recursive".to_string(),
+                "--aush-confirm-recursive".to_string(),
                 "test_dir".to_string(),
             ],
             &mut runtime,

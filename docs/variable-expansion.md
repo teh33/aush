@@ -1,6 +1,6 @@
-# Variable Expansion in Rush
+# Variable Expansion in AUSH
 
-Rush supports comprehensive variable expansion using the `${...}` syntax, compatible with POSIX shell standards.
+AUSH supports comprehensive variable expansion using the `${...}` syntax, compatible with POSIX shell standards.
 
 ## Overview
 
@@ -278,7 +278,7 @@ echo ${NAME}     # Outputs: World
 
 ### Nested Expansions
 
-Currently, Rush does not support nested variable expansions like `${VAR:-${DEFAULT}}`. Use intermediate variables instead:
+Currently, AUSH does not support nested variable expansions like `${VAR:-${DEFAULT}}`. Use intermediate variables instead:
 
 ```bash
 let DEFAULT = "fallback"
@@ -287,7 +287,7 @@ let RESULT = ${VAR:-$DEFAULT}
 
 ### Compatibility
 
-Rush's variable expansion is designed to be compatible with POSIX shell standards and bash, making it easy to port existing shell scripts.
+AUSH's variable expansion is designed to be compatible with POSIX shell standards and bash, making it easy to port existing shell scripts.
 
 ## Error Handling
 

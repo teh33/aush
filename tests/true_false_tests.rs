@@ -1,6 +1,6 @@
-use rush::executor::Executor;
-use rush::lexer::Lexer;
-use rush::parser::Parser;
+use aush::executor::Executor;
+use aush::lexer::Lexer;
+use aush::parser::Parser;
 
 #[test]
 fn test_true_builtin_exit_code() {

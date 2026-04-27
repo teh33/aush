@@ -20,7 +20,7 @@ fn generate_request_id() -> String {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis())
         .unwrap_or(0);
-    format!("rush-rpc-{}-{}", timestamp, count)
+    format!("aush-rpc-{}-{}", timestamp, count)
 }
 
 /// Errors that can occur when using Pi RPC
@@ -55,7 +55,7 @@ pub enum PiRpcError {
     ProcessExited,
 }
 
-/// Pi RPC command (subset we need for Rush integration)
+/// Pi RPC command (subset we need for AUSH integration)
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type")]
 pub enum PiCommand {
@@ -157,8 +157,8 @@ impl PiRpcManager {
         // Clean up any stale state
         self.cleanup();
 
-        // Check for AUSH_PI_PATH/RUSH_PI_PATH override (for testing), otherwise use "pi"
-        let pi_path = crate::brand::env_var("AUSH_PI_PATH", "RUSH_PI_PATH")
+        // Check for AUSH_PI_PATH/AUSH_PI_PATH override (for testing), otherwise use "pi"
+        let pi_path = crate::brand::env_var("AUSH_PI_PATH")
             .unwrap_or_else(|| "pi".to_string());
 
         // Spawn pi --rpc
@@ -342,9 +342,9 @@ mod tests {
         // IDs should be unique
         assert_ne!(id1, id2);
 
-        // IDs should start with "rush-rpc-"
-        assert!(id1.starts_with("rush-rpc-"));
-        assert!(id2.starts_with("rush-rpc-"));
+        // IDs should start with "aush-rpc-"
+        assert!(id1.starts_with("aush-rpc-"));
+        assert!(id2.starts_with("aush-rpc-"));
     }
 
     #[test]

@@ -22,7 +22,7 @@ build:
 
 install: build
 	cp target/release/aush ~/.cargo/bin/aush
-	cp target/release/aush ~/.cargo/bin/rush
+	cp target/release/aushd ~/.cargo/bin/aushd
 
 clean:
 	$(CARGO) clean

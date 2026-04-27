@@ -1,4 +1,4 @@
-# Subshell Support in Rush
+# Subshell Support in AUSH
 
 Subshells provide a way to execute commands in an isolated environment where changes to variables and the current directory do not affect the parent shell.
 
@@ -163,7 +163,7 @@ Safely test commands without affecting your environment:
 
 ### Bash Compatibility
 
-Rush subshells work similarly to Bash subshells:
+AUSH subshells work similarly to Bash subshells:
 
 - Variable isolation works the same way
 - Exit code propagation is identical

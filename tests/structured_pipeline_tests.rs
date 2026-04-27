@@ -4,13 +4,13 @@
 /// These tests run through the full parser + executor stack using
 /// the library API directly (no subprocess), so they work without
 /// a pre-built binary.
-use rush::executor::{Executor, Output};
-use rush::lexer::Lexer;
-use rush::parser::Parser;
+use aush::executor::{Executor, Output};
+use aush::lexer::Lexer;
+use aush::parser::Parser;
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
-fn run(cmd: &str) -> rush::executor::ExecutionResult {
+fn run(cmd: &str) -> aush::executor::ExecutionResult {
     let mut executor = Executor::new();
     let tokens = Lexer::tokenize(cmd).expect("tokenize failed");
     let mut parser = Parser::new(tokens);

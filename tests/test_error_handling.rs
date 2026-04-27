@@ -1,33 +1,33 @@
-/// Integration tests for structured error handling (rush-ai.8)
-use rush::error::{should_output_json_errors, RushError};
+/// Integration tests for structured error handling (aush-ai.8)
+use aush::error::{should_output_json_errors, AUSHError};
 use std::env;
 use std::path::Path;
 
 #[test]
 fn test_error_json_format_env_var() {
     // Clean slate
-    env::remove_var("RUSH_ERROR_FORMAT");
+    env::remove_var("AUSH_ERROR_FORMAT");
     assert!(!should_output_json_errors());
 
     // Enable JSON errors
-    env::set_var("RUSH_ERROR_FORMAT", "json");
+    env::set_var("AUSH_ERROR_FORMAT", "json");
     assert!(should_output_json_errors());
 
     // Case insensitive
-    env::set_var("RUSH_ERROR_FORMAT", "JSON");
+    env::set_var("AUSH_ERROR_FORMAT", "JSON");
     assert!(should_output_json_errors());
 
     // Disable JSON errors
-    env::set_var("RUSH_ERROR_FORMAT", "text");
+    env::set_var("AUSH_ERROR_FORMAT", "text");
     assert!(!should_output_json_errors());
 
     // Clean up
-    env::remove_var("RUSH_ERROR_FORMAT");
+    env::remove_var("AUSH_ERROR_FORMAT");
 }
 
 #[test]
 fn test_rush_error_construction() {
-    let error = RushError::new("TEST_ERROR", "test message", 1);
+    let error = AUSHError::new("TEST_ERROR", "test message", 1);
 
     assert_eq!(error.error_code, "TEST_ERROR");
     assert_eq!(error.message, "test message");
@@ -37,7 +37,7 @@ fn test_rush_error_construction() {
 
 #[test]
 fn test_rush_error_with_context() {
-    let error = RushError::new("TEST_ERROR", "test", 1)
+    let error = AUSHError::new("TEST_ERROR", "test", 1)
         .with_context(serde_json::json!({"additional": "info"}));
 
     assert!(error.context.is_some());
@@ -46,7 +46,7 @@ fn test_rush_error_with_context() {
 
 #[test]
 fn test_rush_error_json_serialization() {
-    let error = RushError::file_not_found(Path::new("/tmp/test.txt"));
+    let error = AUSHError::file_not_found(Path::new("/tmp/test.txt"));
     let json = error.to_json();
 
     assert!(json.contains("FILE_NOT_FOUND"));
@@ -56,7 +56,7 @@ fn test_rush_error_json_serialization() {
 
 #[test]
 fn test_rush_error_text_output() {
-    let error = RushError::file_not_found(Path::new("/tmp/test.txt"));
+    let error = AUSHError::file_not_found(Path::new("/tmp/test.txt"));
     let text = error.to_text();
 
     assert!(text.contains("/tmp/test.txt"));
@@ -65,7 +65,7 @@ fn test_rush_error_text_output() {
 
 #[test]
 fn test_file_not_found_constructor() {
-    let error = RushError::file_not_found(Path::new("/tmp/test.txt"));
+    let error = AUSHError::file_not_found(Path::new("/tmp/test.txt"));
 
     assert_eq!(error.error_code, "FILE_NOT_FOUND");
     assert_eq!(error.exit_code, 1);
@@ -75,7 +75,7 @@ fn test_file_not_found_constructor() {
 
 #[test]
 fn test_is_a_directory_constructor() {
-    let error = RushError::is_a_directory(Path::new("/tmp"));
+    let error = AUSHError::is_a_directory(Path::new("/tmp"));
 
     assert_eq!(error.error_code, "IS_A_DIRECTORY");
     assert_eq!(error.exit_code, 1);
@@ -85,7 +85,7 @@ fn test_is_a_directory_constructor() {
 
 #[test]
 fn test_json_output_format() {
-    let error = RushError::new("CUSTOM_ERROR", "custom message", 42);
+    let error = AUSHError::new("CUSTOM_ERROR", "custom message", 42);
     let json = error.to_json();
 
     // Should be valid JSON
@@ -99,7 +99,7 @@ fn test_json_output_format() {
 #[test]
 fn test_json_output_with_context() {
     let error =
-        RushError::new("TEST", "message", 1).with_context(serde_json::json!({"key": "value"}));
+        AUSHError::new("TEST", "message", 1).with_context(serde_json::json!({"key": "value"}));
     let json = error.to_json();
 
     let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -110,10 +110,10 @@ fn test_json_output_with_context() {
 #[test]
 fn test_error_backwards_compatibility() {
     // Ensure text format is the default
-    env::remove_var("RUSH_ERROR_FORMAT");
+    env::remove_var("AUSH_ERROR_FORMAT");
     assert!(!should_output_json_errors());
 
-    let error = RushError::new("TEST_ERROR", "test message", 1);
+    let error = AUSHError::new("TEST_ERROR", "test message", 1);
     let text = error.to_text();
 
     // Should be plain text, not JSON

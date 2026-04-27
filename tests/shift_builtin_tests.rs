@@ -8,9 +8,9 @@
 //! - $# is decremented correctly
 //! - shift in functions vs global scope
 
-use rush::executor::Executor;
-use rush::lexer::Lexer;
-use rush::parser::Parser;
+use aush::executor::Executor;
+use aush::lexer::Lexer;
+use aush::parser::Parser;
 
 fn execute_line(line: &str, executor: &mut Executor) -> Result<String, String> {
     let tokens = Lexer::tokenize(line).map_err(|e| e.to_string())?;

@@ -1,4 +1,4 @@
-# Rush Daemon Architecture
+# AUSH Daemon Architecture
 
 **Version:** 1.0
 **Date:** January 2026
@@ -23,7 +23,7 @@
 
 ## Overview
 
-Rush daemon mode implements a client-server architecture where:
+AUSH daemon mode implements a client-server architecture where:
 - **Daemon Process**: Long-running background server maintaining shell runtime state
 - **Thin Client**: Lightweight binary (~200KB) that connects to daemon via Unix socket
 - **Session Isolation**: Each client connection gets independent shell session
@@ -44,17 +44,17 @@ Rush daemon mode implements a client-server architecture where:
 
 ### The Startup Problem
 
-Rush's excellent builtin performance (17-427x faster than traditional shells) is masked by startup overhead:
+AUSH's excellent builtin performance (17-427x faster than traditional shells) is masked by startup overhead:
 
 ```bash
 # Current: Pay startup cost every time
-rush -c "ls"        # 4.9ms (startup dominates 109µs builtin)
-rush -c "cat file"  # 4.9ms (startup dominates 10µs builtin)
+aush -c "ls"        # 4.9ms (startup dominates 109µs builtin)
+aush -c "cat file"  # 4.9ms (startup dominates 10µs builtin)
 
 # With daemon: Pay startup cost once
-rushd start         # 4.9ms (daemon init, done once)
-rush -c "ls"        # 0.4ms (just connection + 109µs builtin)
-rush -c "cat file"  # 0.4ms (just connection + 10µs builtin)
+aushd start         # 4.9ms (daemon init, done once)
+aush -c "ls"        # 0.4ms (just connection + 109µs builtin)
+aush -c "cat file"  # 0.4ms (just connection + 10µs builtin)
 ```
 
 ### Use Cases
@@ -78,7 +78,7 @@ rush -c "cat file"  # 0.4ms (just connection + 10µs builtin)
                 │ spawn
                 ↓
 ┌─────────────────────────────────────────────────────────┐
-│              rush (thin client binary)                   │
+│              aush (thin client binary)                   │
 │  - Parse command-line args                               │
 │  - Connect to daemon via Unix socket                     │
 │  - Forward stdin/stdout/stderr                           │
@@ -86,10 +86,10 @@ rush -c "cat file"  # 0.4ms (just connection + 10µs builtin)
 │  Size: ~200KB                                            │
 └───────────────┬─────────────────────────────────────────┘
                 │
-                │ Unix socket: ~/.rush/daemon.sock
+                │ Unix socket: ~/.aush/daemon.sock
                 ↓
 ┌─────────────────────────────────────────────────────────┐
-│              rushd (daemon process)                      │
+│              aushd (daemon process)                      │
 │  ┌─────────────────────────────────────────────────┐   │
 │  │  Socket Listener (accept() loop)                 │   │
 │  └─────────────────────────────────────────────────┘   │
@@ -176,11 +176,11 @@ Uses Unix `SCM_RIGHTS` to pass stdin/stdout/stderr FDs for zero-copy I/O.
 
 ### Unix Socket Permissions
 
-**Location:** `$HOME/.rush/daemon.sock`
+**Location:** `$HOME/.aush/daemon.sock`
 
 **Permissions:**
 ```bash
-drwx------ 2 asher staff 64 .rush/         # 0700
+drwx------ 2 asher staff 64 .aush/         # 0700
 -rw------- 1 asher staff  0 daemon.sock    # 0600
 ```
 
@@ -202,7 +202,7 @@ Prevents resource exhaustion from connection spam.
 
 **Client-triggered:**
 ```rust
-impl RushClient {
+impl AUSHClient {
     fn execute_command(&mut self, cmd: &str) -> Result<i32> {
         match self.send_message(cmd) {
             Ok(_) => self.receive_result(),
@@ -220,14 +220,14 @@ impl RushClient {
 ### macOS Launchd Integration
 
 ```xml
-<!-- ~/Library/LaunchAgents/com.rush.daemon.plist -->
+<!-- ~/Library/LaunchAgents/com.aush.daemon.plist -->
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.rush.daemon</string>
+    <string>com.aush.daemon</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/bin/rushd</string>
+        <string>/usr/local/bin/aushd</string>
         <string>start</string>
     </array>
     <key>KeepAlive</key>
@@ -286,8 +286,8 @@ src/daemon/
 └── client.rs        # Thin client binary logic
 
 src/bin/
-├── rush.rs          # Thin client (rewrite)
-└── rushd.rs         # Daemon server (new)
+├── aush.rs          # Thin client (rewrite)
+└── aushd.rs         # Daemon server (new)
 ```
 
 **Steps:**
@@ -295,15 +295,15 @@ src/bin/
 2. Create `daemon/server.rs` - Unix socket listener, accept loop
 3. Create `daemon/worker.rs` - fork session worker, execute commands
 4. Create `daemon/client.rs` - connect to daemon, send command, receive result
-5. Create `bin/rushd.rs` - daemon entry point (`rushd start/stop/status`)
-6. Create `bin/rush.rs` - thin client
-7. Test: `rushd start && hyperfine 'rush -c exit'` → verify <1ms
+5. Create `bin/aushd.rs` - daemon entry point (`aushd start/stop/status`)
+6. Create `bin/aush.rs` - thin client
+7. Test: `aushd start && hyperfine 'aush -c exit'` → verify <1ms
 
 **Success Criteria:**
-- `rush -c "echo test"` completes in <1ms (after daemon started)
+- `aush -c "echo test"` completes in <1ms (after daemon started)
 - Multiple concurrent commands work correctly
 - Daemon survives worker crashes
-- Clean shutdown with `rushd stop`
+- Clean shutdown with `aushd stop`
 
 ### Phase 2: Interactive Mode (Week 3)
 
@@ -346,15 +346,15 @@ fn test_session_isolation() {
 
 ```bash
 # Startup performance (100 commands should average <1ms)
-rushd start
-hyperfine --warmup 10 --runs 100 'rush -c exit'
+aushd start
+hyperfine --warmup 10 --runs 100 'aush -c exit'
 
 # Concurrent sessions (10 parallel clients)
-for i in {1..10}; do rush -c "echo $i" & done
+for i in {1..10}; do aush -c "echo $i" & done
 
 # Crash recovery
-kill -9 $(pgrep rushd)
-rush -c "echo test"  # Should auto-restart
+kill -9 $(pgrep aushd)
+aush -c "echo test"  # Should auto-restart
 ```
 
 ---
@@ -390,7 +390,7 @@ Main daemon loop, session registry, worker management.
 ### 3. `src/daemon/worker.rs` - **Session execution**
 Where actual shell commands run, isolated per session.
 
-### 4. `src/bin/rush.rs` - **Thin client**
+### 4. `src/bin/aush.rs` - **Thin client**
 User-facing binary, must be minimal (<200KB) and fast.
 
 ### 5. `src/executor/mod.rs` - **Pattern to follow**
@@ -402,7 +402,7 @@ Shows current execution model, must replicate in worker with full isolation.
 
 ### MVP Success (End of Phase 1)
 
-- [ ] `rush -c "exit"` completes in <1ms (90th percentile)
+- [ ] `aush -c "exit"` completes in <1ms (90th percentile)
 - [ ] 100 concurrent commands complete successfully
 - [ ] Daemon survives 10,000 connections without memory leak
 - [ ] Client binary <500KB (goal: 200KB)
@@ -421,7 +421,7 @@ Shows current execution model, must replicate in worker with full isolation.
 - LSP Daemon Research: Language Server Protocol architecture
 - Emacs Server: Original client-server shell pattern
 - Unix Domain Socket Benchmarks: 2-3x faster than TCP localhost
-- Rush Performance Summary: Current startup profiling (4.9ms)
+- AUSH Performance Summary: Current startup profiling (4.9ms)
 
 ---
 

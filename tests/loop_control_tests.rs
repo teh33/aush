@@ -1,5 +1,5 @@
-use rush::executor::Executor;
-use rush::parser::ast::{Argument, Command, ForLoop, Statement};
+use aush::executor::Executor;
+use aush::parser::ast::{Argument, Command, ForLoop, Statement};
 
 #[test]
 fn test_break_basic_for_loop() {

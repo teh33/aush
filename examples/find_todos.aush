@@ -1,6 +1,6 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Find all TODO/FIXME comments in codebase with context
-# Usage: ./find_todos.rush [directory]
+# Usage: ./find_todos.aush [directory]
 
 set -e
 

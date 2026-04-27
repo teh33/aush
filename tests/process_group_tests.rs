@@ -7,13 +7,13 @@ use std::process::{Command, Stdio};
 fn test_background_job_process_group() {
     // Create a test script that starts a background job
     let script = r#"
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Start a background job
 sleep 60 &
 echo $!
 "#;
 
-    let script_path = "/tmp/rush_test_bg_pgid.rush";
+    let script_path = "/tmp/aush_test_bg_pgid.aush";
     fs::write(script_path, script).unwrap();
 
     // Run the script
@@ -65,11 +65,11 @@ echo $!
 fn test_foreground_job_process_group() {
     // Create a test script that runs a simple command
     let script = r#"
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 echo "test"
 "#;
 
-    let script_path = "/tmp/rush_test_fg_pgid.rush";
+    let script_path = "/tmp/aush_test_fg_pgid.aush";
     fs::write(script_path, script).unwrap();
 
     // Run the script
@@ -94,12 +94,12 @@ echo "test"
 fn test_signal_to_process_group() {
     // Create a test script that starts a pipeline
     let script = r#"
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 sleep 100 | cat &
 echo $!
 "#;
 
-    let script_path = "/tmp/rush_test_signal_pgid.rush";
+    let script_path = "/tmp/aush_test_signal_pgid.aush";
     fs::write(script_path, script).unwrap();
 
     // Run the script
@@ -146,7 +146,7 @@ fn test_jobs_shows_pgid() {
     // This test would require running in interactive mode
     // which is difficult to test in CI
     // Manual testing can be done with:
-    // $ rush
+    // $ aush
     // $ sleep 100 &
     // $ jobs -l  # Should show PGID
 }
@@ -184,7 +184,7 @@ fn test_process_group_isolation() {
 /// Test that shell is in its own process group
 #[test]
 fn test_shell_process_group() {
-    // Run rush and check that it puts itself in its own process group
+    // Run aush and check that it puts itself in its own process group
     let script = "echo $$";
 
     let output = Command::new("./target/debug/aush")

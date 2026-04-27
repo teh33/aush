@@ -128,7 +128,7 @@ impl Agent {
         }
     }
 
-    /// Load config from `~/.rushrc` and create an agent.
+    /// Load config from `~/.aushrc` and create an agent.
     pub fn from_config() -> Result<Self> {
         let client = LlmClient::from_config().map_err(|e| anyhow!("{}", e))?;
         Ok(Self::new(client))
@@ -137,14 +137,14 @@ impl Agent {
     /// Run the agent loop for the given user intent.
     ///
     /// Takes a mutable reference to the shell's own executor so tool calls
-    /// run through rush (getting structured output from builtins, persisting
+    /// run through aush (getting structured output from builtins, persisting
     /// environment changes like `cd` and `export`).
     pub fn run(&mut self, intent: &str, cwd: &Path, executor: &mut Executor) -> Result<()> {
         let cwd_str = cwd.display().to_string();
 
         let mut messages = vec![
             Message::system(format!(
-                "You are a shell assistant inside the Rush shell.\n\
+                "You are a shell assistant inside the AUSH shell.\n\
                  Current directory: {cwd_str}\n\
                  You have four tools: shell, read, write, edit.\n\
                  Guidelines:\n\
@@ -338,10 +338,10 @@ pub fn execute_agent(intent: &str, cwd: &Path, executor: &mut Executor) -> Resul
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/// Execute a command string through rush's own executor.
+/// Execute a command string through aush's own executor.
 ///
 /// All four agent tools funnel through this so every action is visible
-/// as a real rush command.
+/// as a real aush command.
 fn execute_through_rush(command: &str, executor: &mut Executor) -> Result<String> {
     let tokens =
         crate::lexer::Lexer::tokenize(command).map_err(|e| anyhow!("Parse error: {}", e))?;
@@ -371,7 +371,7 @@ fn execute_through_rush(command: &str, executor: &mut Executor) -> Result<String
     }
 }
 
-/// Escape a string for safe inclusion in a rush command.
+/// Escape a string for safe inclusion in a aush command.
 ///
 /// Wraps in single quotes, escaping any existing single quotes.
 fn shell_escape(s: &str) -> String {

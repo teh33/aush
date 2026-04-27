@@ -10,7 +10,6 @@ use std::time::SystemTime;
 
 const MAX_UNDO_OPERATIONS: usize = 100;
 const UNDO_DIR: &str = ".aush_undo";
-const LEGACY_UNDO_DIR: &str = ".rush_undo";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FileOperation {
@@ -46,10 +45,7 @@ impl Clone for UndoManager {
 impl UndoManager {
     pub fn new() -> Result<Self> {
         let home = dirs::home_dir().ok_or_else(|| anyhow!("Could not determine home directory"))?;
-        let undo_dir = crate::brand::first_existing_or_primary(
-            home.join(UNDO_DIR),
-            [home.join(LEGACY_UNDO_DIR)],
-        );
+        let undo_dir = home.join(UNDO_DIR);
         Self::with_undo_dir(undo_dir)
     }
 

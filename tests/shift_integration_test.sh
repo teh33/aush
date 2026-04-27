@@ -66,7 +66,7 @@ echo "After shift: $@"
 echo "Count: $#"
 EOF
 chmod +x /tmp/shift_test.sh
-./rush /tmp/shift_test.sh arg1 arg2 arg3
+./aush /tmp/shift_test.sh arg1 arg2 arg3
 rm /tmp/shift_test.sh
 
 echo ""

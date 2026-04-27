@@ -1,5 +1,5 @@
-/// Tests for RUSH_AGENT_MODE — automatic JSON output and ANSI stripping.
-use rush::{run, RunOptions};
+/// Tests for AUSH_AGENT_MODE — automatic JSON output and ANSI stripping.
+use aush::{run, RunOptions};
 
 fn agent_opts() -> RunOptions {
     RunOptions {

@@ -68,7 +68,7 @@ pub fn builtin_grep(args: &[String], runtime: &mut Runtime) -> Result<ExecutionR
     }
 
     // When no explicit paths were given, read from the process's actual stdin.
-    // This handles the common pattern: echo "data" | rush -c 'grep pattern'
+    // This handles the common pattern: echo "data" | aush -c 'grep pattern'
     if !config.explicit_paths {
         let mut stdin_data = Vec::new();
         std::io::stdin()

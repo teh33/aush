@@ -1,8 +1,8 @@
 //! Interactive AI setup wizard
 //!
 //! Runs on first `?` usage (when no config exists) or when the user invokes
-//! `rush --setup-ai`. Guides the user through picking a provider, detecting
-//! available backends, and writing `~/.rushrc`.
+//! `aush --setup-ai`. Guides the user through picking a provider, detecting
+//! available backends, and writing `~/.aushrc`.
 //!
 //! # Flow
 //! 1. Ask which provider to use (Ollama / OpenAI / Anthropic / Skip)
@@ -31,7 +31,7 @@ pub fn setup_wizard() -> Result<Option<LlmConfig>, String> {
         "{}",
         Color::Yellow
             .bold()
-            .paint("rush: No AI backend configured for ? queries.")
+            .paint("aush: No AI backend configured for ? queries.")
     );
     println!();
     println!("  1) Ollama (local, private, recommended)");
@@ -48,7 +48,7 @@ pub fn setup_wizard() -> Result<Option<LlmConfig>, String> {
         "2" => setup_openai(&stdin),
         "3" => setup_anthropic(&stdin),
         "4" | "" => {
-            println!("Skipped. Run `rush --setup-ai` to configure later.");
+            println!("Skipped. Run `aush --setup-ai` to configure later.");
             Ok(None)
         }
         other => {
@@ -73,7 +73,7 @@ fn setup_ollama(stdin: &io::Stdin) -> Result<Option<LlmConfig>, String> {
             println!("{}", Color::Red.paint(format!("not found ({})", e)));
             println!();
             println!("Ollama is not running at {}.", base_url);
-            println!("Install it from https://ollama.com, start it, then run `rush --setup-ai`.");
+            println!("Install it from https://ollama.com, start it, then run `aush --setup-ai`.");
             Ok(None)
         }
         Ok(models) => {
@@ -330,19 +330,19 @@ fn summarise_model(name: &str) -> String {
 
 /// Save config and print confirmation message.
 fn save_and_confirm(config: LlmConfig) -> Result<Option<LlmConfig>, String> {
-    // Set env vars for the current session, preserving legacy Rush vars during migration.
+    // Set env vars for the current session.
     std::env::set_var("AUSH_AI_PROVIDER", config.provider.to_string());
     std::env::set_var("AUSH_AI_MODEL", &config.model);
-    std::env::set_var("RUSH_AI_PROVIDER", config.provider.to_string());
-    std::env::set_var("RUSH_AI_MODEL", &config.model);
+    std::env::set_var("AUSH_AI_PROVIDER", config.provider.to_string());
+    std::env::set_var("AUSH_AI_MODEL", &config.model);
     if let Some(ref key) = config.api_key {
         std::env::set_var("AUSH_AI_API_KEY", key);
-        std::env::set_var("RUSH_AI_API_KEY", key);
+        std::env::set_var("AUSH_AI_API_KEY", key);
     }
 
-    // Append to ~/.aushrc for persistence, or existing ~/.rushrc for compatibility.
+    // Append to ~/.aushrc for persistence, or ~/.aushrc for persistence.
     let config_path = dirs::home_dir()
-        .map(|h| crate::brand::first_existing_or_primary(h.join(".aushrc"), [h.join(".rushrc")]))
+        .map(|h| h.join(".aushrc"))
         .ok_or_else(|| "Could not determine home directory".to_string())?;
 
     let mut lines = String::from("\n# AI configuration (added by aush --setup-ai)\n");

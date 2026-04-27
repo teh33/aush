@@ -1,7 +1,7 @@
 //! OpenAI provider — chat completions API with function/tool calling
 //!
 //! Uses the standard `/v1/chat/completions` endpoint. Requires `OPENAI_API_KEY`
-//! (or `api_key` in `~/.rush/ai.toml`).
+//! (or `api_key` in `~/.aush/ai.toml`).
 
 use crate::ai::client::{LlmError, LlmProvider, Message, Response, Role, Tool};
 use crate::ai::config::LlmConfig;

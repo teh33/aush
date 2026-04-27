@@ -4,9 +4,9 @@
 
 use anyhow::{anyhow, Result};
 use nix::libc;
-use rush::brand;
-use rush::daemon::server::DaemonServer;
-use rush::daemon::worker_pool::PoolConfig;
+use aush::brand;
+use aush::daemon::server::DaemonServer;
+use aush::daemon::worker_pool::PoolConfig;
 use std::env;
 use std::fs;
 use std::process;
@@ -50,7 +50,7 @@ fn start_daemon() -> Result<()> {
                 "Error: Daemon is already running at {}",
                 socket_path.display()
             );
-            eprintln!("Use 'rushd stop' to stop it first, or 'rushd restart' to restart.");
+            eprintln!("Use 'aushd stop' to stop it first, or 'aushd restart' to restart.");
             process::exit(1);
         } else {
             // Stale socket file, remove it
@@ -62,14 +62,14 @@ fn start_daemon() -> Result<()> {
     let mut daemon = DaemonServer::new(socket_path.clone())?;
 
     // Enable worker pool unless disabled via environment variable
-    // AUSH_DISABLE_POOL=1 (or legacy RUSH_DISABLE_POOL=1) uses fork-per-request mode
-    let use_pool = brand::env_var("AUSH_DISABLE_POOL", "RUSH_DISABLE_POOL")
+    // AUSH_DISABLE_POOL=1 uses fork-per-request mode
+    let use_pool = brand::env_var("AUSH_DISABLE_POOL")
         .map(|v| v != "1")
         .unwrap_or(true); // Default: use pool
 
     if use_pool {
         // Get pool size from environment or use default
-        let pool_size = brand::env_var("AUSH_POOL_SIZE", "RUSH_POOL_SIZE")
+        let pool_size = brand::env_var("AUSH_POOL_SIZE")
             .and_then(|s| s.parse().ok())
             .unwrap_or(4); // Default: 4 workers
 
@@ -81,7 +81,7 @@ fn start_daemon() -> Result<()> {
         daemon = daemon.with_worker_pool(config)?;
         eprintln!("Worker pool mode enabled ({} workers)", pool_size);
     } else {
-        eprintln!("Fork-per-request mode enabled (legacy)");
+        eprintln!("Fork-per-request mode enabled");
     }
 
     println!("Starting AUSH daemon at {}", socket_path.display());
@@ -181,7 +181,7 @@ fn check_status() -> Result<()> {
         }
         Err(_) => {
             println!("Socket file exists but daemon is not responding.");
-            println!("This may be a stale socket. Try 'rushd start' to restart.");
+            println!("This may be a stale socket. Try 'aushd start' to restart.");
         }
     }
 
@@ -204,8 +204,8 @@ fn restart_daemon() -> Result<()> {
 /// Reload daemon configuration by sending SIGHUP
 ///
 /// This is equivalent to `kill -HUP $(cat ~/.aush/daemon.pid)` with legacy
-/// `~/.rush/daemon.pid` fallback, but more convenient.
-/// The daemon will re-parse .aushrc or legacy .rushrc and update custom stat definitions without restart.
+/// `~/.aush/daemon.pid` fallback, but more convenient.
+/// The daemon will re-parse .aushrc and update custom stat definitions without restart.
 fn reload_config() -> Result<()> {
     let socket_path = DaemonServer::default_socket_path()?;
 
@@ -217,7 +217,7 @@ fn reload_config() -> Result<()> {
     // Verify daemon is actually running
     if std::os::unix::net::UnixStream::connect(&socket_path).is_err() {
         eprintln!("Error: Socket exists but daemon is not responding.");
-        eprintln!("Try 'rushd restart' to restart the daemon.");
+        eprintln!("Try 'aushd restart' to restart the daemon.");
         process::exit(1);
     }
 
@@ -229,7 +229,7 @@ fn reload_config() -> Result<()> {
 
     if !pid_path.exists() {
         eprintln!("Error: PID file not found at {}", pid_path.display());
-        eprintln!("Cannot send reload signal. Try 'rushd restart' instead.");
+        eprintln!("Cannot send reload signal. Try 'aushd restart' instead.");
         process::exit(1);
     }
 
@@ -244,7 +244,7 @@ fn reload_config() -> Result<()> {
 
     if result == 0 {
         println!("Sent reload signal (SIGHUP) to daemon (PID {}).", pid);
-        println!("Configuration will be reloaded from ~/.aushrc or legacy ~/.rushrc");
+        println!("Configuration will be reloaded from ~/.aushrc");
     } else {
         let err = std::io::Error::last_os_error();
         eprintln!("Error: Failed to send signal: {}", err);
@@ -257,24 +257,24 @@ fn reload_config() -> Result<()> {
 fn print_usage() {
     println!("AUSH Daemon Server v0.1.0");
     println!();
-    println!("Usage: rushd <command>  # legacy daemon binary for AUSH");
+    println!("Usage: aushd <command>");
     println!();
     println!("Commands:");
     println!("  start      Start the AUSH daemon");
     println!("  stop       Stop the AUSH daemon");
     println!("  status     Check daemon status");
     println!("  restart    Restart the daemon");
-    println!("  reload     Reload configuration from ~/.aushrc or legacy ~/.rushrc (via SIGHUP)");
+    println!("  reload     Reload configuration from ~/.aushrc (via SIGHUP)");
     println!("  -h, --help Show this help message");
     println!();
     println!("Examples:");
-    println!("  rushd start    # Start the daemon");
-    println!("  rushd status   # Check if daemon is running");
-    println!("  rushd stop     # Stop the daemon");
-    println!("  rushd reload   # Reload config without restart");
+    println!("  aushd start    # Start the daemon");
+    println!("  aushd status   # Check if daemon is running");
+    println!("  aushd stop     # Stop the daemon");
+    println!("  aushd reload   # Reload config without restart");
     println!();
     println!("Configuration:");
-    println!("  The daemon reads configuration from ~/.aushrc or legacy ~/.rushrc on startup.");
-    println!("  Use 'rushd reload' or 'kill -HUP <pid>' to reload config.");
+    println!("  The daemon reads configuration from ~/.aushrc on startup.");
+    println!("  Use 'aushd reload' or 'kill -HUP <pid>' to reload config.");
     println!("  See docs/design/banner-stats.md for configuration options.");
 }

@@ -3,8 +3,8 @@
 set -euo pipefail
 
 AUSH_BIN="${1:-./target/release/aush}"
-if [[ ! -x "$AUSH_BIN" && -x ./target/release/rush ]]; then
-  AUSH_BIN=./target/release/rush
+if [[ ! -x "$AUSH_BIN" && -x ./target/release/aush ]]; then
+  AUSH_BIN=./target/release/aush
 fi
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"

@@ -1,6 +1,6 @@
-use rush::executor::Executor;
-use rush::lexer::Lexer;
-use rush::parser::Parser;
+use aush::executor::Executor;
+use aush::lexer::Lexer;
+use aush::parser::Parser;
 
 #[test]
 fn test_ifs_default_for_loop() {
@@ -168,7 +168,7 @@ fn test_ifs_with_consecutive_separators() {
 
 #[test]
 fn test_runtime_split_by_ifs_default() {
-    use rush::runtime::Runtime;
+    use aush::runtime::Runtime;
 
     let runtime = Runtime::new();
     let fields = runtime.split_by_ifs("hello world  test");
@@ -177,7 +177,7 @@ fn test_runtime_split_by_ifs_default() {
 
 #[test]
 fn test_runtime_split_by_ifs_custom() {
-    use rush::runtime::Runtime;
+    use aush::runtime::Runtime;
 
     let mut runtime = Runtime::new();
     runtime.set_variable("IFS".to_string(), ":".to_string());
@@ -187,7 +187,7 @@ fn test_runtime_split_by_ifs_custom() {
 
 #[test]
 fn test_runtime_split_by_ifs_empty() {
-    use rush::runtime::Runtime;
+    use aush::runtime::Runtime;
 
     let mut runtime = Runtime::new();
     runtime.set_variable("IFS".to_string(), "".to_string());
@@ -197,7 +197,7 @@ fn test_runtime_split_by_ifs_empty() {
 
 #[test]
 fn test_runtime_split_by_ifs_newline() {
-    use rush::runtime::Runtime;
+    use aush::runtime::Runtime;
 
     let runtime = Runtime::new();
     let fields = runtime.split_by_ifs("hello\nworld\ntest");
@@ -206,7 +206,7 @@ fn test_runtime_split_by_ifs_newline() {
 
 #[test]
 fn test_runtime_split_by_ifs_tab() {
-    use rush::runtime::Runtime;
+    use aush::runtime::Runtime;
 
     let runtime = Runtime::new();
     let fields = runtime.split_by_ifs("hello\tworld\ttest");
@@ -215,7 +215,7 @@ fn test_runtime_split_by_ifs_tab() {
 
 #[test]
 fn test_runtime_split_by_ifs_mixed_whitespace() {
-    use rush::runtime::Runtime;
+    use aush::runtime::Runtime;
 
     let runtime = Runtime::new();
     let fields = runtime.split_by_ifs("hello \t world\n\ttest");

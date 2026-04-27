@@ -101,11 +101,11 @@ impl BenchmarkRunner {
             // File operations
             ("ls", "ls /tmp"),
             ("pwd", "pwd"),
-            ("mkdir_test", "mkdir -p /tmp/rush_bench_test"),
-            ("ls_dir", "ls /tmp/rush_bench_test"),
+            ("mkdir_test", "mkdir -p /tmp/aush_bench_test"),
+            ("ls_dir", "ls /tmp/aush_bench_test"),
             // Variables and substitution
             ("variable_set", "x=5; echo $x"),
-            ("variable_expansion", "name=rush; echo hello $name"),
+            ("variable_expansion", "name=aush; echo hello $name"),
             ("variable_default", "echo ${missing:-default}"),
             // Pipes and redirection
             ("pipe_simple", "echo 'test' | cat"),
@@ -120,7 +120,7 @@ impl BenchmarkRunner {
             ("string_concat", "a=hello; b=world; echo $a$b"),
             ("substring", "str=hello; echo ${str:0:3}"),
             // Globbing
-            ("glob_ls", "ls /tmp/rush_bench_test*"),
+            ("glob_ls", "ls /tmp/aush_bench_test*"),
             // Command substitution
             ("command_substitution", "echo $(echo nested)"),
             ("backtick_substitution", "x=`echo test`; echo $x"),
@@ -138,13 +138,13 @@ impl BenchmarkRunner {
         }
 
         // Cleanup
-        let _ = self.run_test("cleanup", "rm -rf /tmp/rush_bench_test");
+        let _ = self.run_test("cleanup", "rm -rf /tmp/aush_bench_test");
 
         Ok(())
     }
 
     fn run_compare(&mut self) -> Result<()> {
-        // Compare mode: benchmark Rush vs bash/zsh
+        // Compare mode: benchmark AUSH vs bash/zsh
         let runner = ComparisonRunner::default();
 
         // Test commands across shells
@@ -167,7 +167,7 @@ impl BenchmarkRunner {
             // Create test result entry
             self.results.push(TestResult {
                 name: test_name,
-                duration_ms: result.rush_time,
+                duration_ms: result.aush_time,
                 passed: true,
                 error: None,
             });
@@ -222,7 +222,7 @@ impl BenchmarkRunner {
     }
 
     fn print_summary(&self, result: &BenchmarkResult) {
-        println!("\n=== Rush Benchmark Results ===");
+        println!("\n=== AUSH Benchmark Results ===");
         println!("Mode: {}", result.mode);
         println!("Total duration: {:.2}ms", result.total_duration_ms);
         println!("Tests passed: {}", result.passed);
@@ -258,13 +258,13 @@ impl BenchmarkRunner {
     }
 
     fn print_comparison_summary(&self, results: &[crate::benchmark::ComparisonResult]) {
-        println!("\n=== Rush Benchmark Comparison ===");
-        println!("Comparing Rush vs bash/zsh\n");
+        println!("\n=== AUSH Benchmark Comparison ===");
+        println!("Comparing AUSH vs bash/zsh\n");
 
         // Print comparison table
         println!(
             "{:<35} {:<12} {:<12} {:<12} {:<10} {:<10}",
-            "Command", "Rush (ms)", "Bash (ms)", "Zsh (ms)", "vs Bash", "vs Zsh"
+            "Command", "AUSH (ms)", "Bash (ms)", "Zsh (ms)", "vs Bash", "vs Zsh"
         );
         println!("{}", "-".repeat(95));
 
@@ -286,18 +286,18 @@ impl BenchmarkRunner {
                 .unwrap_or_else(|| "N/A".to_string());
 
             let bash_ratio = result
-                .rush_vs_bash_ratio
+                .aush_vs_bash_ratio
                 .map(|r| format!("{:.2}x", r))
                 .unwrap_or_else(|| "N/A".to_string());
 
             let zsh_ratio = result
-                .rush_vs_zsh_ratio
+                .aush_vs_zsh_ratio
                 .map(|r| format!("{:.2}x", r))
                 .unwrap_or_else(|| "N/A".to_string());
 
             println!(
                 "{:<35} {:<12.2} {:<12} {:<12} {:<10} {:<10}",
-                cmd_display, result.rush_time, bash_str, zsh_str, bash_ratio, zsh_ratio
+                cmd_display, result.aush_time, bash_str, zsh_str, bash_ratio, zsh_ratio
             );
         }
 

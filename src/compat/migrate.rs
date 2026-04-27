@@ -1,4 +1,4 @@
-//! Bash-to-Rush migration suggestion engine
+//! Bash-to-AUSH migration suggestion engine
 //!
 //! Suggests automated rewrites for bash-isms, with optional --fix mode
 //! to auto-apply safe transformations.
@@ -27,7 +27,7 @@ impl std::fmt::Display for MigrationComplexity {
     }
 }
 
-/// A suggested migration for a bash-ism to Rush-native code
+/// A suggested migration for a bash-ism to AUSH-native code
 #[derive(Debug, Clone)]
 pub struct MigrationSuggestion {
     /// Feature identifier
@@ -36,8 +36,8 @@ pub struct MigrationSuggestion {
     pub line_number: usize,
     /// Short bash pattern description
     pub bash_pattern: String,
-    /// Suggested Rush replacement
-    pub rush_solution: String,
+    /// Suggested AUSH replacement
+    pub aush_solution: String,
     /// Difficulty level of the migration
     pub complexity: MigrationComplexity,
     /// Detailed explanation
@@ -55,7 +55,7 @@ pub struct DiffPreview {
     pub line_number: usize,
 }
 
-/// Migration engine for bash-to-Rush conversion
+/// Migration engine for bash-to-AUSH conversion
 pub struct MigrationEngine;
 
 impl MigrationEngine {
@@ -71,7 +71,7 @@ impl MigrationEngine {
                 "$(command)".to_string(),
                 "$(command)".to_string(),
                 MigrationComplexity::Simple,
-                "Process substitution is fully supported in Rush",
+                "Process substitution is fully supported in AUSH",
             ),
         );
 
@@ -82,7 +82,7 @@ impl MigrationEngine {
                 "${array[0]}".to_string(),
                 "${array[0]}".to_string(),
                 MigrationComplexity::Simple,
-                "Array indexing is supported in Rush",
+                "Array indexing is supported in AUSH",
             ),
         );
 
@@ -93,7 +93,7 @@ impl MigrationEngine {
                 "${var:offset:length}".to_string(),
                 "${var:offset:length}".to_string(),
                 MigrationComplexity::Simple,
-                "Substring expansion is supported in Rush",
+                "Substring expansion is supported in AUSH",
             ),
         );
 
@@ -104,7 +104,7 @@ impl MigrationEngine {
                 "${var#pattern}".to_string(),
                 "${var#pattern}".to_string(),
                 MigrationComplexity::Simple,
-                "Prefix pattern removal is supported in Rush",
+                "Prefix pattern removal is supported in AUSH",
             ),
         );
 
@@ -114,7 +114,7 @@ impl MigrationEngine {
                 "${var%pattern}".to_string(),
                 "${var%pattern}".to_string(),
                 MigrationComplexity::Simple,
-                "Suffix pattern removal is supported in Rush",
+                "Suffix pattern removal is supported in AUSH",
             ),
         );
 
@@ -125,7 +125,7 @@ impl MigrationEngine {
                 "${var:-default}".to_string(),
                 "${var:-default}".to_string(),
                 MigrationComplexity::Simple,
-                "Default value expansion is supported in Rush",
+                "Default value expansion is supported in AUSH",
             ),
         );
 
@@ -136,7 +136,7 @@ impl MigrationEngine {
                 "${var^^}".to_string(),
                 "${var^^}".to_string(),
                 MigrationComplexity::Simple,
-                "String case transformation is supported in Rush",
+                "String case transformation is supported in AUSH",
             ),
         );
 
@@ -146,7 +146,7 @@ impl MigrationEngine {
                 "${var,,}".to_string(),
                 "${var,,}".to_string(),
                 MigrationComplexity::Simple,
-                "String case transformation is supported in Rush",
+                "String case transformation is supported in AUSH",
             ),
         );
 
@@ -157,7 +157,7 @@ impl MigrationEngine {
                 "$((expr))".to_string(),
                 "$((expr))".to_string(),
                 MigrationComplexity::Simple,
-                "Arithmetic expansion is supported in Rush",
+                "Arithmetic expansion is supported in AUSH",
             ),
         );
 
@@ -179,7 +179,7 @@ impl MigrationEngine {
                 "<<EOF".to_string(),
                 "<<EOF".to_string(),
                 MigrationComplexity::Moderate,
-                "Here-documents are supported in Rush",
+                "Here-documents are supported in AUSH",
             ),
         );
 
@@ -212,7 +212,7 @@ impl MigrationEngine {
                 "local var=value".to_string(),
                 "local var=value".to_string(),
                 MigrationComplexity::Simple,
-                "Local variable declarations are supported in Rush",
+                "Local variable declarations are supported in AUSH",
             ),
         );
 
@@ -223,7 +223,7 @@ impl MigrationEngine {
                 "export VAR=value".to_string(),
                 "export VAR=value".to_string(),
                 MigrationComplexity::Simple,
-                "Variable exports are supported in Rush",
+                "Variable exports are supported in AUSH",
             ),
         );
 
@@ -256,7 +256,7 @@ impl MigrationEngine {
                 "${var:+alternate}".to_string(),
                 "${var:+alternate}".to_string(),
                 MigrationComplexity::Simple,
-                "Null coalescing with + modifier is supported in Rush",
+                "Null coalescing with + modifier is supported in AUSH",
             ),
         );
 
@@ -286,7 +286,7 @@ impl MigrationEngine {
                         feature_id: occurrence.feature_id.clone(),
                         line_number: occurrence.line_number,
                         bash_pattern: pattern.clone(),
-                        rush_solution: solution.clone(),
+                        aush_solution: solution.clone(),
                         complexity: *complexity,
                         explanation: explanation.to_string(),
                     });
@@ -457,7 +457,7 @@ impl MigrationEngine {
             for suggestion in simple {
                 output.push_str(&format!(
                     "  • Line {}: {} → {}\n",
-                    suggestion.line_number, suggestion.bash_pattern, suggestion.rush_solution
+                    suggestion.line_number, suggestion.bash_pattern, suggestion.aush_solution
                 ));
                 output.push_str(&format!("    {}\n", suggestion.explanation));
             }
@@ -473,7 +473,7 @@ impl MigrationEngine {
             for suggestion in moderate {
                 output.push_str(&format!(
                     "  • Line {}: {} → {}\n",
-                    suggestion.line_number, suggestion.bash_pattern, suggestion.rush_solution
+                    suggestion.line_number, suggestion.bash_pattern, suggestion.aush_solution
                 ));
                 output.push_str(&format!("    {}\n", suggestion.explanation));
             }
@@ -489,7 +489,7 @@ impl MigrationEngine {
             for suggestion in complex {
                 output.push_str(&format!(
                     "  • Line {}: {} → {}\n",
-                    suggestion.line_number, suggestion.bash_pattern, suggestion.rush_solution
+                    suggestion.line_number, suggestion.bash_pattern, suggestion.aush_solution
                 ));
                 output.push_str(&format!("    {}\n", suggestion.explanation));
             }
@@ -511,7 +511,7 @@ mod tests {
             feature_id: "command_subst_backtick".to_string(),
             line_number: 1,
             bash_pattern: "`cmd`".to_string(),
-            rush_solution: "$(cmd)".to_string(),
+            aush_solution: "$(cmd)".to_string(),
             complexity: MigrationComplexity::Simple,
             explanation: "Test".to_string(),
         };
@@ -527,7 +527,7 @@ mod tests {
             feature_id: "source_dot".to_string(),
             line_number: 1,
             bash_pattern: ". file".to_string(),
-            rush_solution: "source file".to_string(),
+            aush_solution: "source file".to_string(),
             complexity: MigrationComplexity::Simple,
             explanation: "Test".to_string(),
         };
@@ -557,7 +557,7 @@ mod tests {
             feature_id: "command_subst_backtick".to_string(),
             line_number: 1,
             bash_pattern: "`cmd`".to_string(),
-            rush_solution: "$(cmd)".to_string(),
+            aush_solution: "$(cmd)".to_string(),
             complexity: MigrationComplexity::Simple,
             explanation: "Use modern syntax".to_string(),
         }];
@@ -574,7 +574,7 @@ mod tests {
             feature_id: "command_subst_backtick".to_string(),
             line_number: 1,
             bash_pattern: "`cmd`".to_string(),
-            rush_solution: "$(cmd)".to_string(),
+            aush_solution: "$(cmd)".to_string(),
             complexity: MigrationComplexity::Simple,
             explanation: "Test".to_string(),
         }];

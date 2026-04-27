@@ -1,58 +1,58 @@
-/// Bash compatibility database for Rush
+/// Bash compatibility database for AUSH
 ///
 /// Provides queryable interface to the feature compatibility data.
-/// Easy to extend with new features and update support status as Rush evolves.
-use super::features::{rush_compat_features, RushCompatFeature, RushSupportStatus};
+/// Easy to extend with new features and update support status as AUSH evolves.
+use super::features::{aush_compat_features, AUSHCompatFeature, AUSHSupportStatus};
 
-/// Database for querying bash feature compatibility in Rush
+/// Database for querying bash feature compatibility in AUSH
 pub struct CompatDatabase;
 
 impl CompatDatabase {
     /// Get all features
-    pub fn all_features() -> Vec<RushCompatFeature> {
-        rush_compat_features()
+    pub fn all_features() -> Vec<AUSHCompatFeature> {
+        aush_compat_features()
     }
 
     /// Get feature by ID
-    pub fn find_feature(id: &str) -> Option<RushCompatFeature> {
-        rush_compat_features().into_iter().find(|f| f.id == id)
+    pub fn find_feature(id: &str) -> Option<AUSHCompatFeature> {
+        aush_compat_features().into_iter().find(|f| f.id == id)
     }
 
     /// Get all supported features
-    pub fn supported_features() -> Vec<RushCompatFeature> {
-        rush_compat_features()
+    pub fn supported_features() -> Vec<AUSHCompatFeature> {
+        aush_compat_features()
             .into_iter()
-            .filter(|f| f.rush_status == RushSupportStatus::Supported)
+            .filter(|f| f.aush_status == AUSHSupportStatus::Supported)
             .collect()
     }
 
     /// Get all planned features
-    pub fn planned_features() -> Vec<RushCompatFeature> {
-        rush_compat_features()
+    pub fn planned_features() -> Vec<AUSHCompatFeature> {
+        aush_compat_features()
             .into_iter()
-            .filter(|f| f.rush_status == RushSupportStatus::Planned)
+            .filter(|f| f.aush_status == AUSHSupportStatus::Planned)
             .collect()
     }
 
     /// Get all unsupported features
-    pub fn unsupported_features() -> Vec<RushCompatFeature> {
-        rush_compat_features()
+    pub fn unsupported_features() -> Vec<AUSHCompatFeature> {
+        aush_compat_features()
             .into_iter()
-            .filter(|f| f.rush_status == RushSupportStatus::NotSupported)
+            .filter(|f| f.aush_status == AUSHSupportStatus::NotSupported)
             .collect()
     }
 
     /// Check if a feature is supported
     pub fn is_supported(feature_id: &str) -> bool {
         Self::find_feature(feature_id)
-            .map(|f| f.rush_status == RushSupportStatus::Supported)
+            .map(|f| f.aush_status == AUSHSupportStatus::Supported)
             .unwrap_or(false)
     }
 
     /// Get workaround for unsupported feature
     pub fn get_workaround(feature_id: &str) -> Option<String> {
         Self::find_feature(feature_id).and_then(|f| {
-            if f.rush_status == RushSupportStatus::NotSupported {
+            if f.aush_status == AUSHSupportStatus::NotSupported {
                 f.workaround.map(|w| w.to_string())
             } else {
                 None
@@ -62,19 +62,19 @@ impl CompatDatabase {
 
     /// Get summary statistics
     pub fn summary() -> CompatSummary {
-        let features = rush_compat_features();
+        let features = aush_compat_features();
         let total = features.len();
         let supported = features
             .iter()
-            .filter(|f| f.rush_status == RushSupportStatus::Supported)
+            .filter(|f| f.aush_status == AUSHSupportStatus::Supported)
             .count();
         let planned = features
             .iter()
-            .filter(|f| f.rush_status == RushSupportStatus::Planned)
+            .filter(|f| f.aush_status == AUSHSupportStatus::Planned)
             .count();
         let not_supported = features
             .iter()
-            .filter(|f| f.rush_status == RushSupportStatus::NotSupported)
+            .filter(|f| f.aush_status == AUSHSupportStatus::NotSupported)
             .count();
 
         CompatSummary {
@@ -111,7 +111,7 @@ impl CompatDatabase {
         let summary = Self::summary();
         let mut output = String::new();
 
-        output.push_str("# Rush Bash Compatibility Database\n\n");
+        output.push_str("# AUSH Bash Compatibility Database\n\n");
         output.push_str(&format!(
             "**Total Features:** {} | **Supported:** {} ({})% | **Planned:** {} | **Not Supported:** {}\n\n",
             summary.total, summary.supported, summary.support_percentage, summary.planned, summary.not_supported
@@ -123,15 +123,15 @@ impl CompatDatabase {
         output.push_str("### Supported Features\n\n");
         let supported: Vec<_> = features
             .iter()
-            .filter(|f| f.rush_status == RushSupportStatus::Supported)
+            .filter(|f| f.aush_status == AUSHSupportStatus::Supported)
             .collect();
         for feature in supported {
             output.push_str(&format!(
                 "- **{}** (`{}`): {}\n",
                 feature.name, feature.id, feature.description
             ));
-            if let Some(rv) = feature.rush_version {
-                output.push_str(&format!("  - Rush: {}\n", rv));
+            if let Some(rv) = feature.aush_version {
+                output.push_str(&format!("  - AUSH: {}\n", rv));
             }
         }
         output.push('\n');
@@ -140,7 +140,7 @@ impl CompatDatabase {
         output.push_str("### Planned Features\n\n");
         let planned: Vec<_> = features
             .iter()
-            .filter(|f| f.rush_status == RushSupportStatus::Planned)
+            .filter(|f| f.aush_status == AUSHSupportStatus::Planned)
             .collect();
         for feature in planned {
             output.push_str(&format!(
@@ -157,7 +157,7 @@ impl CompatDatabase {
         output.push_str("### Not Supported (with Workarounds)\n\n");
         let not_supported: Vec<_> = features
             .iter()
-            .filter(|f| f.rush_status == RushSupportStatus::NotSupported)
+            .filter(|f| f.aush_status == AUSHSupportStatus::NotSupported)
             .collect();
         for feature in not_supported {
             output.push_str(&format!(
@@ -178,10 +178,10 @@ impl CompatDatabase {
             summary.total
         ));
         output.push_str(&format!(
-            "- Supported in Rush: {} ({})%\n",
+            "- Supported in AUSH: {} ({})%\n",
             summary.supported, summary.support_percentage
         ));
-        output.push_str(&format!("- Planned for Rush: {}\n", summary.planned));
+        output.push_str(&format!("- Planned for AUSH: {}\n", summary.planned));
         output.push_str(&format!(
             "- Not Supported (with workarounds): {}\n",
             summary.not_supported
@@ -265,7 +265,7 @@ mod tests {
     #[test]
     fn test_markdown() {
         let md = CompatDatabase::to_markdown();
-        assert!(md.contains("# Rush Bash Compatibility Database"));
+        assert!(md.contains("# AUSH Bash Compatibility Database"));
         assert!(md.contains("Supported Features"));
         assert!(md.contains("Planned Features"));
         assert!(md.contains("Not Supported"));

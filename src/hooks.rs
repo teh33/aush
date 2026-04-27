@@ -16,7 +16,7 @@
 //!
 //! Additional functions can be registered explicitly via [`HookManager::add_hook`].
 //!
-//! # Example (in .rushrc)
+//! # Example (in .aushrc)
 //!
 //! ```sh
 //! function rush_precmd() {

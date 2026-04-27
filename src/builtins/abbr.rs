@@ -6,7 +6,7 @@ use anyhow::{anyhow, Result};
 ///
 /// Abbreviations work like aliases but are stored persistently in
 /// `~/.config/aush/abbreviations` with fallback to existing legacy
-/// `~/.config/rush/abbreviations`, and are expanded before execution.
+/// `~/.config/aush/abbreviations`, and are expanded before execution.
 ///
 /// Usage:
 ///   abbr                    — list all abbreviations

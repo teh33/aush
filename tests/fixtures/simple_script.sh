@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Simple test script for rush integration tests
+# Simple test script for aush integration tests
 echo "Script is running"
 pwd
 echo "Script completed"

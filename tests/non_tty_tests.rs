@@ -1,6 +1,6 @@
-// Integration tests for non-TTY mode support in rush shell
+// Integration tests for non-TTY mode support in AUSH shell
 //
-// These tests verify that rush works correctly when:
+// These tests verify that aush works correctly when:
 // - Input is piped from another command
 // - Input is redirected from a file
 // - Used in command substitution
@@ -12,14 +12,14 @@ use std::process::{Command, Stdio};
 use tempfile::{NamedTempFile, TempDir};
 
 fn rush_binary() -> PathBuf {
-    if let Ok(path) = std::env::var("CARGO_BIN_EXE_rush") {
+    if let Ok(path) = std::env::var("CARGO_BIN_EXE_aush") {
         return PathBuf::from(path);
     }
 
     if let Ok(current_exe) = std::env::current_exe() {
         if let Some(deps_dir) = current_exe.parent() {
             if let Some(debug_dir) = deps_dir.parent() {
-                let debug_bin = debug_dir.join("rush");
+                let debug_bin = debug_dir.join("aush");
                 if debug_bin.exists() {
                     return debug_bin;
                 }
@@ -31,7 +31,7 @@ fn rush_binary() -> PathBuf {
     let mut path = std::env::current_dir().unwrap();
     path.push("target");
     path.push("release");
-    path.push("rush");
+    path.push("aush");
     path
 }
 
@@ -41,13 +41,13 @@ fn rush_binary() -> PathBuf {
 
 #[test]
 fn test_piped_input_single_command() {
-    // Test: echo "pwd" | rush
+    // Test: echo "pwd" | aush
     let mut child = Command::new(rush_binary())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin.write_all(b"pwd\n").unwrap();
@@ -62,13 +62,13 @@ fn test_piped_input_single_command() {
 
 #[test]
 fn test_piped_input_echo_command() {
-    // Test: echo "echo hello world" | rush
+    // Test: echo "echo hello world" | aush
     let mut child = Command::new(rush_binary())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin.write_all(b"echo hello world\n").unwrap();
@@ -83,13 +83,13 @@ fn test_piped_input_echo_command() {
 
 #[test]
 fn test_piped_input_multiple_commands() {
-    // Test: echo -e "echo first\necho second\necho third" | rush
+    // Test: echo -e "echo first\necho second\necho third" | aush
     let mut child = Command::new(rush_binary())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin
@@ -108,13 +108,13 @@ fn test_piped_input_multiple_commands() {
 
 #[test]
 fn test_piped_input_with_builtin_commands() {
-    // Test piped input with rush's builtin commands (pwd, echo)
+    // Test piped input with aush's builtin commands (pwd, echo)
     let mut child = Command::new(rush_binary())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin.write_all(b"pwd\necho builtin test\n").unwrap();
@@ -137,7 +137,7 @@ fn test_piped_input_with_builtin_commands() {
 
 #[test]
 fn test_stdin_redirection_simple_script() {
-    // Test: rush < script.sh
+    // Test: aush < script.sh
     let mut script = NamedTempFile::new().unwrap();
     writeln!(script, "echo hello from script").unwrap();
     writeln!(script, "pwd").unwrap();
@@ -307,7 +307,7 @@ fn test_stdin_redirection_with_whitespace() {
 
 #[test]
 fn test_command_substitution_with_c_flag() {
-    // Test: result=$(rush -c "echo test")
+    // Test: result=$(aush -c "echo test")
     let output = Command::new(rush_binary())
         .arg("-c")
         .arg("echo captured output")
@@ -324,7 +324,7 @@ fn test_command_substitution_with_c_flag() {
 
 #[test]
 fn test_command_substitution_pwd() {
-    // Test: dir=$(rush -c "pwd")
+    // Test: dir=$(aush -c "pwd")
     let output = Command::new(rush_binary())
         .arg("-c")
         .arg("pwd")
@@ -343,12 +343,12 @@ fn test_command_substitution_pwd() {
 
 #[test]
 fn test_command_substitution_cat() {
-    // Test: content=$(rush -c "cat file.txt")
-    std::fs::write("/tmp/rush_subst_test.txt", "substitution test\n").unwrap();
+    // Test: content=$(aush -c "cat file.txt")
+    std::fs::write("/tmp/aush_subst_test.txt", "substitution test\n").unwrap();
 
     let output = Command::new(rush_binary())
         .arg("-c")
-        .arg("cat /tmp/rush_subst_test.txt")
+        .arg("cat /tmp/aush_subst_test.txt")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()
@@ -360,7 +360,7 @@ fn test_command_substitution_cat() {
     assert_eq!(stdout, "substitution test\n");
 
     // Cleanup
-    std::fs::remove_file("/tmp/rush_subst_test.txt").ok();
+    std::fs::remove_file("/tmp/aush_subst_test.txt").ok();
 }
 
 // ============================================================================
@@ -369,13 +369,13 @@ fn test_command_substitution_cat() {
 
 #[test]
 fn test_error_handling_failed_command() {
-    // Test that rush handles failed commands gracefully
+    // Test that aush handles failed commands gracefully
     let mut child = Command::new(rush_binary())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         // Try to cat a non-existent file
@@ -386,8 +386,8 @@ fn test_error_handling_failed_command() {
 
     let output = child.wait_with_output().unwrap();
 
-    // Rush should not crash, though the command may fail
-    // The important thing is that rush itself handles this gracefully
+    // AUSH should not crash, though the command may fail
+    // The important thing is that aush itself handles this gracefully
     assert!(!output.status.success() || output.status.success());
 }
 
@@ -399,7 +399,7 @@ fn test_error_handling_multiple_commands_one_fails() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin.write_all(b"echo before\n").unwrap();
@@ -425,13 +425,13 @@ fn test_error_handling_multiple_commands_one_fails() {
 
 #[test]
 fn test_error_handling_parse_error() {
-    // Test that rush handles parse errors gracefully
+    // Test that aush handles parse errors gracefully
     let mut child = Command::new(rush_binary())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin.write_all(b"echo valid command\n").unwrap();
@@ -453,7 +453,7 @@ fn test_error_handling_parse_error() {
 
 #[test]
 fn test_cron_job_scenario_simple() {
-    // Simulate a cron job: rush < backup_script.sh
+    // Simulate a cron job: aush < backup_script.sh
     let mut script = NamedTempFile::new().unwrap();
     writeln!(script, "# Daily backup script").unwrap();
     writeln!(script, "echo Starting backup...").unwrap();
@@ -522,7 +522,7 @@ fn test_exit_code_via_stdin() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin.write_all(b"echo test\n").unwrap();
@@ -539,13 +539,13 @@ fn test_exit_code_via_stdin() {
 
 #[test]
 fn test_pipeline_via_stdin() {
-    // Test that pipelines work when rush is run in non-TTY mode
+    // Test that pipelines work when aush is run in non-TTY mode
     let mut child = Command::new(rush_binary())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin.write_all(b"echo pipeline test | cat\n").unwrap();
@@ -562,9 +562,9 @@ fn test_pipeline_via_stdin() {
 fn test_complex_pipeline_via_stdin() {
     // Test more complex pipeline
     let mut script = NamedTempFile::new().unwrap();
-    writeln!(script, "echo line1 > /tmp/rush_pipeline_test.txt").unwrap();
-    writeln!(script, "echo line2 >> /tmp/rush_pipeline_test.txt").unwrap();
-    writeln!(script, "cat /tmp/rush_pipeline_test.txt | grep line2").unwrap();
+    writeln!(script, "echo line1 > /tmp/aush_pipeline_test.txt").unwrap();
+    writeln!(script, "echo line2 >> /tmp/aush_pipeline_test.txt").unwrap();
+    writeln!(script, "cat /tmp/aush_pipeline_test.txt | grep line2").unwrap();
     script.flush().unwrap();
 
     let output = Command::new(rush_binary())
@@ -580,7 +580,7 @@ fn test_complex_pipeline_via_stdin() {
     assert!(stdout.contains("line2"));
 
     // Cleanup
-    std::fs::remove_file("/tmp/rush_pipeline_test.txt").ok();
+    std::fs::remove_file("/tmp/aush_pipeline_test.txt").ok();
 }
 
 // ============================================================================
@@ -617,13 +617,13 @@ fn test_ci_cd_scenario() {
 
 #[test]
 fn test_empty_input() {
-    // Test that rush handles empty input gracefully
+    // Test that aush handles empty input gracefully
     let mut child = Command::new(rush_binary())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         // Send empty input
@@ -638,13 +638,13 @@ fn test_empty_input() {
 
 #[test]
 fn test_only_whitespace_input() {
-    // Test that rush handles whitespace-only input
+    // Test that aush handles whitespace-only input
     let mut child = Command::new(rush_binary())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("Failed to spawn rush");
+        .expect("Failed to spawn aush");
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin.write_all(b"   \n\t\n   \n").unwrap();
@@ -658,7 +658,7 @@ fn test_only_whitespace_input() {
 
 #[test]
 fn test_only_comments_input() {
-    // Test that rush handles comment-only input
+    // Test that aush handles comment-only input
     let mut script = NamedTempFile::new().unwrap();
     writeln!(script, "# Just comments").unwrap();
     writeln!(script, "# Nothing else").unwrap();

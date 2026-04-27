@@ -44,14 +44,14 @@ fn bench_lexer_init(c: &mut Criterion) {
 
     group.bench_function("tokenize_simple", |b| {
         b.iter(|| {
-            let tokens = rush::lexer::Lexer::tokenize(black_box("echo hello world"));
+            let tokens = aush::lexer::Lexer::tokenize(black_box("echo hello world"));
             black_box(tokens);
         });
     });
 
     group.bench_function("tokenize_complex", |b| {
         b.iter(|| {
-            let tokens = rush::lexer::Lexer::tokenize(black_box("ls -la | grep .rs | wc -l"));
+            let tokens = aush::lexer::Lexer::tokenize(black_box("ls -la | grep .rs | wc -l"));
             black_box(tokens);
         });
     });
@@ -59,7 +59,7 @@ fn bench_lexer_init(c: &mut Criterion) {
     group.bench_function("tokenize_pipeline", |b| {
         b.iter(|| {
             let tokens =
-                rush::lexer::Lexer::tokenize(black_box("cat file.txt | sort | uniq | head -n 10"));
+                aush::lexer::Lexer::tokenize(black_box("cat file.txt | sort | uniq | head -n 10"));
             black_box(tokens);
         });
     });
@@ -72,18 +72,18 @@ fn bench_parser_init(c: &mut Criterion) {
     let mut group = c.benchmark_group("parser");
 
     group.bench_function("parse_simple", |b| {
-        let tokens = rush::lexer::Lexer::tokenize("echo hello").unwrap();
+        let tokens = aush::lexer::Lexer::tokenize("echo hello").unwrap();
         b.iter(|| {
-            let mut parser = rush::parser::Parser::new(black_box(tokens.clone()));
+            let mut parser = aush::parser::Parser::new(black_box(tokens.clone()));
             let ast = parser.parse();
             black_box(ast);
         });
     });
 
     group.bench_function("parse_pipeline", |b| {
-        let tokens = rush::lexer::Lexer::tokenize("ls | grep test | wc -l").unwrap();
+        let tokens = aush::lexer::Lexer::tokenize("ls | grep test | wc -l").unwrap();
         b.iter(|| {
-            let mut parser = rush::parser::Parser::new(black_box(tokens.clone()));
+            let mut parser = aush::parser::Parser::new(black_box(tokens.clone()));
             let ast = parser.parse();
             black_box(ast);
         });
@@ -96,7 +96,7 @@ fn bench_parser_init(c: &mut Criterion) {
 fn bench_executor_init(c: &mut Criterion) {
     c.bench_function("executor_new", |b| {
         b.iter(|| {
-            let executor = rush::executor::Executor::new();
+            let executor = aush::executor::Executor::new();
             black_box(executor);
         });
     });
@@ -106,7 +106,7 @@ fn bench_executor_init(c: &mut Criterion) {
 fn bench_runtime_init(c: &mut Criterion) {
     c.bench_function("runtime_new", |b| {
         b.iter(|| {
-            let runtime = rush::runtime::Runtime::new();
+            let runtime = aush::runtime::Runtime::new();
             black_box(runtime);
         });
     });
@@ -119,7 +119,7 @@ fn bench_memory_footprint(c: &mut Criterion) {
     // Measure allocations during executor creation
     group.bench_function("executor_allocation", |b| {
         b.iter(|| {
-            let executor = rush::executor::Executor::new();
+            let executor = aush::executor::Executor::new();
             // Force allocation to be measured
             std::mem::size_of_val(&executor);
             black_box(executor);

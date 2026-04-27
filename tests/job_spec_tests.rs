@@ -1,4 +1,4 @@
-use rush::jobs::JobManager;
+use aush::jobs::JobManager;
 
 #[cfg(test)]
 mod job_spec_tests {

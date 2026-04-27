@@ -1,6 +1,6 @@
-use rush::builtins::trap::TrapSignal;
-use rush::executor::Executor;
-use rush::parser::ast::{Argument, Command, Statement};
+use aush::builtins::trap::TrapSignal;
+use aush::executor::Executor;
+use aush::parser::ast::{Argument, Command, Statement};
 
 #[test]
 fn test_trap_basic_set_and_list() {

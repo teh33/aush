@@ -229,13 +229,13 @@ Describe 'POSIX Shell Functions'
 
   Describe 'function with redirections'
     It 'redirects function output'
-      When call rush_c "gen() { echo test; }; gen > /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "gen() { echo test; }; gen > /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "test"
       The status should be success
     End
 
     It 'redirects function input'
-      When call rush_c "echo test > /tmp/rush_test_$$; proc() { cat; }; proc < /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo test > /tmp/aush_test_$$; proc() { cat; }; proc < /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "test"
       The status should be success
     End

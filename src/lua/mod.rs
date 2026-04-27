@@ -1,23 +1,22 @@
 //! Lua extension runtime for AUSH.
 //!
 //! Embeds a Lua 5.4 interpreter via the `mlua` crate and exposes the
-//! legacy-compatible `rush.*` API to user scripts. Scripts live in `~/.aush/lua/`
-//! with fallback to existing `~/.rush/lua/`, and are loaded at startup in
-//! lexicographic order.
+//! `aush.*` API to user scripts. Scripts live in `~/.aush/lua/`
+//! and are loaded at startup in lexicographic order.
 //!
 //! # Quick start
 //!
 //! ```lua
 //! -- ~/.aush/lua/myconfig.lua
 //!
-//! rush.register_builtin("greet", {
+//! aush.register_builtin("greet", {
 //!     description = "Say hello",
 //!     run = function(args)
 //!         return { text = "Hello, " .. (args[1] or "world") }
 //!     end
 //! })
 //!
-//! rush.on("precmd", function(exit_code, elapsed_ms)
+//! aush.on("precmd", function(exit_code, elapsed_ms)
 //!     -- fires before every prompt
 //! end)
 //! ```
@@ -32,7 +31,7 @@ use mlua::Lua;
 
 use crate::value::Value;
 
-/// A registered Lua builtin exposed to the rush command dispatcher.
+/// A registered Lua builtin exposed to the AUSH command dispatcher.
 #[derive(Debug, Clone)]
 pub struct LuaBuiltin {
     /// Name used to invoke this builtin (e.g. `"weather"`).
@@ -43,21 +42,21 @@ pub struct LuaBuiltin {
 
 /// The embedded Lua runtime.
 ///
-/// Owns a single `mlua::Lua` instance with the full `rush.*` API registered.
+/// Owns a single `mlua::Lua` instance with the full `aush.*` API registered.
 /// Create once at shell startup and hold for the session.
 pub struct LuaRuntime {
     lua: Lua,
 }
 
 impl LuaRuntime {
-    /// Create a new runtime and register the `rush.*` API.
+    /// Create a new runtime and register the `aush.*` API.
     pub fn new() -> Result<Self> {
         let lua = Lua::new();
-        api::register_rush_api(&lua).map_err(|e| anyhow!("Lua API init: {}", e))?;
+        api::register_aush_api(&lua).map_err(|e| anyhow!("Lua API init: {}", e))?;
         Ok(Self { lua })
     }
 
-    /// Load all `*.lua` files from `~/.aush/lua/` with legacy `~/.rush/lua/` fallback.
+    /// Load all `*.lua` files from `~/.aush/lua/`.
     ///
     /// Missing directory is not an error. Files that fail are propagated.
     pub fn load_user_scripts(&self) -> Result<()> {
@@ -98,7 +97,7 @@ impl LuaRuntime {
 
     /// Fire a named shell event, calling all Lua hooks registered for it.
     ///
-    /// Arguments are converted from rush `Value`s into Lua values. Hook
+    /// Arguments are converted from aush `Value`s into Lua values. Hook
     /// errors are printed to stderr but do not abort the shell.
     pub fn call_hook(&self, name: &str, args: &[Value]) -> Result<()> {
         let hooks_store: mlua::Table = self
@@ -127,7 +126,7 @@ impl LuaRuntime {
         Ok(())
     }
 
-    /// Return all builtins registered by Lua scripts via `rush.register_builtin`.
+    /// Return all builtins registered by Lua scripts via `aush.register_builtin`.
     pub fn get_registered_builtins(&self) -> Vec<LuaBuiltin> {
         let store: mlua::Table = match self.lua.named_registry_value(api::builtins_key()) {
             Ok(t) => t,
@@ -147,7 +146,7 @@ impl LuaRuntime {
 
     /// Execute a registered Lua builtin by name with the given arguments.
     ///
-    /// Returns the result as a rush `Value`, or `Value::Null` if the builtin
+    /// Returns the result as a aush `Value`, or `Value::Null` if the builtin
     /// returns nothing.
     pub fn call_builtin(&self, name: &str, args: &[Value]) -> Result<Value> {
         let store: mlua::Table = self
@@ -201,13 +200,10 @@ impl LuaRuntime {
     }
 }
 
-/// Returns `~/.aush/lua/`, falling back to existing `~/.rush/lua/`.
+/// Returns `~/.aush/lua/`.
 fn user_lua_dir() -> PathBuf {
     let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-    crate::brand::first_existing_or_primary(
-        home.join(".aush").join("lua"),
-        [home.join(".rush").join("lua")],
-    )
+    home.join(".aush").join("lua")
 }
 
 /// Initialise the Lua runtime, returning `None` on failure (non-fatal).
@@ -239,11 +235,11 @@ mod tests {
     }
 
     #[test]
-    fn test_rush_global_is_table() {
+    fn test_aush_global_is_table() {
         let rt = make_rt();
-        let rush: mlua::Table = rt.lua().globals().get("rush").expect("rush global missing");
+        let aush: mlua::Table = rt.lua().globals().get("aush").expect("aush global missing");
         // Verify exec is registered.
-        let _: mlua::Function = rush.get("exec").expect("rush.exec missing");
+        let _: mlua::Function = aush.get("exec").expect("aush.exec missing");
     }
 
     #[test]
@@ -252,7 +248,7 @@ mod tests {
         rt.lua()
             .load(
                 r#"
-                rush.register_builtin("test_cmd", {
+                aush.register_builtin("test_cmd", {
                     description = "A test builtin",
                     run = function(args) return args[1] end
                 })
@@ -273,7 +269,7 @@ mod tests {
         rt.lua()
             .load(
                 r#"
-                rush.register_builtin("echo_first", {
+                aush.register_builtin("echo_first", {
                     description = "echo first arg",
                     run = function(args) return args[1] end
                 })
@@ -296,7 +292,7 @@ mod tests {
             .load(
                 r#"
                 _hook_fired = false
-                rush.on("precmd", function(exit_code)
+                aush.on("precmd", function(exit_code)
                     _hook_fired = true
                 end)
             "#,
@@ -328,7 +324,7 @@ mod tests {
 
     #[test]
     fn test_load_user_scripts_no_dir_is_ok() {
-        // Verify that a missing ~/.rush/lua/ directory is handled gracefully.
+        // Verify that a missing ~/.aush/lua/ directory is handled gracefully.
         let rt = make_rt();
         let _ = rt.load_user_scripts();
     }

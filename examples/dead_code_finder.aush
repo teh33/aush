@@ -1,6 +1,6 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Find potentially unused code (functions/types not referenced elsewhere)
-# Usage: ./dead_code_finder.rush [directory]
+# Usage: ./dead_code_finder.aush [directory]
 
 set -e
 

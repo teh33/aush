@@ -133,7 +133,7 @@ fn main() -> Result<()> {
                 }
                 "--setup-ai" => {
                     // Run the interactive AI setup wizard
-                    match rush::ai::setup_wizard() {
+                    match aush::ai::setup_wizard() {
                         Ok(_) => std::process::exit(0),
                         Err(e) => {
                             eprintln!("Setup failed: {}", e);
@@ -216,7 +216,7 @@ fn main() -> Result<()> {
 
     // Check if invoked as login shell (argv[0] starts with -)
     if let Some(arg0) = args.first() {
-        if arg0.starts_with('-') || arg0.ends_with("/-aush") || arg0.ends_with("/-rush") {
+        if arg0.starts_with('-') || arg0.ends_with("/-aush") || arg0.ends_with("/-aush") {
             is_login_shell = true;
         }
     }
@@ -339,7 +339,7 @@ fn run_script(
 
 fn run_command(command: &str, signal_handler: SignalHandler) -> Result<()> {
     // Try to use daemon if available
-    if let Ok(mut client) = rush::daemon::DaemonClient::new() {
+    if let Ok(mut client) = aush::daemon::DaemonClient::new() {
         if client.is_daemon_running() {
             // Use daemon for execution
             let args = vec!["-c".to_string(), command.to_string()];
@@ -390,11 +390,11 @@ fn run_command(command: &str, signal_handler: SignalHandler) -> Result<()> {
 }
 
 /// Interactive prompt showing cwd, git branch, and last exit code.
-struct RushPrompt {
+struct AUSHPrompt {
     last_exit_code: std::sync::atomic::AtomicI32,
 }
 
-impl RushPrompt {
+impl AUSHPrompt {
     fn new() -> Self {
         Self {
             last_exit_code: std::sync::atomic::AtomicI32::new(0),
@@ -407,8 +407,8 @@ impl RushPrompt {
     }
 
     fn get_prompt_indicator(&self) -> String {
-        // If AUSH_PROMPT or legacy RUSH_PROMPT is set, expand its tokens. Otherwise use the default.
-        if let Some(fmt) = brand::env_var("AUSH_PROMPT", "RUSH_PROMPT") {
+        // If AUSH_PROMPT is set, expand its tokens. Otherwise use the default.
+        if let Some(fmt) = brand::env_var("AUSH_PROMPT") {
             return self.expand_prompt(&fmt);
         }
 
@@ -523,13 +523,13 @@ impl RushPrompt {
     }
 }
 
-impl Prompt for RushPrompt {
+impl Prompt for AUSHPrompt {
     fn render_prompt_left(&self) -> Cow<'_, str> {
         Cow::Owned(self.get_prompt_indicator())
     }
 
     fn render_prompt_right(&self) -> Cow<'_, str> {
-        if let Some(fmt) = brand::env_var("AUSH_PROMPT_RIGHT", "RUSH_PROMPT_RIGHT") {
+        if let Some(fmt) = brand::env_var("AUSH_PROMPT_RIGHT") {
             Cow::Owned(self.expand_prompt(&fmt))
         } else {
             Cow::Borrowed("")
@@ -576,25 +576,19 @@ fn run_interactive_with_init(
 
     // Source profile files based on login shell and flags
     if is_login && !skip_rc {
-        // Login shell: source ~/.aush_profile, falling back to ~/.rush_profile
+        // Login shell: source ~/.aush_profile
         if let Some(home) = dirs::home_dir() {
-            let profile = brand::first_existing_or_primary(
-                home.join(".aush_profile"),
-                [home.join(".rush_profile")],
-            );
+            let profile = home.join(".aush_profile");
             if let Err(e) = executor.source_file(&profile) {
                 eprintln!("Warning: Error sourcing {}: {}", profile.display(), e);
             }
         }
     }
 
-    // Interactive shell: source ~/.aushrc, falling back to ~/.rushrc (unless --no-rc)
+    // Interactive shell: source ~/.aushrc (unless --no-rc)
     if !skip_rc {
         if let Some(home) = dirs::home_dir() {
-            let rc = brand::first_existing_or_primary(
-                home.join(".aushrc"),
-                [home.join(".rushrc"), home.join(".zshrc")],
-            );
+            let rc = home.join(".aushrc");
             if let Err(e) = executor.source_file(&rc) {
                 eprintln!("Warning: Error sourcing {}: {}", rc.display(), e);
             }
@@ -720,7 +714,7 @@ fn run_interactive_with_reedline(
     signal_handler: SignalHandler,
     mut executor: Executor,
 ) -> Result<()> {
-    // Load banner configuration from environment (set by .aushrc or legacy .rushrc)
+    // Load banner configuration from environment (set by .aushrc)
     let banner_config = banner::BannerConfig::from_env();
 
     // Increment shell nesting level for nested shell detection
@@ -740,16 +734,16 @@ fn run_interactive_with_reedline(
     let builtins = Arc::new(builtins::Builtins::new());
     let runtime = Arc::new(RwLock::new(runtime::Runtime::new()));
     let completer = Box::new(Completer::new(builtins.clone(), runtime.clone()));
-    let highlighter = Box::new(highlight::RushHighlighter::new(builtins.clone()));
+    let highlighter = Box::new(highlight::AUSHHighlighter::new(builtins.clone()));
 
     let mut line_editor = Reedline::create()
         .with_completer(completer)
         .with_highlighter(highlighter);
-    let prompt = RushPrompt::new();
+    let prompt = AUSHPrompt::new();
 
     // Bell threshold for long-running commands (default 10s, 0 = disabled)
     let bell_threshold = std::time::Duration::from_secs(
-        brand::env_var("AUSH_BELL_THRESHOLD", "RUSH_BELL_THRESHOLD")
+        brand::env_var("AUSH_BELL_THRESHOLD")
             .and_then(|s| s.parse().ok())
             .unwrap_or(10),
     );
@@ -1059,7 +1053,7 @@ fn print_help() {
     println!("Usage:");
     println!("  aush                Start interactive shell");
     println!(
-        "  aush --login        Start as login shell (sources ~/.aush_profile or ~/.rush_profile)"
+        "  aush --login        Start as login shell (sources ~/.aush_profile or ~/.aush_profile)"
     );
     println!("  aush --no-rc        Skip sourcing config files");
     println!("  aush --no-config    Skip sourcing config files (alias for --no-rc)");
@@ -1090,8 +1084,8 @@ fn print_help() {
     println!("  aush --info --json                   # Get all stats as JSON");
     println!();
     println!("Config Files:");
-    println!("  ~/.aush_profile     Sourced on login shells, with ~/.rush_profile fallback");
-    println!("  ~/.aushrc           Sourced on interactive shells, with ~/.rushrc fallback");
+    println!("  ~/.aush_profile     Sourced on login shells");
+    println!("  ~/.aushrc           Sourced on interactive shells");
 }
 
 fn execute_line(line: &str, executor: &mut Executor) -> Result<executor::ExecutionResult> {
@@ -1134,11 +1128,11 @@ fn fast_execute_c(
         libc::signal(libc::SIGPIPE, libc::SIG_DFL);
     }
 
-    // Resolve max output bytes: --max-output flag takes priority, then AUSH_MAX_OUTPUT/RUSH_MAX_OUTPUT env vars.
+    // Resolve max output bytes: --max-output flag takes priority, then AUSH_MAX_OUTPUT/AUSH_MAX_OUTPUT env vars.
     let max_output_bytes: Option<usize> = max_output
         .and_then(|s| run_api::parse_max_output(s))
         .or_else(|| {
-            brand::env_var("AUSH_MAX_OUTPUT", "RUSH_MAX_OUTPUT")
+            brand::env_var("AUSH_MAX_OUTPUT")
                 .and_then(|v| run_api::parse_max_output(&v))
         });
 
@@ -1309,7 +1303,7 @@ fn run_info_command(stat_name: Option<String>, json_output: bool) -> ! {
 
     // Try to get stats from daemon first (instant)
     let (builtin_stats, custom_stats, daemon_info): (BuiltinStats, CustomStats, DaemonInfo) =
-        if let Ok(mut client) = rush::daemon::DaemonClient::new() {
+        if let Ok(mut client) = aush::daemon::DaemonClient::new() {
             if client.is_daemon_running() {
                 // Try to fetch from daemon cache
                 match fetch_stats_from_daemon(&mut client, stat_name.as_deref()) {
@@ -1596,7 +1590,7 @@ fn run_info_command(stat_name: Option<String>, json_output: bool) -> ! {
 
 /// Fetch stats from daemon cache
 fn fetch_stats_from_daemon(
-    client: &mut rush::daemon::DaemonClient,
+    client: &mut aush::daemon::DaemonClient,
     _stat_name: Option<&str>,
 ) -> Result<(
     std::collections::HashMap<String, String>,
@@ -1635,9 +1629,9 @@ mod tests {
         use std::io::Write;
 
         // Create a temporary script
-        let script_path = "/tmp/rush_test_args.rush";
+        let script_path = "/tmp/aush_test_args.aush";
         let mut file = fs::File::create(script_path).unwrap();
-        writeln!(file, "#!/usr/bin/env rush").unwrap();
+        writeln!(file, "#!/usr/bin/env aush").unwrap();
         writeln!(file, "echo $1").unwrap();
         writeln!(file, "echo $2").unwrap();
 
@@ -1651,7 +1645,7 @@ mod tests {
     #[test]
     fn test_execute_line_with_context() {
         let mut executor = Executor::new();
-        let result = execute_line_with_context("echo test", &mut executor, "test.rush", 1);
+        let result = execute_line_with_context("echo test", &mut executor, "test.aush", 1);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().stdout(), "test\n");
     }

@@ -1,7 +1,7 @@
-use rush::executor::Executor;
-use rush::jobs::JobStatus;
-use rush::lexer::Lexer;
-use rush::parser::Parser;
+use aush::executor::Executor;
+use aush::jobs::JobStatus;
+use aush::lexer::Lexer;
+use aush::parser::Parser;
 use std::thread;
 use std::time::Duration;
 

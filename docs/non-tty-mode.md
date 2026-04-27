@@ -2,7 +2,7 @@
 
 ## Overview
 
-Rush shell now supports both TTY (interactive) and non-TTY (piped input) modes, making it suitable as a login shell and for scripting scenarios.
+AUSH shell now supports both TTY (interactive) and non-TTY (piped input) modes, making it suitable as a login shell and for scripting scenarios.
 
 ## Implementation
 
@@ -22,7 +22,7 @@ fn run_interactive() -> Result<()> {
 
 ### Interactive Mode (TTY)
 
-When running in a terminal (TTY mode), Rush uses reedline for:
+When running in a terminal (TTY mode), AUSH uses reedline for:
 - Line editing
 - Tab completion
 - History
@@ -31,7 +31,7 @@ When running in a terminal (TTY mode), Rush uses reedline for:
 
 ### Non-Interactive Mode (Non-TTY)
 
-When stdin is piped (non-TTY mode), Rush:
+When stdin is piped (non-TTY mode), AUSH:
 - Reads from stdin line by line
 - Executes each line immediately
 - Prints output as it's generated
@@ -43,29 +43,29 @@ When stdin is piped (non-TTY mode), Rush:
 
 ### Piped Input
 ```bash
-echo "echo hello" | rush
+echo "echo hello" | aush
 ```
 
 ### Multiple Commands
 ```bash
-printf "echo line1\necho line2\n" | rush
+printf "echo line1\necho line2\n" | aush
 ```
 
 ### Script Execution
 ```bash
-cat script.txt | rush
+cat script.txt | aush
 ```
 
 ### Login Shell
 ```bash
-# In /etc/shells, add rush path
+# In /etc/shells, add aush path
 # Then use chsh to change shell
-chsh -s /path/to/rush
+chsh -s /path/to/aush
 ```
 
 ### Process Substitution
 ```bash
-rush < <(echo "echo test")
+aush < <(echo "echo test")
 ```
 
 ## Error Handling
@@ -75,7 +75,7 @@ In non-interactive mode, errors are reported to stderr but execution continues:
 echo "echo ok" > test.txt
 echo "invalid_command" >> test.txt
 echo "echo still works" >> test.txt
-cat test.txt | rush
+cat test.txt | aush
 # Outputs:
 # ok
 # Error: invalid_command

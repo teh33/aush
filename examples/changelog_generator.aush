@@ -1,9 +1,9 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Generate changelog from git commits
-# Usage: ./changelog_generator.rush [since_tag]
+# Usage: ./changelog_generator.aush [since_tag]
 
 set -e
-export RUSH_ERROR_FORMAT=json
+export AUSH_ERROR_FORMAT=json
 
 # Check if in git repo
 if ! git_status --json > /dev/null 2>&1; then

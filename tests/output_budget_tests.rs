@@ -1,11 +1,11 @@
-/// Tests for shell-level output budget (--max-output / RUSH_MAX_OUTPUT / RunOptions::max_output_bytes).
-use rush::{run, RunOptions};
+/// Tests for shell-level output budget (--max-output / AUSH_MAX_OUTPUT / RunOptions::max_output_bytes).
+use aush::{run, RunOptions};
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-fn run_with_budget(cmd: &str, max_bytes: usize) -> rush::RunResult {
+fn run_with_budget(cmd: &str, max_bytes: usize) -> aush::RunResult {
     let opts = RunOptions {
         max_output_bytes: Some(max_bytes),
         ..Default::default()
@@ -53,7 +53,7 @@ fn test_output_budget_no_truncation() {
     );
 }
 
-/// The RUSH_MAX_OUTPUT environment variable should act as a default budget when
+/// The AUSH_MAX_OUTPUT environment variable should act as a default budget when
 /// RunOptions::max_output_bytes is not set.
 #[test]
 fn test_output_budget_via_env() {
@@ -61,7 +61,7 @@ fn test_output_budget_via_env() {
     let opts = RunOptions {
         env: Some({
             let mut m = std::collections::HashMap::new();
-            m.insert("RUSH_MAX_OUTPUT".to_string(), "512".to_string());
+            m.insert("AUSH_MAX_OUTPUT".to_string(), "512".to_string());
             m
         }),
         ..Default::default()
@@ -69,17 +69,17 @@ fn test_output_budget_via_env() {
     // Note: the env var is read from the *process* environment, not from RunOptions::env,
     // because execute_inner calls std::env::var directly. So we set it on the process here.
     // (RunOptions::env is for variables passed *into* the child shell environment.)
-    std::env::set_var("RUSH_MAX_OUTPUT", "512");
+    std::env::set_var("AUSH_MAX_OUTPUT", "512");
     let result = run(
         r#"printf 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n%.0s' $(seq 1 200)"#,
         &RunOptions::default(),
     )
     .expect("run() should not fail");
-    std::env::remove_var("RUSH_MAX_OUTPUT");
+    std::env::remove_var("AUSH_MAX_OUTPUT");
 
     assert!(
         result.truncated,
-        "expected truncated=true via RUSH_MAX_OUTPUT env var"
+        "expected truncated=true via AUSH_MAX_OUTPUT env var"
     );
     assert!(
         result.stdout.len() <= 512 + 100,

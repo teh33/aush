@@ -26,11 +26,11 @@ pub struct TestRecord {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComparisonRecord {
     pub command: String,
-    pub rush_time: f64,
+    pub aush_time: f64,
     pub bash_time: Option<f64>,
     pub zsh_time: Option<f64>,
-    pub rush_vs_bash_ratio: Option<f64>,
-    pub rush_vs_zsh_ratio: Option<f64>,
+    pub aush_vs_bash_ratio: Option<f64>,
+    pub aush_vs_zsh_ratio: Option<f64>,
     pub min_time: f64,
     pub max_time: f64,
     pub std_dev: f64,
@@ -121,7 +121,7 @@ fn build_markdown_report(results: &BenchmarkResultsFile) -> String {
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
     let mut report = format!(
-        "# Rush Benchmark Report\n\n\
+        "# AUSH Benchmark Report\n\n\
          **Generated:** {}\n\n\
          ## Summary\n\n\
          - **Mode:** {}\n\
@@ -156,12 +156,12 @@ fn build_markdown_report(results: &BenchmarkResultsFile) -> String {
 
     // Methodology
     report.push_str("\n## Methodology\n\n");
-    report.push_str("This benchmark report was generated using the Rush benchmark runner.\n\n");
+    report.push_str("This benchmark report was generated using the AUSH benchmark runner.\n\n");
     report.push_str("### Test Categories\n\n");
     report.push_str("- **Quick Mode:** 5-second smoke test with essential commands\n");
     report.push_str("- **Full Mode:** Comprehensive test suite covering shell features\n");
     report
-        .push_str("- **Compare Mode:** Comparison benchmarks across shells (Rush, Bash, Zsh)\n\n");
+        .push_str("- **Compare Mode:** Comparison benchmarks across shells (AUSH, Bash, Zsh)\n\n");
 
     report.push_str("### Metrics\n\n");
     report.push_str("- **Duration:** Time taken to execute the test in milliseconds\n");
@@ -209,7 +209,7 @@ fn build_html_report(results: &BenchmarkResultsFile) -> String {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rush Benchmark Report</title>
+    <title>AUSH Benchmark Report</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <style>
         * {{
@@ -376,7 +376,7 @@ fn build_html_report(results: &BenchmarkResultsFile) -> String {
 <body>
     <div class="container">
         <header>
-            <h1>Rush Benchmark Report</h1>
+            <h1>AUSH Benchmark Report</h1>
             <div class="timestamp">Generated: {}</div>
         </header>
 
@@ -474,7 +474,7 @@ fn build_html_report(results: &BenchmarkResultsFile) -> String {
                     <ul>
                         <li><strong>Quick Mode:</strong> 5-second smoke test with essential commands</li>
                         <li><strong>Full Mode:</strong> Comprehensive test suite covering shell features</li>
-                        <li><strong>Compare Mode:</strong> Comparison benchmarks across shells (Rush, Bash, Zsh)</li>
+                        <li><strong>Compare Mode:</strong> Comparison benchmarks across shells (AUSH, Bash, Zsh)</li>
                     </ul>
 
                     <h3>Metrics</h3>
@@ -490,14 +490,14 @@ fn build_html_report(results: &BenchmarkResultsFile) -> String {
                         <li>Results may vary based on system load and resources</li>
                         <li>The "Quick Mode" provides rapid feedback for CI/CD pipelines</li>
                         <li>The "Full Mode" performs comprehensive testing for release validation</li>
-                        <li>The "Compare Mode" benchmarks Rush against other shells</li>
+                        <li>The "Compare Mode" benchmarks AUSH against other shells</li>
                     </ul>
                 </div>
             </section>
         </main>
 
         <footer>
-            <p>Rush Benchmark Suite | Powered by criterion and custom benchmark tools</p>
+            <p>AUSH Benchmark Suite | Powered by criterion and custom benchmark tools</p>
         </footer>
     </div>
 
@@ -581,7 +581,7 @@ mod tests {
         };
 
         let report = build_markdown_report(&results);
-        assert!(report.contains("Rush Benchmark Report"));
+        assert!(report.contains("AUSH Benchmark Report"));
         assert!(report.contains("quick"));
         assert!(report.contains("test1"));
         assert!(report.contains("test2"));
@@ -606,7 +606,7 @@ mod tests {
 
         let html = build_html_report(&results);
         assert!(html.contains("<!DOCTYPE html>"));
-        assert!(html.contains("Rush Benchmark Report"));
+        assert!(html.contains("AUSH Benchmark Report"));
         assert!(html.contains("test1"));
         assert!(html.contains("Chart.js"));
     }

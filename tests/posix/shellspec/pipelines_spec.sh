@@ -94,7 +94,7 @@ Describe 'POSIX Pipelines'
     End
 
     It 'combines with redirections'
-      When call rush_c "echo test | cat > /tmp/rush_test_$$; cat /tmp/rush_test_$$; rm -f /tmp/rush_test_$$"
+      When call rush_c "echo test | cat > /tmp/aush_test_$$; cat /tmp/aush_test_$$; rm -f /tmp/aush_test_$$"
       The output should equal "test"
       The status should be success
     End
@@ -213,7 +213,7 @@ Describe 'POSIX Pipelines'
 
   Describe 'named pipes (FIFOs)'
     Skip 'can use named pipes'
-      When call rush_c "mkfifo /tmp/rush_fifo_$$; echo test > /tmp/rush_fifo_$$ & cat < /tmp/rush_fifo_$$; rm /tmp/rush_fifo_$$"
+      When call rush_c "mkfifo /tmp/aush_fifo_$$; echo test > /tmp/aush_fifo_$$ & cat < /tmp/aush_fifo_$$; rm /tmp/aush_fifo_$$"
       The output should equal "test"
       The status should be success
     End

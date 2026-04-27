@@ -1,4 +1,4 @@
-# Rush Banner & System Stats Design
+# AUSH Banner & System Stats Design
 
 ## Overview
 
@@ -18,21 +18,21 @@ Stats are cached by the daemon for near-zero latency.
 
 No emojis - ASCII labels only for terminal compatibility.
 
-## Configuration (~/.rushrc)
+## Configuration (~/.aushrc)
 
 ```bash
 # Banner style: block, line, minimal, none
-RUSH_BANNER_STYLE="block"
+AUSH_BANNER_STYLE="block"
 
 # Banner color: cyan, green, yellow, magenta, blue, white, none
-RUSH_BANNER_COLOR="cyan"
+AUSH_BANNER_COLOR="cyan"
 
 # Show banner: always, first (first shell only), never
-RUSH_BANNER_SHOW="always"
+AUSH_BANNER_SHOW="always"
 
 # Stats to display (space-separated)
 # Mix built-in and custom stats freely
-RUSH_BANNER_STATS="host uptime memory"
+AUSH_BANNER_STATS="host uptime memory"
 ```
 
 ## Built-in Stats
@@ -65,27 +65,27 @@ Fast stats using direct syscalls (no subprocess overhead):
 Define any stat with a shell command. Daemon runs it periodically and caches the output.
 
 ```bash
-# Format: RUSH_STAT_<name>="<command>"
-RUSH_STAT_weather="curl -s 'wttr.in?format=%t'"
-RUSH_STAT_todos="wc -l < ~/todo.txt"
-RUSH_STAT_branch="git -C ~/projects/main branch --show-current 2>/dev/null"
-RUSH_STAT_docker="docker ps -q 2>/dev/null | wc -l | tr -d ' '"
-RUSH_STAT_k8s="kubectl get pods --no-headers 2>/dev/null | wc -l"
-RUSH_STAT_mail="ls ~/Mail/INBOX/new | wc -l"
-RUSH_STAT_spotify="osascript -e 'tell app \"Spotify\" to name of current track' 2>/dev/null"
+# Format: AUSH_STAT_<name>="<command>"
+AUSH_STAT_weather="curl -s 'wttr.in?format=%t'"
+AUSH_STAT_todos="wc -l < ~/todo.txt"
+AUSH_STAT_branch="git -C ~/projects/main branch --show-current 2>/dev/null"
+AUSH_STAT_docker="docker ps -q 2>/dev/null | wc -l | tr -d ' '"
+AUSH_STAT_k8s="kubectl get pods --no-headers 2>/dev/null | wc -l"
+AUSH_STAT_mail="ls ~/Mail/INBOX/new | wc -l"
+AUSH_STAT_spotify="osascript -e 'tell app \"Spotify\" to name of current track' 2>/dev/null"
 
 # Custom refresh interval (optional, default 30s)
-RUSH_STAT_weather_INTERVAL=300    # 5 minutes
-RUSH_STAT_todos_INTERVAL=10       # 10 seconds
-RUSH_STAT_docker_INTERVAL=15      # 15 seconds
+AUSH_STAT_weather_INTERVAL=300    # 5 minutes
+AUSH_STAT_todos_INTERVAL=10       # 10 seconds
+AUSH_STAT_docker_INTERVAL=15      # 15 seconds
 
 # Use in banner
-RUSH_BANNER_STATS="host uptime weather todos docker"
+AUSH_BANNER_STATS="host uptime weather todos docker"
 ```
 
 ### Custom stat behavior
 
-- **Timeout**: Commands killed after 2s (configurable via `RUSH_STAT_<name>_TIMEOUT`)
+- **Timeout**: Commands killed after 2s (configurable via `AUSH_STAT_<name>_TIMEOUT`)
 - **Failure**: Error cached, retried next interval
 - **First run**: Daemon collects all custom stats on startup (may delay first banner by a few ms)
 - **Output**: First line of stdout only, trimmed
@@ -94,34 +94,34 @@ RUSH_BANNER_STATS="host uptime weather todos docker"
 ### Error display
 
 - **In banner**: Show `--` for failed/empty stats (keeps it clean)
-- **In `rush --info`**: Show short error like `[timeout]`, `[not found]`, `[exit 1]`
+- **In `aush --info`**: Show short error like `[timeout]`, `[not found]`, `[exit 1]`
 
 ```
 # Banner (clean)
   weather   --
   docker    3
 
-# rush --info (detailed)
+# aush --info (detailed)
   weather   [timeout]       (updated 30s ago)
   docker    3               (updated 10s ago)
 ```
 
 ### Config reload
 
-Daemon reads `.rushrc` on startup. To reload config:
-- Send SIGHUP: `kill -HUP $(cat ~/.rush/daemon.pid)`
-- Or: `rush daemon reload`
+Daemon reads `.aushrc` on startup. To reload config:
+- Send SIGHUP: `kill -HUP $(cat ~/.aush/daemon.pid)`
+- Or: `aush daemon reload`
 
 ### Example: Git-aware prompt stat
 
 ```bash
 # Show repo state if in a git directory
-RUSH_STAT_git='
+AUSH_STAT_git='
   branch=$(git branch --show-current 2>/dev/null) || exit 0
   dirty=$(git status --porcelain 2>/dev/null | head -1)
   [ -n "$dirty" ] && echo "$branch*" || echo "$branch"
 '
-RUSH_STAT_git_INTERVAL=5
+AUSH_STAT_git_INTERVAL=5
 ```
 
 ## Platform Support for Built-ins
@@ -289,7 +289,7 @@ Message::StatsResponse(StatsResponse {
 
 ```
 ┌─────────┐     ┌────────┐
-│  rush   │     │ rushd  │
+│  aush   │     │ aushd  │
 └────┬────┘     └────┬───┘
      │               │
      │ StatsRequest  │
@@ -307,13 +307,13 @@ Message::StatsResponse(StatsResponse {
 ### With daemon running:
 - Banner + configured stats
 - Stats fetched from daemon cache (<1ms)
-- `rush --info` returns full stats instantly
+- `aush --info` returns full stats instantly
 
 ### Without daemon:
 - Banner only, no stats (zero penalty)
-- `rush --info` collects stats on-demand (~10-15ms, acceptable for explicit command)
+- `aush --info` collects stats on-demand (~10-15ms, acceptable for explicit command)
 
-This keeps Rush fast by default. Stats are a **daemon perk**, not a core feature.
+This keeps AUSH fast by default. Stats are a **daemon perk**, not a core feature.
 
 ## Platform Support
 
@@ -322,13 +322,13 @@ This keeps Rush fast by default. Stats are a **daemon perk**, not a core feature
 | macOS | sysctl | vm_stat | statfs | getloadavg | sysctl |
 | Linux | /proc/uptime | /proc/meminfo | statfs | /proc/loadavg | /proc/cpuinfo |
 
-## `rush --info` Command
+## `aush --info` Command
 
 Always available, shows all stats (built-in + custom):
 
 ```
-$ rush --info
-rush v0.1.0
+$ aush --info
+aush v0.1.0
 
 Built-in:
   host      asher@macbook
@@ -362,19 +362,19 @@ Daemon:
 - With daemon: instant (reads cache)
 - Without daemon: collects built-ins on-demand (~15ms), skips custom
 
-### `rush --info <stat>`
+### `aush --info <stat>`
 
 Show single stat value (useful for scripting):
 
 ```
-$ rush --info memory
+$ aush --info memory
 8.2/16G
 
-$ rush --info weather  
+$ aush --info weather  
 72°F
 ```
 
-### `rush --info --json`
+### `aush --info --json`
 
 Machine-readable output:
 

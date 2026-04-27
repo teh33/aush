@@ -1,6 +1,6 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Basic security audit - find potential security issues
-# Usage: ./security_audit.rush [directory]
+# Usage: ./security_audit.aush [directory]
 
 set -e
 

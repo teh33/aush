@@ -1,8 +1,8 @@
-use rush::executor::Executor;
-use rush::lexer::Lexer;
-use rush::parser::Parser;
+use aush::executor::Executor;
+use aush::lexer::Lexer;
+use aush::parser::Parser;
 
-fn execute_script(script: &str) -> Result<rush::executor::ExecutionResult, anyhow::Error> {
+fn execute_script(script: &str) -> Result<aush::executor::ExecutionResult, anyhow::Error> {
     let tokens = Lexer::tokenize(script)?;
     let mut parser = Parser::new(tokens);
     let statements = parser.parse()?;

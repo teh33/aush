@@ -1,11 +1,11 @@
-//! Type conversion between rush's `Value` and Lua values.
+//! Type conversion between aush's `Value` and Lua values.
 //!
 //! - [`value_to_lua`] — converts a `Value` into an `mlua::Value`
 //! - [`lua_to_value`] — converts an `mlua::Value` back into a `Value`
 //!
 //! # Type mapping
 //!
-//! | Rush `Value`          | Lua type                             |
+//! | AUSH `Value`          | Lua type                             |
 //! |-----------------------|--------------------------------------|
 //! | `String`              | string                               |
 //! | `Int`                 | integer                              |
@@ -25,7 +25,7 @@ use mlua::{Lua, Value as LuaValue};
 
 use crate::value::{Table, Value};
 
-/// Convert a rush `Value` into a Lua value.
+/// Convert a aush `Value` into a Lua value.
 pub fn value_to_lua(lua: &Lua, value: &Value) -> mlua::Result<LuaValue> {
     match value {
         Value::String(s) => Ok(LuaValue::String(lua.create_string(s)?)),
@@ -64,7 +64,7 @@ pub fn value_to_lua(lua: &Lua, value: &Value) -> mlua::Result<LuaValue> {
     }
 }
 
-/// Convert a Lua value back into a rush `Value`.
+/// Convert a Lua value back into a aush `Value`.
 pub fn lua_to_value(lua_value: LuaValue) -> Value {
     match lua_value {
         LuaValue::Nil => Value::Null,
@@ -73,7 +73,7 @@ pub fn lua_to_value(lua_value: LuaValue) -> Value {
         LuaValue::Number(f) => Value::Float(f),
         LuaValue::String(s) => Value::String(lua_string_to_string(&s)),
         LuaValue::Table(table) => lua_table_to_value(table),
-        // Functions, threads, and userdata have no meaningful rush representation.
+        // Functions, threads, and userdata have no meaningful aush representation.
         _ => Value::Null,
     }
 }
@@ -90,7 +90,7 @@ fn lua_string_to_string(s: &mlua::String) -> String {
     }
 }
 
-/// Encode a rush `Table` (columnar) as a Lua table with "columns" and "rows" keys.
+/// Encode a aush `Table` (columnar) as a Lua table with "columns" and "rows" keys.
 ///
 /// The Lua representation mirrors the Lua builtin spec:
 /// ```lua
@@ -120,7 +120,7 @@ fn rush_table_to_lua(lua: &Lua, rush_table: &Table) -> mlua::Result<LuaValue> {
     Ok(LuaValue::Table(outer))
 }
 
-/// Convert a Lua table to a rush `Value`.
+/// Convert a Lua table to a aush `Value`.
 ///
 /// Detection rules (in order):
 /// 1. If the table has both "columns" (array of strings) and "rows" (array of tables) keys

@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 
 fn socket_path() -> String {
     format!(
-        "{}/.rush/daemon.sock",
+        "{}/.aush/daemon.sock",
         std::env::var("HOME").unwrap_or_default()
     )
 }
@@ -33,7 +33,7 @@ fn start_daemon() {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("Failed to start rushd");
+        .expect("Failed to start aushd");
 
     let path = socket_path();
     for _ in 0..50 {
@@ -67,7 +67,7 @@ fn ensure_daemon() {
 // ---------------------------------------------------------------------------
 
 fn execute_via_daemon(cmd: &str) -> i32 {
-    use rush::daemon::protocol::{read_message, write_message, Message, SessionInit};
+    use aush::daemon::protocol::{read_message, write_message, Message, SessionInit};
 
     let path = socket_path();
     let mut stream = UnixStream::connect(&path).expect("Failed to connect to daemon socket");
@@ -182,8 +182,8 @@ fn bench_daemon_cold_start(c: &mut Criterion) {
 }
 
 // ===========================================================================
-// 4. COLD STARTUP — rush -c (single reference point)
-//    Process spawn → rush binary load → lex/parse/exec → exit.
+// 4. COLD STARTUP — aush -c (single reference point)
+//    Process spawn → aush binary load → lex/parse/exec → exit.
 //    This is the baseline that the daemon amortizes away.
 // ===========================================================================
 
@@ -210,7 +210,7 @@ fn bench_cold_startup(c: &mut Criterion) {
 }
 
 // ===========================================================================
-// 5. SHELL COMPARISON — rush -c vs bash -c vs zsh -c
+// 5. SHELL COMPARISON — aush -c vs bash -c vs zsh -c
 //    Context only — measures process spawn overhead across shells.
 // ===========================================================================
 
@@ -220,7 +220,7 @@ fn bench_shell_comparison(c: &mut Criterion) {
     group.sample_size(50);
 
     let mut shells: Vec<(&str, String)> = vec![
-        ("rush", "target/release/aush".to_string()),
+        ("aush", "target/release/aush".to_string()),
         ("bash", "/bin/bash".to_string()),
     ];
 
@@ -261,8 +261,8 @@ criterion_group!(
     bench_daemon_execution,  // PRIMARY: daemon warm execution
     bench_daemon_throughput, // Sustained throughput
     bench_daemon_cold_start, // Cold start overhead
-    bench_cold_startup,      // rush -c reference (single variable)
-    bench_shell_comparison,  // Context: rush vs bash vs zsh
+    bench_cold_startup,      // aush -c reference (single variable)
+    bench_shell_comparison,  // Context: aush vs bash vs zsh
 );
 
 criterion_main!(benches);

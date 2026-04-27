@@ -1,5 +1,5 @@
-/// Integration tests for rush::run() one-shot programmatic API.
-use rush::{run, RunOptions};
+/// Integration tests for aush::run() one-shot programmatic API.
+use aush::{run, RunOptions};
 use std::collections::HashMap;
 use std::fs;
 

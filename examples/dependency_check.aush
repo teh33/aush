@@ -1,6 +1,6 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Check for dependency updates (Cargo.toml)
-# Usage: ./dependency_check.rush
+# Usage: ./dependency_check.aush
 
 set -e
 
@@ -11,7 +11,7 @@ fi
 
 echo "# Dependency Check"
 echo ""
-echo "**Note:** This example demonstrates Rush's fetch and JSON capabilities."
+echo "**Note:** This example demonstrates AUSH's fetch and JSON capabilities."
 echo "For real dependency checking, use \`cargo outdated\`."
 echo ""
 

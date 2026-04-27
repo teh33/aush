@@ -14,9 +14,9 @@ use std::io::{self, Write};
 /// Uses raw mode so a single keypress is enough — no need to hit Enter.
 /// Returns an error only if terminal setup fails.
 pub fn confirm(prompt: &str) -> Result<bool> {
-    // Skip confirmation if autorun is enabled via AUSH_AI_AUTORUN/RUSH_AI_AUTORUN.
+    // Skip confirmation if autorun is enabled via AUSH_AI_AUTORUN/AUSH_AI_AUTORUN.
     if matches!(
-        crate::brand::env_var("AUSH_AI_AUTORUN", "RUSH_AI_AUTORUN").as_deref(),
+        crate::brand::env_var("AUSH_AI_AUTORUN").as_deref(),
         Some("1" | "true" | "yes")
     ) {
         println!("  {} ✓", prompt);

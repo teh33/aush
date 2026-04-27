@@ -1,7 +1,7 @@
-# Rush Builtin Compatibility Checklist
+# AUSH Builtin Compatibility Checklist
 
 Status of builtins vs POSIX.1-2017, common bash/zsh expectations, modern shell
-features (fish/nushell/zsh), and Rush's "fast coreutils" differentiator.
+features (fish/nushell/zsh), and AUSH's "fast coreutils" differentiator.
 
 **Legend:** ✅ Implemented · ⚠️ Code exists but not wired · ❌ Missing · 🔧 Partial
 
@@ -62,7 +62,7 @@ because they modify shell state or need shell internals).
 | `type`      | ✅     | —        | |
 | `wait`      | ✅     | —        | |
 | `fc`        | ❌     | P2       | List/edit/re-execute history entries. Needs `$EDITOR` integration. Interactive convenience — rarely used in scripts. |
-| `hash`      | ❌     | P3       | Cache command path lookups. Rush may not need this if it already caches `$PATH` lookups internally. |
+| `hash`      | ❌     | P3       | Cache command path lookups. AUSH may not need this if it already caches `$PATH` lookups internally. |
 | `umask`     | ❌     | **P0**   | **Cannot be external.** Must modify the shell process's file creation mask. Scripts that set `umask 077` before creating files will silently fail without this. |
 | `ulimit`    | ❌     | **P1**   | **Cannot be external.** Must call `setrlimit` on the shell process. Scripts that set resource limits (e.g. `ulimit -n 4096`) will silently fail. |
 | `newgrp`    | ❌     | P3       | Change effective group ID. Rarely used in practice. |
@@ -83,7 +83,7 @@ by how often they appear in real dotfiles and scripts.
 | `popd`          | ❌     | P1       | Same — runtime support exists. |
 | `dirs`          | ❌     | P2       | Same — `get_dir_stack()` exists. |
 | `declare` / `typeset` | ❌ | P2    | Variable attributes (`-i`, `-r`, `-x`, `-a`, `-A`). Commonly used in bash scripts. |
-| `let`           | ❌     | P3       | Arithmetic evaluation. Rush already has `$(( ))` — `let` is syntactic sugar. |
+| `let`           | ❌     | P3       | Arithmetic evaluation. AUSH already has `$(( ))` — `let` is syntactic sugar. |
 | `shopt`         | ❌     | P2       | Bash-specific shell options (e.g. `globstar`, `nullglob`). Important for bash script compat. |
 | `bind`          | ❌     | P3       | Readline/key bindings. Reedline handles this differently. |
 | `complete` / `compgen` | ❌ | P2  | Programmable completion API. Needed for user-defined completions. |
@@ -97,10 +97,10 @@ by how often they appear in real dotfiles and scripts.
 
 ---
 
-## 4. Fast Coreutils (Rush's Differentiator)
+## 4. Fast Coreutils (AUSH's Differentiator)
 
-Commands Rush implements as in-process builtins for speed (no fork/exec).
-This is Rush's unique value prop — the more of these it has, the faster
+Commands AUSH implements as in-process builtins for speed (no fork/exec).
+This is AUSH's unique value prop — the more of these it has, the faster
 AI agent and CI/CD workloads become.
 
 ### Currently implemented
@@ -138,7 +138,7 @@ Making them builtins eliminates thousands of fork/exec calls per session.
 | `cut`       | P2       | Low        | Field extraction. Common in scripts. |
 | `tr`        | P2       | Low-Med    | Character translation. Common in scripts. |
 | `sleep`     | P2       | Trivial    | `thread::sleep`. Common in scripts + loops. |
-| `date`      | P2       | Low        | Rush already depends on `chrono`. |
+| `date`      | P2       | Low        | AUSH already depends on `chrono`. |
 | `ln`        | ✅ P3    | Low        | Symlinks/hardlinks. `std::os::unix::fs`. |
 | `stat`      | ✅ P3    | Low        | File metadata. `fs::metadata`. |
 | `readlink`  | ✅ P3    | Trivial    | `fs::read_link`. |
@@ -151,11 +151,11 @@ Making them builtins eliminates thousands of fork/exec calls per session.
 
 ---
 
-## 5. Rush-Specific Builtins
+## 5. AUSH-Specific Builtins
 
 | Command         | Status | Priority | Notes |
 |-----------------|--------|----------|-------|
-| `undo`          | ✅     | —        | Unique to Rush |
+| `undo`          | ✅     | —        | Unique to AUSH |
 | `profile`       | ✅     | —        | Command profiling |
 | `time`          | ✅     | —        | Timing wrapper |
 | `help`          | ✅     | —        | |
@@ -202,8 +202,8 @@ Making them builtins eliminates thousands of fork/exec calls per session.
 
 # Part 2: Modern Shell Feature Comparison
 
-How Rush stacks up against fish, nushell, and zsh — the three shells most
-likely to poach Rush's potential users. Organized by capability area, not
+How AUSH stacks up against fish, nushell, and zsh — the three shells most
+likely to poach AUSH's potential users. Organized by capability area, not
 by individual command.
 
 ---
@@ -214,7 +214,7 @@ The biggest single gap vs fish. Fish's `string` builtin is a Swiss army knife
 that replaces `sed`, `tr`, `cut`, `awk`, and `grep` for 90% of common cases —
 all without forking a process.
 
-| Feature | Fish | Nushell | Zsh | Rush |
+| Feature | Fish | Nushell | Zsh | AUSH |
 |---------|------|---------|-----|------|
 | split / join | `string split`, `string join` | `str join`, `split row/column/chars/words` | `${(s:.:)var}` parameter expansion | ❌ |
 | match (glob + regex) | `string match -r` | `str contains`, `str starts-with`, `str ends-with` | `[[ =~ ]]`, `${var:#pattern}` | ❌ (only `grep` or `test`) |
@@ -239,7 +239,7 @@ a huge win for the "fast builtins, no forking" story.
 
 ## 7. Math / Arithmetic
 
-| Feature | Fish | Nushell | Zsh | Rush |
+| Feature | Fish | Nushell | Zsh | AUSH |
 |---------|------|---------|-----|------|
 | Basic arithmetic | `math "1 + 2"` | `1 + 2` (native) | `$(( ))`, `(( ))` | ✅ `$(( ))` |
 | Floating point | `math "3.14 * 2"` | Native floats | `$(( 3.14 * 2 ))` | ❌ (integer only) |
@@ -258,7 +258,7 @@ a huge win for the "fast builtins, no forking" story.
 Fish added a `path` builtin; nushell has a full `path` category. These
 eliminate the need for `basename`, `dirname`, `realpath` as separate commands.
 
-| Feature | Fish | Nushell | Zsh | Rush |
+| Feature | Fish | Nushell | Zsh | AUSH |
 |---------|------|---------|-----|------|
 | basename | `path basename` | `path basename` | `${var:t}` | ❌ |
 | dirname | `path dirname` | `path dirname` | `${var:h}` | ❌ |
@@ -279,11 +279,11 @@ and feels very modern.
 
 ## 9. Structured Data / Tables
 
-This is nushell's core differentiator. Fish and zsh are string-based. Rush
+This is nushell's core differentiator. Fish and zsh are string-based. AUSH
 already has `json_get`/`json_set`/`json_query` + `--json` output mode, which
 is a good start, but nushell goes much further.
 
-| Feature | Fish | Nushell | Rush |
+| Feature | Fish | Nushell | AUSH |
 |---------|------|---------|------|
 | JSON parsing | — (external `jq`) | Native: `open file.json`, `from json` | ✅ `json_get`, `json_set`, `json_query` |
 | JSON output from builtins | — | All commands output structured data | ✅ `--json` flag on builtins |
@@ -293,10 +293,10 @@ is a good start, but nushell goes much further.
 | CSV / YAML / TOML | — | `from csv`, `from yaml`, `from toml` | ❌ |
 | Parallel iteration | — | `par-each` | ❌ |
 
-**Recommendation:** Rush is already ahead of fish here with `json_*` builtins.
+**Recommendation:** AUSH is already ahead of fish here with `json_*` builtins.
 Next steps: (1) add `--json` to more builtins, (2) consider a `table` display
 mode for JSON arrays, (3) add `from csv`/`from yaml` for common formats.
-Don't try to become nushell — lean into JSON as Rush's structured data format.
+Don't try to become nushell — lean into JSON as AUSH's structured data format.
 
 **Priority: P2** — extend what you have rather than building a type system.
 
@@ -307,7 +307,7 @@ Don't try to become nushell — lean into JSON as Rush's structured data format.
 This is where fish absolutely dominates. These features are what make people
 *switch* to a shell.
 
-| Feature | Fish | Nushell | Zsh | Rush |
+| Feature | Fish | Nushell | Zsh | AUSH |
 |---------|------|---------|-----|------|
 | Autosuggestions (ghost text) | ✅ Built-in | ✅ Built-in | ⚠️ Plugin (zsh-autosuggestions) | ❌ |
 | Syntax highlighting (live) | ✅ Built-in | ✅ Built-in | ⚠️ Plugin (zsh-syntax-highlighting) | ❌ |
@@ -338,7 +338,7 @@ Fish has a rich event system that lets functions react to signals, variable
 changes, job exits, and custom events. This enables things like auto-updating
 prompts, cleanup on exit, and plugin coordination.
 
-| Feature | Fish | Nushell | Zsh | Rush |
+| Feature | Fish | Nushell | Zsh | AUSH |
 |---------|------|---------|-----|------|
 | `--on-event` (custom events) | ✅ `emit`/`function --on-event` | ❌ | ❌ | ❌ |
 | `--on-variable` | ✅ `function --on-variable` | ❌ | ❌ | ❌ |
@@ -359,7 +359,7 @@ themes, timing display, etc.). Full event system is P3.
 Fish treats functions as first-class citizens with autoloading, introspection,
 and interactive editing.
 
-| Feature | Fish | Nushell | Zsh | Rush |
+| Feature | Fish | Nushell | Zsh | AUSH |
 |---------|------|---------|-----|------|
 | Autoload from `~/.config/fish/functions/` | ✅ | ❌ (uses modules) | ✅ `$fpath` | ❌ |
 | `functions` (list/inspect/erase) | ✅ `functions -n`, `functions -e` | ✅ `scope commands` | ✅ `functions`/`whence` | ❌ |
@@ -377,7 +377,7 @@ slowing down startup.
 
 ## 13. Scoping & Variables
 
-| Feature | Fish | Nushell | Zsh | Rush |
+| Feature | Fish | Nushell | Zsh | AUSH |
 |---------|------|---------|-----|------|
 | Local scope (`-l`) | ✅ | ✅ `let` | ✅ `local` | ✅ `local` |
 | Global scope (`-g`) | ✅ | ✅ `$env` | ✅ | ✅ `export` |

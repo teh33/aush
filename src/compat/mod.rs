@@ -1,9 +1,9 @@
 //! Bash script compatibility analyzer
 //!
 //! This module provides tools to analyze bash scripts and identify syntax features,
-//! categorizing them by support status in Rush.
+//! categorizing them by support status in AUSH.
 //!
-//! The compatibility database maps 50+ bash features to Rush support status:
+//! The compatibility database maps 50+ bash features to AUSH support status:
 //! - Supported: Fully implemented
 //! - Planned: Will be implemented
 //! - Not Supported: Has clear workarounds

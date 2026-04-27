@@ -5,7 +5,7 @@ use std::time::Duration;
 
 pub mod render;
 
-/// Core value types for structured data in rush shell
+/// Core value types for structured data in AUSH shell
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Value {
     // Primitives

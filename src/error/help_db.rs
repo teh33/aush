@@ -1,7 +1,7 @@
 //! Help text database for common shell errors
 //!
 //! This module provides actionable help messages for common errors that users
-//! encounter when using Rush shell. Each error code can be looked up to get
+//! encounter when using AUSH shell. Each error code can be looked up to get
 //! guidance on how to fix the issue.
 
 use std::collections::HashMap;

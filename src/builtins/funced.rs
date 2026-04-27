@@ -71,8 +71,8 @@ pub fn builtin_funced(args: &[String], runtime: &mut Runtime) -> Result<Executio
 
 /// Return the path of the file to edit for `name`:
 ///  1. The persisted autoload file if it exists.
-///  2. A new file in `~/.config/aush/functions/` (or existing legacy
-///     `~/.config/rush/functions/`) with a stub if the function
+///  2. A new file in `~/.config/aush/functions/` (or existing
+///     `~/.config/aush/functions/`) with a stub if the function
 ///     is defined in-memory.
 ///  3. A temp file with a blank skeleton otherwise.
 fn resolve_edit_path(name: &str, runtime: &Runtime) -> Result<PathBuf> {
@@ -82,13 +82,13 @@ fn resolve_edit_path(name: &str, runtime: &Runtime) -> Result<PathBuf> {
     }
 
     // 2. Function exists in memory — write it to the canonical save location.
-    let functions_dir = crate::brand::migrated_xdg_config_file("functions")
+    let functions_dir = crate::brand::xdg_config_file("functions")
         .ok_or_else(|| anyhow!("funced: cannot determine home directory"))?;
 
     fs::create_dir_all(&functions_dir)
         .map_err(|e| anyhow!("funced: failed to create functions directory: {}", e))?;
 
-    let path = functions_dir.join(format!("{}.rush", name));
+    let path = functions_dir.join(format!("{}.aush", name));
 
     if !path.exists() {
         let stub = if runtime.get_function(name).is_some() {

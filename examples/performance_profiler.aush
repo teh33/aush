@@ -1,9 +1,9 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Profile git operations performance
-# Usage: ./performance_profiler.rush
+# Usage: ./performance_profiler.aush
 
 set -e
-export RUSH_ERROR_FORMAT=json
+export AUSH_ERROR_FORMAT=json
 
 echo "# Git Operations Performance Profile"
 echo ""
@@ -74,5 +74,5 @@ echo "- **Uncommitted changes:** $(echo "$status" | json_get '.summary.staged_co
 echo ""
 
 echo "## Performance Summary"
-echo "Rush provides native Rust implementations that are typically 4-10x faster"
+echo "AUSH provides native Rust implementations that are typically 4-10x faster"
 echo "than equivalent bash + external tools."

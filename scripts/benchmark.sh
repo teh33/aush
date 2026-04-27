@@ -25,8 +25,8 @@ echo -e "${BLUE}Building AUSH in release mode...${NC}"
 cargo build --release
 
 AUSH_BIN="${AUSH_BIN:-./target/release/aush}"
-if [ ! -f "$AUSH_BIN" ] && [ -f ./target/release/rush ]; then
-    AUSH_BIN=./target/release/rush
+if [ ! -f "$AUSH_BIN" ] && [ -f ./target/release/aush ]; then
+    AUSH_BIN=./target/release/aush
 fi
 
 if [ ! -f "$AUSH_BIN" ]; then

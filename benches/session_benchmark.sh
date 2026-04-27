@@ -1,18 +1,18 @@
 #!/bin/bash
-# Session-based Benchmark: Rush vs Zsh
+# Session-based Benchmark: AUSH vs Zsh
 # Compares running commands in a single session vs spawning for each command
 
 set -e
 
 AUSH="${AUSH:-./target/release/aush}"
-if [ ! -x "$AUSH" ] && [ -x ./target/release/rush ]; then
-    AUSH=./target/release/rush
+if [ ! -x "$AUSH" ] && [ -x ./target/release/aush ]; then
+    AUSH=./target/release/aush
 fi
 ZSH="/bin/zsh"
 RUNS=10
 
 if [ ! -x "$AUSH" ]; then
-    echo "Error: Rush binary not found at $AUSH"
+    echo "Error: AUSH binary not found at $AUSH"
     echo "Run: cargo build --release"
     exit 1
 fi
@@ -23,7 +23,7 @@ echo "   Runs: $RUNS"
 echo ""
 
 # Test 1: Spawn shell for EACH command (current benchmark method)
-echo "📊 Method 1: Spawn shell per command (rush -c \"cmd\")"
+echo "📊 Method 1: Spawn shell per command (aush -c \"cmd\")"
 echo "   This includes shell startup overhead for EVERY command"
 echo ""
 
@@ -50,7 +50,7 @@ test_spawn_per_command() {
     echo "$avg"
 }
 
-printf "  Rush (5 commands, spawn each): "
+printf "  AUSH (5 commands, spawn each): "
 rush_spawn_time=$(test_spawn_per_command "$AUSH")
 printf "%8.2f ms total (%6.2f ms per command)\n" "$rush_spawn_time" "$(python3 -c "print($rush_spawn_time / 5)")"
 
@@ -61,7 +61,7 @@ printf "%8.2f ms total (%6.2f ms per command)\n" "$zsh_spawn_time" "$(python3 -c
 speedup_spawn=$(python3 -c "print($zsh_spawn_time / $rush_spawn_time)")
 printf "  Speedup: %.2fx " "$speedup_spawn"
 if [ $(python3 -c "print(1 if $speedup_spawn > 1.0 else 0)") -eq 1 ]; then
-    printf "🏆 Rush\n"
+    printf "🏆 AUSH\n"
 else
     printf "(Zsh faster)\n"
 fi
@@ -97,7 +97,7 @@ echo test > /dev/null"
     echo "$avg"
 }
 
-printf "  Rush (5 commands, 1 session):  "
+printf "  AUSH (5 commands, 1 session):  "
 rush_session_time=$(test_single_session "$AUSH")
 printf "%8.2f ms total (%6.2f ms per command)\n" "$rush_session_time" "$(python3 -c "print($rush_session_time / 5)")"
 
@@ -108,7 +108,7 @@ printf "%8.2f ms total (%6.2f ms per command)\n" "$zsh_session_time" "$(python3 
 speedup_session=$(python3 -c "print($zsh_session_time / $rush_session_time)")
 printf "  Speedup: %.2fx " "$speedup_session"
 if [ $(python3 -c "print(1 if $speedup_session > 1.0 else 0)") -eq 1 ]; then
-    printf "🏆 Rush\n"
+    printf "🏆 AUSH\n"
 else
     printf "(Zsh faster)\n"
 fi
@@ -130,7 +130,7 @@ printf "  Difference:                  %6.2f ms (%.1fx slower)\n" \
     "$(python3 -c "print($rush_startup / $zsh_startup)")"
 
 echo ""
-printf "  Rush command execution:      %6.2f ms per command (in session)\n" "$(python3 -c "print($rush_session_time / 5)")"
+printf "  AUSH command execution:      %6.2f ms per command (in session)\n" "$(python3 -c "print($rush_session_time / 5)")"
 printf "  Zsh  command execution:      %6.2f ms per command (in session)\n" "$(python3 -c "print($zsh_session_time / 5)")"
 printf "  Difference:                  %6.2f ms (%.2fx)\n" \
     "$(python3 -c "print(($rush_session_time - $zsh_session_time) / 5)")" \
@@ -144,10 +144,10 @@ echo "   - Every command after that uses the session speed"
 
 if [ $(python3 -c "print(1 if $speedup_session >= 1.0 else 0)") -eq 1 ]; then
     percent_faster=$(python3 -c "print(int(($speedup_session - 1.0) * 100))")
-    echo "   - Rush is ${percent_faster}% FASTER than Zsh for in-session commands 🚀"
+    echo "   - AUSH is ${percent_faster}% FASTER than Zsh for in-session commands 🚀"
 else
     percent_slower=$(python3 -c "print(int((1.0 - $speedup_session) * 100))")
-    echo "   - Rush is ${percent_slower}% slower than Zsh for in-session commands"
+    echo "   - AUSH is ${percent_slower}% slower than Zsh for in-session commands"
 fi
 
 echo ""

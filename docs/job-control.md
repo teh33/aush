@@ -2,7 +2,7 @@
 
 ## Overview
 
-Rush shell implements full job control functionality, allowing users to run commands in the background, manage multiple jobs, and bring them to the foreground. This feature enables efficient multitasking within the shell.
+AUSH shell implements full job control functionality, allowing users to run commands in the background, manage multiple jobs, and bring them to the foreground. This feature enables efficient multitasking within the shell.
 
 ## Features
 
@@ -14,7 +14,7 @@ Run any command in the background by appending `&` to the command:
 sleep 100 &
 ```
 
-When a job is started in background, Rush displays:
+When a job is started in background, AUSH displays:
 ```
 [1] 12345
 ```
@@ -285,4 +285,4 @@ The JobManager uses Arc<Mutex<>> internally to ensure thread-safe access to job 
 
 - POSIX Job Control: IEEE Std 1003.1-2008
 - Bash Job Control: GNU Bash Reference Manual, Chapter 7
-- Rush Implementation: `src/jobs/mod.rs`, `src/builtins/jobs.rs`
+- AUSH Implementation: `src/jobs/mod.rs`, `src/builtins/jobs.rs`

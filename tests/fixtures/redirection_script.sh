@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Test script with redirections
-echo "redirect test" > /tmp/rush_redirect_test.txt
-cat /tmp/rush_redirect_test.txt
-echo "append test" >> /tmp/rush_redirect_test.txt
-cat /tmp/rush_redirect_test.txt
-rm -f /tmp/rush_redirect_test.txt
+echo "redirect test" > /tmp/aush_redirect_test.txt
+cat /tmp/aush_redirect_test.txt
+echo "append test" >> /tmp/aush_redirect_test.txt
+cat /tmp/aush_redirect_test.txt
+rm -f /tmp/aush_redirect_test.txt

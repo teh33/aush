@@ -1,11 +1,11 @@
-# Rush Criterion Benchmarks
+# AUSH Criterion Benchmarks
 
 This directory contains microbenchmarks using the [Criterion](https://github.com/bheisler/criterion.rs) framework.
 
 ## Benchmark Files
 
 ### startup.rs
-Benchmarks Rush initialization and startup performance:
+Benchmarks AUSH initialization and startup performance:
 - **Cold startup**: Shell launch and immediate exit
 - **Startup with command**: Launch, execute, exit
 - **Lexer init**: Tokenization performance
@@ -18,11 +18,11 @@ Benchmarks Rush initialization and startup performance:
 
 ### builtins.rs
 Benchmarks builtin commands vs GNU equivalents:
-- **Echo**: Rush builtin vs system echo
-- **PWD**: Rush builtin vs system pwd
+- **Echo**: AUSH builtin vs system echo
+- **PWD**: AUSH builtin vs system pwd
 - **CD**: Directory change performance
 - **Export**: Environment variable setting
-- **Find**: File search (Rush vs GNU find)
+- **Find**: File search (AUSH vs GNU find)
 - **Dispatch**: Builtin lookup performance
 - **Arg scaling**: Performance with varying argument counts
 
@@ -181,7 +181,7 @@ cargo instruments -t time --bench builtins
 ### Cachegrind (Linux)
 ```bash
 valgrind --tool=cachegrind --cachegrind-out-file=cache.out \
-    target/release/rush -c exit
+    target/release/aush -c exit
 cg_annotate cache.out
 ```
 

@@ -1,6 +1,6 @@
 # Glob Expansion (Wildcard Expansion)
 
-Rush implements full glob (wildcard) expansion support for file matching, similar to bash and other Unix shells.
+AUSH implements full glob (wildcard) expansion support for file matching, similar to bash and other Unix shells.
 
 ## Features
 
@@ -76,7 +76,7 @@ ls .*/*.txt
 
 ## Empty Glob Results
 
-When a glob pattern matches no files, Rush returns an error instead of treating it as a literal string.
+When a glob pattern matches no files, AUSH returns an error instead of treating it as a literal string.
 
 ```bash
 # If no .xyz files exist, this returns an error
@@ -225,7 +225,7 @@ cat "file*.txt"  # Literal file named "file*.txt"
 
 ## Differences from Bash
 
-Rush glob expansion aims for bash compatibility, but with some enhancements:
+AUSH glob expansion aims for bash compatibility, but with some enhancements:
 
 1. **Better Error Messages**: Clear error when no matches found
 2. **Consistent Sorting**: Always alphabetically sorted

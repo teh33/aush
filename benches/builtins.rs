@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use rush::builtins::Builtins;
-use rush::runtime::Runtime;
+use aush::builtins::Builtins;
+use aush::runtime::Runtime;
 use std::process::Command;
 use std::time::Duration;
 
@@ -14,7 +14,7 @@ fn bench_echo_builtin(c: &mut Criterion) {
     let builtins = Builtins::new();
     let mut runtime = Runtime::new();
 
-    // Benchmark Rush builtin echo
+    // Benchmark AUSH builtin echo
     group.bench_function("rush_builtin", |b| {
         b.iter(|| {
             let args = vec!["hello".to_string(), "world".to_string()];
@@ -57,7 +57,7 @@ fn bench_pwd_builtin(c: &mut Criterion) {
     let builtins = Builtins::new();
     let mut runtime = Runtime::new();
 
-    // Benchmark Rush builtin pwd
+    // Benchmark AUSH builtin pwd
     group.bench_function("rush_builtin", |b| {
         b.iter(|| {
             let result = builtins.execute("pwd", vec![], &mut runtime);
@@ -95,7 +95,7 @@ fn bench_cd_builtin(c: &mut Criterion) {
     let builtins = Builtins::new();
     let mut runtime = Runtime::new();
 
-    // Benchmark Rush builtin cd
+    // Benchmark AUSH builtin cd
     group.bench_function("rush_builtin_home", |b| {
         b.iter(|| {
             let args = vec![];
@@ -130,7 +130,7 @@ fn bench_export_builtin(c: &mut Criterion) {
     let builtins = Builtins::new();
     let mut runtime = Runtime::new();
 
-    // Benchmark Rush builtin export
+    // Benchmark AUSH builtin export
     group.bench_function("rush_builtin_single", |b| {
         b.iter(|| {
             let args = vec!["TEST=value".to_string()];
@@ -241,7 +241,7 @@ fn bench_find_builtin(c: &mut Criterion) {
     let mut runtime = Runtime::new();
     runtime.set_cwd(base_path.to_path_buf());
 
-    // Benchmark Rush builtin find (all files)
+    // Benchmark AUSH builtin find (all files)
     group.bench_function("rush_builtin_all", |b| {
         b.iter(|| {
             let result = builtins.execute("find", vec![], &mut runtime);
@@ -249,7 +249,7 @@ fn bench_find_builtin(c: &mut Criterion) {
         });
     });
 
-    // Benchmark Rush builtin find with pattern
+    // Benchmark AUSH builtin find with pattern
     group.bench_function("rush_builtin_pattern", |b| {
         b.iter(|| {
             let args = vec!["-name".to_string(), "*.rs".to_string()];
@@ -258,7 +258,7 @@ fn bench_find_builtin(c: &mut Criterion) {
         });
     });
 
-    // Benchmark Rush builtin find with type filter
+    // Benchmark AUSH builtin find with type filter
     group.bench_function("rush_builtin_type", |b| {
         b.iter(|| {
             let args = vec!["-type".to_string(), "f".to_string()];

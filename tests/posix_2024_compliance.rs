@@ -28,21 +28,21 @@ fn project_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
 
-/// Get the Rush binary path (debug for faster tests)
+/// Get the AUSH binary path (debug for faster tests)
 fn rush_binary() -> PathBuf {
     let mut path = project_root();
     path.push("target");
     path.push("debug");
-    path.push("rush");
+    path.push("aush");
     path
 }
 
-/// Build Rush in debug mode if not already built
+/// Build AUSH in debug mode if not already built
 fn ensure_rush_binary() -> Result<(), String> {
     let binary = rush_binary();
 
     if !binary.exists() {
-        eprintln!("Building Rush binary...");
+        eprintln!("Building AUSH binary...");
         let status = Command::new("cargo")
             .args(["build"])
             .current_dir(project_root())
@@ -50,20 +50,20 @@ fn ensure_rush_binary() -> Result<(), String> {
             .map_err(|e| format!("Failed to run cargo build: {}", e))?;
 
         if !status.success() {
-            return Err("Failed to build Rush binary".to_string());
+            return Err("Failed to build AUSH binary".to_string());
         }
     }
 
     Ok(())
 }
 
-/// Run rush with a script and return stdout
+/// Run aush with a script and return stdout
 fn run_rush(script: &str) -> std::process::Output {
     Command::new(rush_binary())
         .arg("-c")
         .arg(script)
         .output()
-        .expect("Failed to execute rush")
+        .expect("Failed to execute aush")
 }
 
 /// Helper to get stdout as string
@@ -1397,7 +1397,7 @@ mod redirection {
     #[test]
     fn test_stdout_redirect() {
         ensure_rush_binary().unwrap();
-        let output = run_rush("echo test > /tmp/rush_test_stdout.txt && cat /tmp/rush_test_stdout.txt && rm /tmp/rush_test_stdout.txt");
+        let output = run_rush("echo test > /tmp/aush_test_stdout.txt && cat /tmp/aush_test_stdout.txt && rm /tmp/aush_test_stdout.txt");
         assert_eq!(stdout(&output).trim(), "test");
     }
 
@@ -1406,10 +1406,10 @@ mod redirection {
         ensure_rush_binary().unwrap();
         let output = run_rush(
             r#"
-            echo first > /tmp/rush_test_append.txt
-            echo second >> /tmp/rush_test_append.txt
-            cat /tmp/rush_test_append.txt
-            rm /tmp/rush_test_append.txt
+            echo first > /tmp/aush_test_append.txt
+            echo second >> /tmp/aush_test_append.txt
+            cat /tmp/aush_test_append.txt
+            rm /tmp/aush_test_append.txt
         "#,
         );
         assert!(stdout(&output).contains("first"));
@@ -1419,14 +1419,14 @@ mod redirection {
     #[test]
     fn test_stdin_redirect() {
         ensure_rush_binary().unwrap();
-        let output = run_rush("echo hello > /tmp/rush_test_stdin.txt && cat < /tmp/rush_test_stdin.txt && rm /tmp/rush_test_stdin.txt");
+        let output = run_rush("echo hello > /tmp/aush_test_stdin.txt && cat < /tmp/aush_test_stdin.txt && rm /tmp/aush_test_stdin.txt");
         assert_eq!(stdout(&output).trim(), "hello");
     }
 
     #[test]
     fn test_stderr_redirect() {
         ensure_rush_binary().unwrap();
-        let output = run_rush("ls /nonexistent 2> /tmp/rush_test_stderr.txt; cat /tmp/rush_test_stderr.txt; rm /tmp/rush_test_stderr.txt");
+        let output = run_rush("ls /nonexistent 2> /tmp/aush_test_stderr.txt; cat /tmp/aush_test_stderr.txt; rm /tmp/aush_test_stderr.txt");
         // Should have captured error
         assert!(
             stdout(&output).contains("No such file")
@@ -1481,10 +1481,10 @@ EOF
         ensure_rush_binary().unwrap();
         let output = run_rush(
             r#"
-            echo first > /tmp/rush_noclobber.txt
-            echo second > /tmp/rush_noclobber.txt
-            cat /tmp/rush_noclobber.txt
-            rm /tmp/rush_noclobber.txt
+            echo first > /tmp/aush_noclobber.txt
+            echo second > /tmp/aush_noclobber.txt
+            cat /tmp/aush_noclobber.txt
+            rm /tmp/aush_noclobber.txt
         "#,
         );
         assert_eq!(stdout(&output).trim(), "second");
@@ -1863,7 +1863,7 @@ mod shellspec_integration {
         Command::new("shellspec")
             .args([spec_file, "--format", "tap"])
             .current_dir(posix_dir)
-            .env("RUSH_BINARY", project_root().join("target/release/rush"))
+            .env("AUSH_BINARY", project_root().join("target/release/aush"))
             .output()
     }
 

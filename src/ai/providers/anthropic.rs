@@ -1,7 +1,7 @@
 //! Anthropic provider — Claude models via the Messages API
 //!
 //! Uses `POST /v1/messages`. Requires `ANTHROPIC_API_KEY` (or `api_key` in
-//! `~/.rush/ai.toml`). Tool use is via Anthropic's `tool_use` content blocks.
+//! `~/.aush/ai.toml`). Tool use is via Anthropic's `tool_use` content blocks.
 
 use crate::ai::client::{LlmError, LlmProvider, Message, Response, Role, Tool};
 use crate::ai::config::LlmConfig;

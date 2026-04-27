@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use thiserror::Error;
 
-use crate::daemon::protocol::{decode_jsonl, encode_jsonl, PiToRush, RushToPi, ShellContext};
+use crate::daemon::protocol::{decode_jsonl, encode_jsonl, PiToAUSH, AUSHToPi, ShellContext};
 
 /// Global counter for generating unique request IDs
 static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -21,7 +21,7 @@ fn generate_request_id() -> String {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis())
         .unwrap_or(0);
-    format!("rush-{}-{}", timestamp, count)
+    format!("aush-{}-{}", timestamp, count)
 }
 
 /// Errors that can occur when communicating with the Pi daemon
@@ -59,11 +59,11 @@ impl PiClient {
     ///
     /// Tries socket paths in order:
     /// 1. `$AUSH_PI_SOCKET` environment variable
-    /// 2. `$RUSH_PI_SOCKET` legacy environment variable
+    /// 2. `$AUSH_PI_SOCKET` environment variable
     /// 3. `~/.pi/aush.sock`
-    /// 4. `~/.pi/rush.sock`
+    /// 4. `~/.pi/aush.sock`
     /// 5. `/tmp/pi-aush-$USER.sock`
-    /// 6. `/tmp/pi-rush-$USER.sock`
+    /// 6. `/tmp/pi-aush-$USER.sock`
     ///
     /// # Errors
     ///
@@ -106,23 +106,23 @@ impl PiClient {
     ///
     /// Search order:
     /// 1. `$AUSH_PI_SOCKET` environment variable
-    /// 2. `$RUSH_PI_SOCKET` legacy environment variable
+    /// 2. `$AUSH_PI_SOCKET` environment variable
     /// 3. `~/.pi/aush.sock`
-    /// 4. `~/.pi/rush.sock`
+    /// 4. `~/.pi/aush.sock`
     /// 5. `/tmp/pi-aush-$USER.sock`
-    /// 6. `/tmp/pi-rush-$USER.sock`
+    /// 6. `/tmp/pi-aush-$USER.sock`
     fn find_socket() -> Result<PathBuf, PiClientError> {
         // 1. Check environment variables
-        if let Some(path) = crate::brand::env_var("AUSH_PI_SOCKET", "RUSH_PI_SOCKET") {
+        if let Some(path) = crate::brand::env_var("AUSH_PI_SOCKET") {
             let path = PathBuf::from(path);
             if path.exists() {
                 return Ok(path);
             }
         }
 
-        // 2. Check ~/.pi/aush.sock, then legacy ~/.pi/rush.sock
+        // 2. Check ~/.pi/aush.sock, then ~/.pi/aush.sock
         if let Some(home) = dirs::home_dir() {
-            for file_name in ["aush.sock", "rush.sock"] {
+            for file_name in ["aush.sock", "aush.sock"] {
                 let path = home.join(".pi").join(file_name);
                 if path.exists() {
                     return Ok(path);
@@ -130,9 +130,9 @@ impl PiClient {
             }
         }
 
-        // 3. Check /tmp/pi-aush-$USER.sock, then legacy /tmp/pi-rush-$USER.sock
+        // 3. Check /tmp/pi-aush-$USER.sock, then /tmp/pi-aush-$USER.sock
         let username = whoami::username();
-        for prefix in ["pi-aush", "pi-rush"] {
+        for prefix in ["pi-aush", "pi-aush"] {
             let path = PathBuf::from(format!("/tmp/{}-{}.sock", prefix, username));
             if path.exists() {
                 return Ok(path);
@@ -143,7 +143,7 @@ impl PiClient {
     }
 
     /// Send a message to the Pi daemon
-    fn send(&mut self, message: &RushToPi) -> Result<(), PiClientError> {
+    fn send(&mut self, message: &AUSHToPi) -> Result<(), PiClientError> {
         let line =
             encode_jsonl(message).map_err(|e| PiClientError::ProtocolError(e.to_string()))?;
         self.stream.write_all(line.as_bytes())?;
@@ -152,7 +152,7 @@ impl PiClient {
     }
 
     /// Read a single response from the Pi daemon
-    fn read_response(&mut self) -> Result<Option<PiToRush>, PiClientError> {
+    fn read_response(&mut self) -> Result<Option<PiToAUSH>, PiClientError> {
         let mut line = String::new();
         let bytes_read = self.reader.read_line(&mut line)?;
 
@@ -160,14 +160,14 @@ impl PiClient {
             return Ok(None); // EOF
         }
 
-        let message: PiToRush =
+        let message: PiToAUSH =
             decode_jsonl(&line).map_err(|e| PiClientError::ProtocolError(e.to_string()))?;
         Ok(Some(message))
     }
 
     /// Send a query and return a streaming response iterator
     ///
-    /// The iterator yields `PiToRush` messages until a `Done` or `Error` message
+    /// The iterator yields `PiToAUSH` messages until a `Done` or `Error` message
     /// is received. Tool calls should be handled by the caller.
     ///
     /// # Arguments
@@ -178,7 +178,7 @@ impl PiClient {
     ///
     /// # Returns
     ///
-    /// An iterator over `PiToRush` messages. The iterator continues until
+    /// An iterator over `PiToAUSH` messages. The iterator continues until
     /// a terminal message (`Done` or `Error`) is received.
     pub fn query(
         &mut self,
@@ -187,7 +187,7 @@ impl PiClient {
         context: ShellContext,
     ) -> Result<ResponseIterator<'_>, PiClientError> {
         let id = generate_request_id();
-        let msg = RushToPi::Query {
+        let msg = AUSHToPi::Query {
             id: id.clone(),
             prompt: prompt.to_string(),
             stdin: stdin.map(String::from),
@@ -214,7 +214,7 @@ impl PiClient {
     ///
     /// # Returns
     ///
-    /// An iterator over `PiToRush` messages. Typically returns a single
+    /// An iterator over `PiToAUSH` messages. Typically returns a single
     /// `SuggestedCommand` message followed by `Done`.
     pub fn intent(
         &mut self,
@@ -223,7 +223,7 @@ impl PiClient {
         project_type: Option<&str>,
     ) -> Result<ResponseIterator<'_>, PiClientError> {
         let id = generate_request_id();
-        let msg = RushToPi::Intent {
+        let msg = AUSHToPi::Intent {
             id: id.clone(),
             intent: intent.to_string(),
             context,
@@ -252,7 +252,7 @@ impl PiClient {
         output: String,
         exit_code: i32,
     ) -> Result<(), PiClientError> {
-        let msg = RushToPi::ToolResult {
+        let msg = AUSHToPi::ToolResult {
             id: tool_call_id.to_string(),
             output,
             exit_code,
@@ -331,7 +331,7 @@ impl<'a> ResponseIterator<'a> {
 }
 
 impl<'a> Iterator for ResponseIterator<'a> {
-    type Item = Result<PiToRush, PiClientError>;
+    type Item = Result<PiToAUSH, PiClientError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -342,7 +342,7 @@ impl<'a> Iterator for ResponseIterator<'a> {
             Ok(Some(msg)) => {
                 // Check for terminal messages
                 match &msg {
-                    PiToRush::Done { .. } | PiToRush::Error { .. } => {
+                    PiToAUSH::Done { .. } | PiToAUSH::Error { .. } => {
                         self.done = true;
                     }
                     _ => {}
@@ -374,9 +374,9 @@ mod tests {
         // IDs should be unique
         assert_ne!(id1, id2);
 
-        // IDs should start with "rush-"
-        assert!(id1.starts_with("rush-"));
-        assert!(id2.starts_with("rush-"));
+        // IDs should start with "aush-"
+        assert!(id1.starts_with("aush-"));
+        assert!(id2.starts_with("aush-"));
     }
 
     #[test]

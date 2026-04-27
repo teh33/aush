@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `ls` builtin command provides a fast, modern implementation of directory listing functionality for Rush shell. It's designed to be 3-5x faster than GNU ls while maintaining compatibility with common use cases.
+The `ls` builtin command provides a fast, modern implementation of directory listing functionality for AUSH shell. It's designed to be 3-5x faster than GNU ls while maintaining compatibility with common use cases.
 
 ## Features
 
@@ -72,7 +72,7 @@ The long format (`-l`) displays:
 ```
 -rw-r--r--   1     1.5K Dec 20 14:30 config.toml
 drwxr-xr-x   3     4.0K Dec 20 12:15 src
--rwxr-xr-x   1   102.4M Dec 19 18:45 rush
+-rwxr-xr-x   1   102.4M Dec 19 18:45 aush
 ```
 
 Columns (left to right):
@@ -102,7 +102,7 @@ drwxr-xr-x
 
 ## Performance
 
-The Rush `ls` builtin is optimized for speed:
+The AUSH `ls` builtin is optimized for speed:
 
 - Uses parallel directory traversal when possible
 - Efficient metadata caching
@@ -131,7 +131,7 @@ Typical performance improvements over GNU ls:
 
 ## Differences from GNU ls
 
-The Rush `ls` implementation focuses on common use cases. Some advanced GNU ls features are not yet implemented:
+The AUSH `ls` implementation focuses on common use cases. Some advanced GNU ls features are not yet implemented:
 
 **Not Yet Supported:**
 - `-R` (recursive listing)

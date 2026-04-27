@@ -84,7 +84,7 @@ const BUILTINS: &[BuiltinHelp] = &[
         description: "Read and execute commands from a file in the current shell environment. Supports ~ expansion.",
         usage: "source <file>",
         examples: &[
-            "source ~/.rushrc    # Load shell configuration",
+            "source ~/.aushrc    # Load shell configuration",
             "source ./setup.sh   # Execute setup script",
         ],
     },
@@ -410,7 +410,7 @@ fn show_all_builtins() -> String {
     let title_style = Color::Cyan.bold();
     let name_style = Color::Green.bold();
 
-    output.push_str(&title_style.paint("Rush Shell Builtins").to_string());
+    output.push_str(&title_style.paint("AUSH Shell Builtins").to_string());
     output.push_str("\n\n");
     output.push_str("Type 'help <command>' for more information on a specific command.\n\n");
 
@@ -479,7 +479,7 @@ mod tests {
         let mut runtime = Runtime::new();
         let result = builtin_help(&[], &mut runtime).unwrap();
         assert_eq!(result.exit_code, 0);
-        assert!(result.stdout().contains("Rush Shell Builtins"));
+        assert!(result.stdout().contains("AUSH Shell Builtins"));
         assert!(result.stdout().contains("cd"));
         assert!(result.stdout().contains("echo"));
         assert!(result.stdout().contains("help"));

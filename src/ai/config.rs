@@ -1,7 +1,7 @@
 //! Configuration for the LLM client.
 //!
 //! All settings are read from environment variables, which are typically set
-//! in `~/.aushrc` or legacy `~/.rushrc`:
+//! in `~/.aushrc`:
 //!
 //! ```bash
 //! AUSH_AI_PROVIDER=ollama
@@ -74,16 +74,16 @@ impl LlmConfig {
     /// Returns `Ok` with defaults for any unset variable.
     /// Returns `Err` only if a variable has an invalid value.
     pub fn load() -> Result<Self, String> {
-        let provider = match crate::brand::env_var("AUSH_AI_PROVIDER", "RUSH_AI_PROVIDER") {
+        let provider = match crate::brand::env_var("AUSH_AI_PROVIDER") {
             Some(val) => val.parse::<ProviderType>()?,
             None => ProviderType::Ollama,
         };
 
-        let model = crate::brand::env_var("AUSH_AI_MODEL", "RUSH_AI_MODEL")
+        let model = crate::brand::env_var("AUSH_AI_MODEL")
             .unwrap_or_else(|| "qwen2.5-coder:7b".to_string());
 
         let api_key =
-            crate::brand::env_var("AUSH_AI_API_KEY", "RUSH_AI_API_KEY").or_else(
+            crate::brand::env_var("AUSH_AI_API_KEY").or_else(
                 || match provider {
                     ProviderType::OpenAi => std::env::var("OPENAI_API_KEY").ok(),
                     ProviderType::Anthropic => std::env::var("ANTHROPIC_API_KEY").ok(),
@@ -91,10 +91,10 @@ impl LlmConfig {
                 },
             );
 
-        let base_url = crate::brand::env_var("AUSH_AI_BASE_URL", "RUSH_AI_BASE_URL");
+        let base_url = crate::brand::env_var("AUSH_AI_BASE_URL");
 
         let autorun = matches!(
-            crate::brand::env_var("AUSH_AI_AUTORUN", "RUSH_AI_AUTORUN").as_deref(),
+            crate::brand::env_var("AUSH_AI_AUTORUN").as_deref(),
             Some("1" | "true" | "yes")
         );
 
@@ -109,7 +109,7 @@ impl LlmConfig {
 
     /// Check if AI has been configured (provider env var is set).
     pub fn is_configured() -> bool {
-        crate::brand::env_var("AUSH_AI_PROVIDER", "RUSH_AI_PROVIDER").is_some()
+        crate::brand::env_var("AUSH_AI_PROVIDER").is_some()
     }
 }
 

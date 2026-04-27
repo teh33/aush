@@ -72,7 +72,7 @@ If you have Rust installed:
 cargo install aush
 ```
 
-The crates.io package is `aush`. During the migration it installs `aush` as the primary command plus a legacy `rush` executable for existing scripts.
+The crates.io package is `aush`. It installs `aush` as the primary command.
 
 To install from git instead:
 
@@ -125,18 +125,16 @@ echo "/usr/local/bin/aush" | sudo tee -a /etc/shells
 chsh -s /usr/local/bin/aush
 ```
 
-## Migrating from Rush
+## Login Shell Setup
 
-AUSH releases keep a legacy `rush` executable during the migration. New scripts and login-shell configuration should use `aush`; existing scripts that call `rush` can continue to work while you update them.
-
-If you previously used Rush as your login shell, add the new AUSH path to `/etc/shells` and run `chsh` again:
+To use AUSH as your login shell, add the AUSH path to `/etc/shells` and run `chsh`:
 
 ```bash
 echo "/usr/local/bin/aush" | sudo tee -a /etc/shells
 chsh -s /usr/local/bin/aush
 ```
 
-AUSH reads new `AUSH_*` environment variables and `~/.aushrc` first, with legacy `RUSH_*` and `~/.rushrc` fallback for compatibility. Release archives also include a legacy `rush` executable during this migration phase. The daemon helper binary is still named `rushd` and is installed when present in the selected package.
+AUSH reads `AUSH_*` environment variables and `~/.aushrc`. Release archives include the `aush` shell and install `aushd` when daemon support is packaged.
 
 ## Daemon Mode (Optional)
 
@@ -144,13 +142,13 @@ For ultra-fast startup times, use AUSH's daemon mode:
 
 ```bash
 # Start the daemon
-rushd start
+aushd start
 
 # Commands now connect to the daemon (much faster)
 aush -c "ls"      # ~0.4ms instead of ~4.9ms
 
 # Stop the daemon
-rushd stop
+aushd stop
 ```
 
 This is ideal for:
@@ -191,14 +189,12 @@ brew untap opus-workshop/aush
 
 ```bash
 sudo rm /usr/local/bin/aush
-sudo rm /usr/local/bin/rush  # optional legacy compatibility executable, if installed
 ```
 
 ### From Source
 
 ```bash
 sudo rm /usr/local/bin/aush
-sudo rm /usr/local/bin/rush  # optional legacy compatibility executable, if installed
 ```
 
 ## Troubleshooting

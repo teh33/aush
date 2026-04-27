@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Claude Code Performance Benchmark: Rush vs Zsh
+Claude Code Performance Benchmark: AUSH vs Zsh
 
-Measures and compares Claude Code performance when running in Rush shell vs Zsh.
+Measures and compares Claude Code performance when running in AUSH shell vs Zsh.
 Tests shell startup, command execution, file operations, and interactive responsiveness.
 """
 
@@ -28,14 +28,14 @@ class BenchmarkResult:
     runs: int
 
 class ClaudeCodeBenchmark:
-    def __init__(self, rush_path: str, zsh_path: str = "/bin/zsh", runs: int = 10):
-        self.rush_path = Path(rush_path).resolve()
+    def __init__(self, aush_path: str, zsh_path: str = "/bin/zsh", runs: int = 10):
+        self.aush_path = Path(aush_path).resolve()
         self.zsh_path = Path(zsh_path)
         self.runs = runs
         self.results: List[BenchmarkResult] = []
 
-        if not self.rush_path.exists():
-            raise FileNotFoundError(f"Rush binary not found: {self.rush_path}")
+        if not self.aush_path.exists():
+            raise FileNotFoundError(f"AUSH binary not found: {self.aush_path}")
         if not self.zsh_path.exists():
             raise FileNotFoundError(f"Zsh binary not found: {self.zsh_path}")
 
@@ -95,7 +95,7 @@ class ClaudeCodeBenchmark:
         print("\n📊 Shell Startup Time:")
 
         # Test 1: Empty command (just shell startup)
-        for shell in [str(self.rush_path), str(self.zsh_path)]:
+        for shell in [str(self.aush_path), str(self.zsh_path)]:
             result = self.run_benchmark(
                 "Shell startup (exit immediately)",
                 shell,
@@ -105,7 +105,7 @@ class ClaudeCodeBenchmark:
                 self.results.append(result)
 
         # Test 2: Simple echo
-        for shell in [str(self.rush_path), str(self.zsh_path)]:
+        for shell in [str(self.aush_path), str(self.zsh_path)]:
             result = self.run_benchmark(
                 "Simple echo command",
                 shell,
@@ -127,7 +127,7 @@ class ClaudeCodeBenchmark:
         ]
 
         for name, cmd in commands:
-            for shell in [str(self.rush_path), str(self.zsh_path)]:
+            for shell in [str(self.aush_path), str(self.zsh_path)]:
                 result = self.run_benchmark(name, shell, cmd)
                 if result:
                     self.results.append(result)
@@ -137,7 +137,7 @@ class ClaudeCodeBenchmark:
         print("\n📊 File Operations:")
 
         # Create test directory
-        test_dir = Path("/tmp/rush_bench_test")
+        test_dir = Path("/tmp/aush_bench_test")
         test_dir.mkdir(exist_ok=True)
         test_file = test_dir / "test.txt"
 
@@ -148,7 +148,7 @@ class ClaudeCodeBenchmark:
         ]
 
         for name, cmd in commands:
-            for shell in [str(self.rush_path), str(self.zsh_path)]:
+            for shell in [str(self.aush_path), str(self.zsh_path)]:
                 result = self.run_benchmark(name, shell, cmd)
                 if result:
                     self.results.append(result)
@@ -179,7 +179,7 @@ class ClaudeCodeBenchmark:
         ]
 
         for name, cmd in commands:
-            for shell in [str(self.rush_path), str(self.zsh_path)]:
+            for shell in [str(self.aush_path), str(self.zsh_path)]:
                 result = self.run_benchmark(name, shell, cmd)
                 if result:
                     self.results.append(result)
@@ -196,7 +196,7 @@ class ClaudeCodeBenchmark:
         ]
 
         for name, cmd in commands:
-            for shell in [str(self.rush_path), str(self.zsh_path)]:
+            for shell in [str(self.aush_path), str(self.zsh_path)]:
                 result = self.run_benchmark(name, shell, cmd)
                 if result:
                     self.results.append(result)
@@ -214,17 +214,17 @@ class ClaudeCodeBenchmark:
 
         # Calculate speedup for each benchmark
         for name, shells in by_name.items():
-            if "rush" in shells and "zsh" in shells:
-                rush_time = shells["rush"].mean_ms
+            if "aush" in shells and "zsh" in shells:
+                aush_time = shells["aush"].mean_ms
                 zsh_time = shells["zsh"].mean_ms
-                speedup = zsh_time / rush_time if rush_time > 0 else 0
+                speedup = zsh_time / aush_time if aush_time > 0 else 0
 
                 comparison[name] = {
-                    "rush_ms": rush_time,
+                    "rush_ms": aush_time,
                     "zsh_ms": zsh_time,
                     "speedup": speedup,
-                    "faster": "rush" if speedup > 1 else "zsh",
-                    "difference_ms": abs(rush_time - zsh_time)
+                    "faster": "aush" if speedup > 1 else "zsh",
+                    "difference_ms": abs(aush_time - zsh_time)
                 }
 
         return comparison
@@ -232,36 +232,36 @@ class ClaudeCodeBenchmark:
     def print_report(self):
         """Print a formatted benchmark report"""
         print("\n" + "="*80)
-        print("BENCHMARK RESULTS: Claude Code in Rush vs Zsh")
+        print("BENCHMARK RESULTS: Claude Code in AUSH vs Zsh")
         print("="*80)
 
         comparison = self.generate_comparison()
 
         # Calculate overall statistics
-        rush_faster = sum(1 for c in comparison.values() if c["faster"] == "rush")
-        zsh_faster = len(comparison) - rush_faster
+        aush_faster = sum(1 for c in comparison.values() if c["faster"] == "aush")
+        zsh_faster = len(comparison) - aush_faster
         avg_speedup = statistics.mean([c["speedup"] for c in comparison.values()])
 
         print(f"\n📈 Summary:")
         print(f"  Total benchmarks: {len(comparison)}")
-        print(f"  Rush faster: {rush_faster} tests")
+        print(f"  AUSH faster: {aush_faster} tests")
         print(f"  Zsh faster: {zsh_faster} tests")
         print(f"  Average speedup: {avg_speedup:.2f}x")
 
         print(f"\n📊 Detailed Results:")
-        print(f"\n{'Benchmark':<40} {'Rush':>10} {'Zsh':>10} {'Speedup':>10} {'Winner':>10}")
+        print(f"\n{'Benchmark':<40} {'AUSH':>10} {'Zsh':>10} {'Speedup':>10} {'Winner':>10}")
         print("-" * 80)
 
         for name, comp in sorted(comparison.items()):
             speedup_str = f"{comp['speedup']:.2f}x"
-            winner = "🏆 Rush" if comp['faster'] == 'rush' else "Zsh"
+            winner = "🏆 AUSH" if comp['faster'] == 'aush' else "Zsh"
             print(f"{name:<40} {comp['rush_ms']:>8.2f}ms {comp['zsh_ms']:>8.2f}ms {speedup_str:>10} {winner:>10}")
 
         # Find biggest wins
         print(f"\n🚀 Biggest Improvements:")
         sorted_by_speedup = sorted(comparison.items(), key=lambda x: x[1]['speedup'], reverse=True)
         for name, comp in sorted_by_speedup[:3]:
-            if comp['faster'] == 'rush':
+            if comp['faster'] == 'aush':
                 print(f"  • {name}: {comp['speedup']:.2f}x faster ({comp['difference_ms']:.2f}ms saved)")
 
         print(f"\n⚠️  Areas to Improve:")
@@ -276,7 +276,7 @@ class ClaudeCodeBenchmark:
         """Save results to JSON file"""
         output = {
             "metadata": {
-                "rush_path": str(self.rush_path),
+                "aush_path": str(self.aush_path),
                 "zsh_path": str(self.zsh_path),
                 "runs_per_test": self.runs,
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
@@ -292,8 +292,8 @@ class ClaudeCodeBenchmark:
 
     def run_all(self):
         """Run all benchmarks"""
-        print("🚀 Claude Code Shell Benchmark: Rush vs Zsh")
-        print(f"   Rush: {self.rush_path}")
+        print("🚀 Claude Code Shell Benchmark: AUSH vs Zsh")
+        print(f"   AUSH: {self.aush_path}")
         print(f"   Zsh: {self.zsh_path}")
         print(f"   Runs per test: {self.runs}")
 
@@ -315,18 +315,18 @@ class ClaudeCodeBenchmark:
 
 def main():
     # Default paths
-    rush_path = "./target/release/rush"
+    aush_path = "./target/release/aush"
     zsh_path = "/bin/zsh"
     runs = 10
 
     # Parse command line arguments
     if len(sys.argv) > 1:
-        rush_path = sys.argv[1]
+        aush_path = sys.argv[1]
     if len(sys.argv) > 2:
         runs = int(sys.argv[2])
 
     try:
-        benchmark = ClaudeCodeBenchmark(rush_path, zsh_path, runs)
+        benchmark = ClaudeCodeBenchmark(aush_path, zsh_path, runs)
         benchmark.run_all()
     except Exception as e:
         print(f"\n❌ Error: {e}", file=sys.stderr)

@@ -1,5 +1,5 @@
-use rush::executor::Executor;
-use rush::parser::ast::{Argument, Command, Statement};
+use aush::executor::Executor;
+use aush::parser::ast::{Argument, Command, Statement};
 
 /// Test exec with no arguments is a no-op
 #[test]
@@ -255,16 +255,16 @@ mod subprocess_tests {
     /// This test spawns a subprocess to verify exec works
     #[test]
     fn test_exec_replaces_shell() {
-        // Build the rush binary path
-        let rush_binary = env!("CARGO_BIN_EXE_rush");
+        // Build the aush binary path
+        let rush_binary = env!("CARGO_BIN_EXE_aush");
 
-        // Run rush with a command that uses exec to run /bin/echo
+        // Run aush with a command that uses exec to run /bin/echo
         // If exec works, the shell is replaced and we get the output from echo
         let output = Command::new(rush_binary)
             .arg("-c")
             .arg("exec /bin/echo hello from exec")
             .output()
-            .expect("Failed to execute rush");
+            .expect("Failed to execute aush");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         assert!(
@@ -277,13 +277,13 @@ mod subprocess_tests {
     /// Test exec with arguments passes arguments correctly
     #[test]
     fn test_exec_with_arguments() {
-        let rush_binary = env!("CARGO_BIN_EXE_rush");
+        let rush_binary = env!("CARGO_BIN_EXE_aush");
 
         let output = Command::new(rush_binary)
             .arg("-c")
             .arg("exec /bin/echo arg1 arg2 arg3")
             .output()
-            .expect("Failed to execute rush");
+            .expect("Failed to execute aush");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         assert!(
@@ -296,13 +296,13 @@ mod subprocess_tests {
     /// Test exec failure doesn't crash the shell for nonexistent command
     #[test]
     fn test_exec_failure_nonexistent() {
-        let rush_binary = env!("CARGO_BIN_EXE_rush");
+        let rush_binary = env!("CARGO_BIN_EXE_aush");
 
         let output = Command::new(rush_binary)
             .arg("-c")
             .arg("exec nonexistent_command_xyz; echo should not print")
             .output()
-            .expect("Failed to execute rush");
+            .expect("Failed to execute aush");
 
         // The shell should error out on exec failure
         let stderr = String::from_utf8_lossy(&output.stderr);

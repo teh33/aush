@@ -1,6 +1,6 @@
 # Context Detection
 
-Rush provides comprehensive project context detection to enable intelligent command routing and environment awareness.
+AUSH provides comprehensive project context detection to enable intelligent command routing and environment awareness.
 
 ## Overview
 
@@ -114,7 +114,7 @@ Check cache for path
 ### Basic Detection
 
 ```rust
-use rush::context::Context;
+use aush::context::Context;
 use std::path::Path;
 
 // Detect context for current directory
@@ -133,7 +133,7 @@ if let Some(root) = ctx.get_project_root() {
 ### Command Routing
 
 ```rust
-use rush::context::Context;
+use aush::context::Context;
 use std::path::Path;
 
 let ctx = Context::detect(Path::new("."));
@@ -148,7 +148,7 @@ if let Some(cmd) = ctx.route_command("test") {
 ### Git Integration
 
 ```rust
-use rush::context::Context;
+use aush::context::Context;
 use std::path::Path;
 
 let ctx = Context::detect(Path::new("."));
@@ -167,7 +167,7 @@ println!("Status: {}", status);
 ### Manual Context Management
 
 ```rust
-use rush::context::Context;
+use aush::context::Context;
 use std::path::Path;
 
 // Create context without auto-detection
@@ -185,7 +185,7 @@ ctx.detect_all(Path::new("."));
 
 ## Nested Projects
 
-When projects are nested (e.g., a Node frontend inside a Rust monorepo), Rush follows the **closest ancestor wins** rule:
+When projects are nested (e.g., a Node frontend inside a Rust monorepo), AUSH follows the **closest ancestor wins** rule:
 
 ```
 /my-project/
@@ -203,7 +203,7 @@ Running detection from `/my-project/frontend/src/` will identify it as a Node pr
 Detection results are cached to avoid repeated filesystem operations:
 
 ```rust
-use rush::context::Context;
+use aush::context::Context;
 use std::path::Path;
 
 let mut ctx = Context::new();
@@ -311,7 +311,7 @@ Potential additions:
 2. **Custom marker files**: User-defined project identification
 3. **Multiple projects**: Handle polyglot directories gracefully
 4. **Workspace awareness**: Detect monorepo workspace roots
-5. **Configuration files**: Load project-specific Rush settings
+5. **Configuration files**: Load project-specific AUSH settings
 6. **LSP integration**: Provide context to language servers
 7. **Smart defaults**: Learn user preferences over time
 
@@ -375,4 +375,4 @@ When adding support for a new project type:
 
 ## License
 
-Part of the Rush shell project. See LICENSE for details.
+Part of the AUSH shell project. See LICENSE for details.

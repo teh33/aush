@@ -36,42 +36,42 @@ impl SuggestionConfig {
     /// Create configuration from environment variables
     ///
     /// Supports:
-    /// - AUSH_SUGGEST_ENABLED / RUSH_SUGGEST_ENABLED: "0" or "false" to disable (default: enabled)
-    /// - AUSH_SUGGEST_THRESHOLD / RUSH_SUGGEST_THRESHOLD: minimum score 0-100 (default: 30)
-    /// - AUSH_SUGGEST_MAX / RUSH_SUGGEST_MAX: maximum suggestions (default: 5)
-    /// - AUSH_SUGGEST_HISTORY / RUSH_SUGGEST_HISTORY: "0" or "false" to disable history suggestions (default: enabled)
-    /// - AUSH_SUGGEST_CONTEXT / RUSH_SUGGEST_CONTEXT: "0" or "false" to disable context-aware suggestions (default: enabled)
+    /// - AUSH_SUGGEST_ENABLED / AUSH_SUGGEST_ENABLED: "0" or "false" to disable (default: enabled)
+    /// - AUSH_SUGGEST_THRESHOLD / AUSH_SUGGEST_THRESHOLD: minimum score 0-100 (default: 30)
+    /// - AUSH_SUGGEST_MAX / AUSH_SUGGEST_MAX: maximum suggestions (default: 5)
+    /// - AUSH_SUGGEST_HISTORY / AUSH_SUGGEST_HISTORY: "0" or "false" to disable history suggestions (default: enabled)
+    /// - AUSH_SUGGEST_CONTEXT / AUSH_SUGGEST_CONTEXT: "0" or "false" to disable context-aware suggestions (default: enabled)
     pub fn from_env() -> Self {
         let mut config = Self::default();
 
-        // AUSH_SUGGEST_ENABLED / RUSH_SUGGEST_ENABLED
-        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_ENABLED", "RUSH_SUGGEST_ENABLED") {
+        // AUSH_SUGGEST_ENABLED / AUSH_SUGGEST_ENABLED
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_ENABLED") {
             config.enabled = !matches!(val.to_lowercase().as_str(), "0" | "false" | "no" | "off");
         }
 
-        // AUSH_SUGGEST_THRESHOLD / RUSH_SUGGEST_THRESHOLD
-        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_THRESHOLD", "RUSH_SUGGEST_THRESHOLD")
+        // AUSH_SUGGEST_THRESHOLD / AUSH_SUGGEST_THRESHOLD
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_THRESHOLD")
         {
             if let Ok(threshold) = val.parse::<i64>() {
                 config.min_threshold = threshold.clamp(0, 100);
             }
         }
 
-        // AUSH_SUGGEST_MAX / RUSH_SUGGEST_MAX
-        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_MAX", "RUSH_SUGGEST_MAX") {
+        // AUSH_SUGGEST_MAX / AUSH_SUGGEST_MAX
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_MAX") {
             if let Ok(max) = val.parse::<usize>() {
                 config.max_suggestions = max.max(1);
             }
         }
 
-        // AUSH_SUGGEST_HISTORY / RUSH_SUGGEST_HISTORY
-        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_HISTORY", "RUSH_SUGGEST_HISTORY") {
+        // AUSH_SUGGEST_HISTORY / AUSH_SUGGEST_HISTORY
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_HISTORY") {
             config.use_history =
                 !matches!(val.to_lowercase().as_str(), "0" | "false" | "no" | "off");
         }
 
-        // AUSH_SUGGEST_CONTEXT / RUSH_SUGGEST_CONTEXT
-        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_CONTEXT", "RUSH_SUGGEST_CONTEXT") {
+        // AUSH_SUGGEST_CONTEXT / AUSH_SUGGEST_CONTEXT
+        if let Some(val) = crate::brand::env_var("AUSH_SUGGEST_CONTEXT") {
             config.use_context =
                 !matches!(val.to_lowercase().as_str(), "0" | "false" | "no" | "off");
         }
@@ -822,106 +822,106 @@ mod tests {
     #[test]
     fn test_config_from_env_threshold() {
         // Save original value
-        let original = env::var("RUSH_SUGGEST_THRESHOLD").ok();
+        let original = env::var("AUSH_SUGGEST_THRESHOLD").ok();
 
         // Test with valid threshold
-        env::set_var("RUSH_SUGGEST_THRESHOLD", "50");
+        env::set_var("AUSH_SUGGEST_THRESHOLD", "50");
         let config = SuggestionConfig::from_env();
         assert_eq!(config.min_threshold, 50);
 
         // Test with clamping (too high)
-        env::set_var("RUSH_SUGGEST_THRESHOLD", "200");
+        env::set_var("AUSH_SUGGEST_THRESHOLD", "200");
         let config = SuggestionConfig::from_env();
         assert_eq!(config.min_threshold, 100);
 
         // Test with clamping (negative)
-        env::set_var("RUSH_SUGGEST_THRESHOLD", "-10");
+        env::set_var("AUSH_SUGGEST_THRESHOLD", "-10");
         let config = SuggestionConfig::from_env();
         assert_eq!(config.min_threshold, 0);
 
         // Restore original
         match original {
-            Some(val) => env::set_var("RUSH_SUGGEST_THRESHOLD", val),
-            None => env::remove_var("RUSH_SUGGEST_THRESHOLD"),
+            Some(val) => env::set_var("AUSH_SUGGEST_THRESHOLD", val),
+            None => env::remove_var("AUSH_SUGGEST_THRESHOLD"),
         }
     }
 
     #[test]
     fn test_config_from_env_enabled() {
-        let original = env::var("RUSH_SUGGEST_ENABLED").ok();
+        let original = env::var("AUSH_SUGGEST_ENABLED").ok();
 
         // Test disabling
-        env::set_var("RUSH_SUGGEST_ENABLED", "0");
+        env::set_var("AUSH_SUGGEST_ENABLED", "0");
         let config = SuggestionConfig::from_env();
         assert!(!config.enabled);
 
-        env::set_var("RUSH_SUGGEST_ENABLED", "false");
+        env::set_var("AUSH_SUGGEST_ENABLED", "false");
         let config = SuggestionConfig::from_env();
         assert!(!config.enabled);
 
-        env::set_var("RUSH_SUGGEST_ENABLED", "no");
+        env::set_var("AUSH_SUGGEST_ENABLED", "no");
         let config = SuggestionConfig::from_env();
         assert!(!config.enabled);
 
         // Test enabling
-        env::set_var("RUSH_SUGGEST_ENABLED", "1");
+        env::set_var("AUSH_SUGGEST_ENABLED", "1");
         let config = SuggestionConfig::from_env();
         assert!(config.enabled);
 
         // Restore
         match original {
-            Some(val) => env::set_var("RUSH_SUGGEST_ENABLED", val),
-            None => env::remove_var("RUSH_SUGGEST_ENABLED"),
+            Some(val) => env::set_var("AUSH_SUGGEST_ENABLED", val),
+            None => env::remove_var("AUSH_SUGGEST_ENABLED"),
         }
     }
 
     #[test]
     fn test_config_from_env_max_suggestions() {
-        let original = env::var("RUSH_SUGGEST_MAX").ok();
+        let original = env::var("AUSH_SUGGEST_MAX").ok();
 
-        env::set_var("RUSH_SUGGEST_MAX", "10");
+        env::set_var("AUSH_SUGGEST_MAX", "10");
         let config = SuggestionConfig::from_env();
         assert_eq!(config.max_suggestions, 10);
 
         // Test minimum enforcement
-        env::set_var("RUSH_SUGGEST_MAX", "0");
+        env::set_var("AUSH_SUGGEST_MAX", "0");
         let config = SuggestionConfig::from_env();
         assert_eq!(config.max_suggestions, 1);
 
         // Restore
         match original {
-            Some(val) => env::set_var("RUSH_SUGGEST_MAX", val),
-            None => env::remove_var("RUSH_SUGGEST_MAX"),
+            Some(val) => env::set_var("AUSH_SUGGEST_MAX", val),
+            None => env::remove_var("AUSH_SUGGEST_MAX"),
         }
     }
 
     #[test]
     fn test_config_from_env_history_and_context() {
-        let original_history = env::var("RUSH_SUGGEST_HISTORY").ok();
-        let original_context = env::var("RUSH_SUGGEST_CONTEXT").ok();
+        let original_history = env::var("AUSH_SUGGEST_HISTORY").ok();
+        let original_context = env::var("AUSH_SUGGEST_CONTEXT").ok();
 
         // Disable both
-        env::set_var("RUSH_SUGGEST_HISTORY", "off");
-        env::set_var("RUSH_SUGGEST_CONTEXT", "false");
+        env::set_var("AUSH_SUGGEST_HISTORY", "off");
+        env::set_var("AUSH_SUGGEST_CONTEXT", "false");
         let config = SuggestionConfig::from_env();
         assert!(!config.use_history);
         assert!(!config.use_context);
 
         // Enable both
-        env::set_var("RUSH_SUGGEST_HISTORY", "yes");
-        env::set_var("RUSH_SUGGEST_CONTEXT", "1");
+        env::set_var("AUSH_SUGGEST_HISTORY", "yes");
+        env::set_var("AUSH_SUGGEST_CONTEXT", "1");
         let config = SuggestionConfig::from_env();
         assert!(config.use_history);
         assert!(config.use_context);
 
         // Restore
         match original_history {
-            Some(val) => env::set_var("RUSH_SUGGEST_HISTORY", val),
-            None => env::remove_var("RUSH_SUGGEST_HISTORY"),
+            Some(val) => env::set_var("AUSH_SUGGEST_HISTORY", val),
+            None => env::remove_var("AUSH_SUGGEST_HISTORY"),
         }
         match original_context {
-            Some(val) => env::set_var("RUSH_SUGGEST_CONTEXT", val),
-            None => env::remove_var("RUSH_SUGGEST_CONTEXT"),
+            Some(val) => env::set_var("AUSH_SUGGEST_CONTEXT", val),
+            None => env::remove_var("AUSH_SUGGEST_CONTEXT"),
         }
     }
 

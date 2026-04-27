@@ -1,6 +1,6 @@
 # Shell Options (set command)
 
-Rush supports standard shell options that control the behavior of the shell during script execution. These options are managed using the `set` builtin command.
+AUSH supports standard shell options that control the behavior of the shell during script execution. These options are managed using the `set` builtin command.
 
 ## Overview
 
@@ -272,7 +272,7 @@ echo "Will print"
 ### Safe Script Template
 
 ```bash
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 set -euo pipefail
 
 # Your script here
@@ -311,5 +311,5 @@ set +x
 
 - Bash manual: `man bash` (search for "set")
 - POSIX specification for `set`
-- Rush executor implementation: `src/executor/mod.rs`
-- Rush pipeline implementation: `src/executor/pipeline.rs`
+- AUSH executor implementation: `src/executor/mod.rs`
+- AUSH pipeline implementation: `src/executor/pipeline.rs`

@@ -1,6 +1,6 @@
-# Rush Shell Integration Tests
+# AUSH Shell Integration Tests
 
-This directory contains comprehensive integration tests for Rush shell, specifically designed to verify login shell functionality.
+This directory contains comprehensive integration tests for AUSH shell, specifically designed to verify login shell functionality.
 
 ## Quick Start
 
@@ -19,7 +19,7 @@ This directory contains comprehensive integration tests for Rush shell, specific
 
 ## Requirements
 
-1. Build rush in release mode:
+1. Build aush in release mode:
    ```bash
    cargo build --release
    ```

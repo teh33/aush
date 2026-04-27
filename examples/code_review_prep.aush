@@ -1,9 +1,9 @@
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 # Prepare code review summary
-# Usage: ./code_review_prep.rush [base_branch]
+# Usage: ./code_review_prep.aush [base_branch]
 
 set -e
-export RUSH_ERROR_FORMAT=json
+export AUSH_ERROR_FORMAT=json
 
 # Check if in git repository
 if ! git_status --json > /dev/null 2>&1; then

@@ -251,17 +251,17 @@ mod tests {
 
     #[test]
     fn test_env_unset_variable() {
-        std::env::set_var("_RUSH_DU_TEST_VAR", "to_be_unset");
+        std::env::set_var("_AUSH_DU_TEST_VAR", "to_be_unset");
         let mut rt = make_runtime();
         let result = builtin_env(
-            &["-u".to_string(), "_RUSH_DU_TEST_VAR".to_string()],
+            &["-u".to_string(), "_AUSH_DU_TEST_VAR".to_string()],
             &mut rt,
         )
         .unwrap();
         assert_eq!(result.exit_code, 0);
-        assert!(!result.stdout().contains("_RUSH_DU_TEST_VAR"));
+        assert!(!result.stdout().contains("_AUSH_DU_TEST_VAR"));
         // Clean up
-        std::env::remove_var("_RUSH_DU_TEST_VAR");
+        std::env::remove_var("_AUSH_DU_TEST_VAR");
     }
 
     #[test]

@@ -1,20 +1,20 @@
 #!/bin/bash
-# Profile Rush command execution to identify bottlenecks
+# Profile AUSH command execution to identify bottlenecks
 
 set -e
 
 AUSH="${AUSH:-./target/release/aush}"
-if [ ! -x "$AUSH" ] && [ -x ./target/release/rush ]; then
-    AUSH=./target/release/rush
+if [ ! -x "$AUSH" ] && [ -x ./target/release/aush ]; then
+    AUSH=./target/release/aush
 fi
 RUNS=100
 
 if [ ! -x "$AUSH" ]; then
-    echo "Error: Rush binary not found"
+    echo "Error: AUSH binary not found"
     exit 1
 fi
 
-echo "🔍 Profiling Rush Command Execution"
+echo "🔍 Profiling AUSH Command Execution"
 echo "   Finding bottlenecks in persistent session"
 echo "   Runs: $RUNS"
 echo ""
@@ -106,7 +106,7 @@ if command -v perf &> /dev/null; then
     perf report --stdio | head -50 || true
 elif command -v sample &> /dev/null; then
     echo "Using sample (macOS):"
-    echo "Run: sudo sample $AUSH 5 -file rush_profile.txt"
+    echo "Run: sudo sample $AUSH 5 -file aush_profile.txt"
     echo "Then execute: $AUSH -c 'pwd; echo test; git status' in another terminal"
 else
     echo "No profiler available. Install perf (Linux) or use Instruments (macOS)"

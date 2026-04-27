@@ -281,7 +281,7 @@ fn dispatch_lua_builtin(
     let output = match &result {
         // Collections and structured types → JSON for pipeline consumption.
         // We convert to a plain JSON value (no serde type-tags) so downstream
-        // tools can consume the output without knowing about rush's Value enum.
+        // tools can consume the output without knowing about aush's Value enum.
         Value::List(_) | Value::Record(_) | Value::Table(_) => {
             let json_val = rush_value_to_json(&result);
             Output::Structured(json_val)
@@ -300,7 +300,7 @@ fn dispatch_lua_builtin(
     })
 }
 
-/// Convert a rush `Value` to a plain `serde_json::Value` without the `#[serde(tag = "type")]`
+/// Convert a aush `Value` to a plain `serde_json::Value` without the `#[serde(tag = "type")]`
 /// envelope that the derived `Serialize` impl produces.
 ///
 /// This produces idiomatic JSON (arrays, objects) that external tools can consume directly.

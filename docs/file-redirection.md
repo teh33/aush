@@ -1,8 +1,8 @@
-# File Redirection in Rush
+# File Redirection in AUSH
 
 ## Overview
 
-Rush supports comprehensive file redirection, allowing you to control where command input comes from and where output goes. This is a fundamental feature for shell scripting and command-line operations.
+AUSH supports comprehensive file redirection, allowing you to control where command input comes from and where output goes. This is a fundamental feature for shell scripting and command-line operations.
 
 ## Supported Redirect Operators
 
@@ -222,7 +222,7 @@ RedirectKind::Stdin => {
 
 ## Error Handling
 
-Rush provides helpful error messages for redirection failures:
+AUSH provides helpful error messages for redirection failures:
 
 - **File not found** (for stdin): Clear error indicating which file couldn't be opened
 - **Permission denied**: Indicates lack of read/write permissions
@@ -231,7 +231,7 @@ Rush provides helpful error messages for redirection failures:
 
 ## Compatibility
 
-Rush's redirection behavior is designed to match POSIX shell standards:
+AUSH's redirection behavior is designed to match POSIX shell standards:
 
 - `>` overwrites files (like bash)
 - `>>` appends to files

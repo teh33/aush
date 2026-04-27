@@ -54,6 +54,26 @@ units:
   kind: task
   feature: false
   has_decisions: false
+- id: '24.5'
+  title: Clean AUSH release testing documentation
+  status: closed
+  priority: 1
+  parent: '24'
+  dependencies:
+  - '24.4'
+  labels:
+  - aush
+  - release
+  - docs
+  updated_at: '2026-04-27T04:37:00.846455Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && ! rg -n 'opus-workshop/rush|brew install rush|brew tap opus-workshop/rush|rush-(macos|linux)' docs/RELEASE_TESTING.md && rg -n 'opus-workshop/aush|brew install aush|aush-(macos|linux)|legacy `rush`' docs/RELEASE_TESTING.md
+  created_at: '2026-04-27T03:37:50.843232Z'
+  claimed_by: imp
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
 - id: '25.4.1'
   title: Add backslash-newline line continuation compatibility for real shell scripts
   status: closed

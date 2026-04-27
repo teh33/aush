@@ -1,8 +1,8 @@
-# Signal Handling in Rush
+# Signal Handling in AUSH
 
 ## Overview
 
-Rush implements comprehensive signal handling to provide a robust shell experience. The shell properly handles SIGINT (Ctrl-C), SIGTERM, and SIGHUP signals, ensuring clean termination and no orphaned processes.
+AUSH implements comprehensive signal handling to provide a robust shell experience. The shell properly handles SIGINT (Ctrl-C), SIGTERM, and SIGHUP signals, ensuring clean termination and no orphaned processes.
 
 ## Supported Signals
 
@@ -87,7 +87,7 @@ loop {
 
 ## Exit Codes
 
-Rush follows the standard Unix convention for signal exit codes:
+AUSH follows the standard Unix convention for signal exit codes:
 
 | Signal  | Exit Code | Calculation |
 |---------|-----------|-------------|
@@ -122,7 +122,7 @@ Shell still running
 When running a script file, signals cause immediate termination:
 
 ```bash
-#!/usr/bin/env rush
+#!/usr/bin/env aush
 echo "Starting..."
 sleep 10
 echo "This won't run if interrupted"
@@ -135,7 +135,7 @@ If SIGINT is received during `sleep 10`, the script exits with code 130 and the 
 One-off commands terminate on signal:
 
 ```bash
-$ rush -c "sleep 10"
+$ aush -c "sleep 10"
 ^C
 $ echo $?
 130
@@ -146,14 +146,14 @@ $ echo $?
 When reading from stdin (non-TTY), signals terminate execution:
 
 ```bash
-$ echo "sleep 10" | rush
+$ echo "sleep 10" | aush
 ^C
 Interrupted by signal
 ```
 
 ## Child Process Management
 
-Rush ensures no orphaned processes by:
+AUSH ensures no orphaned processes by:
 
 1. **Tracking child processes**: All spawned commands are tracked
 2. **Signal propagation**: Signals are caught and children are killed
@@ -161,7 +161,7 @@ Rush ensures no orphaned processes by:
 
 ### Process Groups
 
-While Rush doesn't currently use process groups, child processes are managed individually:
+While AUSH doesn't currently use process groups, child processes are managed individually:
 
 ```rust
 // When signal received during command execution
@@ -246,7 +246,7 @@ Potential improvements:
 
 ## Best Practices
 
-When writing Rush scripts:
+When writing AUSH scripts:
 
 1. **Trap Cleanup**: Consider adding cleanup handlers (future feature)
 2. **Atomic Operations**: Make critical operations atomic where possible
@@ -288,7 +288,7 @@ If exit codes are incorrect:
 
 ## Summary
 
-Rush's signal handling provides:
+AUSH's signal handling provides:
 - ✅ Proper SIGINT, SIGTERM, and SIGHUP handling
 - ✅ No orphaned child processes
 - ✅ Correct signal exit codes (130 for SIGINT, etc.)

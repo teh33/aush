@@ -10,7 +10,7 @@
 //! ```
 
 use crate::ai::config::LlmConfig;
-use crate::daemon::{PiClient, PiClientError, PiToRush, ShellContext};
+use crate::daemon::{PiClient, PiClientError, PiToAUSH, ShellContext};
 use nu_ansi_term::Color;
 use std::collections::HashMap;
 use std::io::{self, Write};
@@ -115,7 +115,7 @@ pub fn query_intent(
     // Collect responses - we expect a SuggestedCommand followed by Done
     for response in responses.by_ref() {
         match response? {
-            PiToRush::SuggestedCommand {
+            PiToAUSH::SuggestedCommand {
                 command,
                 explanation,
                 confidence,
@@ -127,21 +127,21 @@ pub fn query_intent(
                     confidence,
                 });
             }
-            PiToRush::Error { message, .. } => {
+            PiToAUSH::Error { message, .. } => {
                 return Err(PiClientError::ProtocolError(message));
             }
-            PiToRush::Done { .. } => {
+            PiToAUSH::Done { .. } => {
                 // Done without a command means no suggestion
                 return Err(PiClientError::ProtocolError(
                     "No command suggestion received".to_string(),
                 ));
             }
-            PiToRush::Chunk { content, .. } => {
+            PiToAUSH::Chunk { content, .. } => {
                 // Streaming chunks - Pi might stream the explanation
                 // For now, we ignore these as we expect SuggestedCommand
                 eprintln!("{}", content);
             }
-            PiToRush::ToolCall { .. } => {
+            PiToAUSH::ToolCall { .. } => {
                 // Tool calls shouldn't happen for intent queries
                 // but handle gracefully
             }

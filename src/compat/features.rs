@@ -583,12 +583,12 @@ mod tests {
 }
 
 // ============================================================================
-// Rush Compatibility Database - 57 Bash Features Catalogued
+// AUSH Compatibility Database - 57 Bash Features Catalogued
 // ============================================================================
 
-/// Support status for a feature in Rush
+/// Support status for a feature in AUSH
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum RushSupportStatus {
+pub enum AUSHSupportStatus {
     /// Feature is fully supported
     Supported,
     /// Feature is planned but not yet implemented
@@ -597,650 +597,650 @@ pub enum RushSupportStatus {
     NotSupported,
 }
 
-impl RushSupportStatus {
+impl AUSHSupportStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            RushSupportStatus::Supported => "supported",
-            RushSupportStatus::Planned => "planned",
-            RushSupportStatus::NotSupported => "not-supported",
+            AUSHSupportStatus::Supported => "supported",
+            AUSHSupportStatus::Planned => "planned",
+            AUSHSupportStatus::NotSupported => "not-supported",
         }
     }
 }
 
-/// Extended feature metadata mapping bash features to Rush support
+/// Extended feature metadata mapping bash features to AUSH support
 #[derive(Debug, Clone)]
-pub struct RushCompatFeature {
+pub struct AUSHCompatFeature {
     /// Unique identifier
     pub id: &'static str,
     /// Human-readable name
     pub name: &'static str,
     /// Description
     pub description: &'static str,
-    /// Support status in Rush
-    pub rush_status: RushSupportStatus,
+    /// Support status in AUSH
+    pub aush_status: AUSHSupportStatus,
     /// Bash version that introduced this
     pub bash_version: &'static str,
     /// Example code
     pub bash_example: &'static str,
     /// Workaround if unsupported
     pub workaround: Option<&'static str>,
-    /// When Rush added support
-    pub rush_version: Option<&'static str>,
+    /// When AUSH added support
+    pub aush_version: Option<&'static str>,
     /// Additional notes
     pub notes: &'static str,
 }
 
-/// Get Rush compatibility features database
-pub fn rush_compat_features() -> Vec<RushCompatFeature> {
+/// Get AUSH compatibility features database
+pub fn aush_compat_features() -> Vec<AUSHCompatFeature> {
     vec![
         // VARIABLES - 11 features
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "env-vars",
             name: "Environment Variables",
             description: "Access and modify environment variables",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "export PATH=/usr/bin:$PATH",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support via export builtin",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "positional-params",
             name: "Positional Parameters",
             description: "$0, $1, $2... for function/script arguments",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "echo $1 $2 $3",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support in function calls",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "special-params",
             name: "Special Parameters",
             description: "$#, $*, $@, $?, $-, $$, $!, etc.",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "echo $# $? $$",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Core special params supported",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "array-vars",
             name: "Array Variables",
             description: "Indexed and associative arrays",
-            rush_status: RushSupportStatus::Planned,
+            aush_status: AUSHSupportStatus::Planned,
             bash_version: "2.0",
             bash_example: "arr=(a b c); echo ${arr[0]} ${arr[@]}",
             workaround: Some("Use multiple variables or shift parameters"),
-            rush_version: None,
+            aush_version: None,
             notes: "In planning phase",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "readonly-vars",
             name: "Readonly Variables",
             description: "Make variables immutable with readonly",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "readonly VAR=value",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support via readonly builtin",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "local-vars",
             name: "Local Variables",
             description: "Function-scoped variables",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "func() { local x=5; }",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support via local builtin",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "var-expansion",
             name: "Variable Expansion",
             description: "$VAR, ${VAR}, with defaults and subscripts",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "echo ${VAR:-default} ${VAR:?error}",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Basic expansion supported",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "indirect-expansion",
             name: "Indirect Variable Expansion",
             description: "${!VAR} to access variable whose name is in VAR",
-            rush_status: RushSupportStatus::NotSupported,
+            aush_status: AUSHSupportStatus::NotSupported,
             bash_version: "2.0",
             bash_example: "ref=PATH; echo ${!ref}",
             workaround: Some("Store values directly or use associative arrays"),
-            rush_version: None,
+            aush_version: None,
             notes: "Complex feature",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "name-refs",
             name: "Name References (nameref)",
             description: "declare -n to create variable references",
-            rush_status: RushSupportStatus::NotSupported,
+            aush_status: AUSHSupportStatus::NotSupported,
             bash_version: "4.3",
             bash_example: "declare -n ref=VAR; ref=value",
             workaround: Some("Use local and pass by name"),
-            rush_version: None,
+            aush_version: None,
             notes: "Advanced bash feature",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "var-typing",
             name: "Variable Typing (declare flags)",
             description: "declare -i (integer), -a (array), -A (assoc), etc.",
-            rush_status: RushSupportStatus::Planned,
+            aush_status: AUSHSupportStatus::Planned,
             bash_version: "2.0",
             bash_example: "declare -i num=5; declare -a arr",
             workaround: Some("Manually manage types"),
-            rush_version: None,
+            aush_version: None,
             notes: "Partially supported",
         },
         // CONTROL FLOW - 12 features
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "if-else",
             name: "If-Else Statements",
             description: "Conditional branching with if/elif/else/fi",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "if [ $x -eq 1 ]; then echo yes; fi",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "case-statement",
             name: "Case Statements",
             description: "Pattern matching with case/esac",
-            rush_status: RushSupportStatus::Planned,
+            aush_status: AUSHSupportStatus::Planned,
             bash_version: "2.0",
             bash_example: "case $x in 1) echo one;; esac",
             workaround: Some("Use nested if-elif-else"),
-            rush_version: None,
+            aush_version: None,
             notes: "In planning",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "for-loop",
             name: "For Loops",
             description: "Iterate over values with for/do/done",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "for i in 1 2 3; do echo $i; done",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "for-c-style",
             name: "C-Style For Loops",
             description: "for ((i=0; i<10; i++)) syntax",
-            rush_status: RushSupportStatus::Planned,
+            aush_status: AUSHSupportStatus::Planned,
             bash_version: "2.0",
             bash_example: "for ((i=0; i<10; i++)); do echo $i; done",
             workaround: Some("Use while loop"),
-            rush_version: None,
+            aush_version: None,
             notes: "Planned",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "while-loop",
             name: "While Loops",
             description: "Loop while condition is true",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "while [ $x -lt 10 ]; do ((x++)); done",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "until-loop",
             name: "Until Loops",
             description: "Loop until condition becomes true",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "until [ $x -ge 10 ]; do ((x++)); done",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "break-continue",
             name: "Break and Continue",
             description: "break and continue statements for loop control",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "while true; do break; done",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "select-loop",
             name: "Select Loops",
             description: "select loop for interactive menu creation",
-            rush_status: RushSupportStatus::NotSupported,
+            aush_status: AUSHSupportStatus::NotSupported,
             bash_version: "2.0",
             bash_example: "select opt in opt1 opt2; do echo $opt; done",
             workaround: Some("Implement menu manually"),
-            rush_version: None,
+            aush_version: None,
             notes: "Interactive feature",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "return-stmt",
             name: "Return Statements",
             description: "Return from function with exit code",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "func() { return 42; }",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "exit-stmt",
             name: "Exit Statements",
             description: "Exit shell with exit code",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "exit 1",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "function-defs",
             name: "Function Definitions",
             description: "Define functions with function keyword or ()",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "func() { echo hello; }",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Both syntaxes",
         },
         // BUILTINS - 15 features
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "echo",
             name: "Echo Builtin",
             description: "Output text to stdout",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "echo hello world",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "printf",
             name: "Printf Builtin",
             description: "Formatted output like C printf",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "printf '%s\\n' hello",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Core specifiers",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "read",
             name: "Read Builtin",
             description: "Read input from stdin into variables",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "read -p 'Enter: ' var",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "test-builtin",
             name: "Test Builtin ([ ])",
             description: "File and string conditionals",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "[ -f file.txt ] && echo exists",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "cd-builtin",
             name: "Cd Builtin",
             description: "Change directory",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "cd /path/to/dir",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "pwd-builtin",
             name: "Pwd Builtin",
             description: "Print working directory",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "pwd",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "export-builtin",
             name: "Export Builtin",
             description: "Export variables to child processes",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "export VAR=value",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "source-builtin",
             name: "Source Builtin",
             description: "Execute script in current shell context",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "source ./script.sh",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "alias-builtin",
             name: "Alias Builtin",
             description: "Create command aliases",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "alias ll='ls -la'",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "unset-builtin",
             name: "Unset Builtin",
             description: "Remove variables or functions",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "unset VAR",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "type-builtin",
             name: "Type Builtin",
             description: "Show how a command would be executed",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "type ls",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "jobs-builtin",
             name: "Jobs Builtin",
             description: "List background jobs",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "jobs",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "trap-builtin",
             name: "Trap Builtin",
             description: "Trap signals and run commands",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "trap 'echo cleaned' EXIT",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "kill-builtin",
             name: "Kill Builtin",
             description: "Terminate processes by PID or job",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "kill %1",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "shift-builtin",
             name: "Shift Builtin",
             description: "Remove positional parameters",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "shift 2",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
         // SYNTAX - 10 features
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "command-subst",
             name: "Command Substitution",
             description: "$(cmd) and `cmd` to substitute output",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "result=$(ls) or result=`ls`",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "process-subst",
             name: "Process Substitution",
             description: "<(cmd) and >(cmd) for stdin/stdout",
-            rush_status: RushSupportStatus::NotSupported,
+            aush_status: AUSHSupportStatus::NotSupported,
             bash_version: "3.0",
             bash_example: "diff <(sort a) <(sort b)",
             workaround: Some("Use temp files or pipes"),
-            rush_version: None,
+            aush_version: None,
             notes: "Advanced feature",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "pipe-operator",
             name: "Pipe Operator",
             description: "| to connect stdout to stdin",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "ls | grep txt",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "redirect-append",
             name: "Append Redirection",
             description: ">> to append to files",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "echo hello >> file.txt",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "redirect-stderr",
             name: "Stderr Redirection",
             description: "2>, 2>>, 2>&1 for error redirection",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "cmd 2> error.log",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "heredoc",
             name: "Heredoc Syntax",
             description: "<<EOF multi-line string input",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "cat <<EOF\nMulti\nLine\nEOF",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "logical-and-or",
             name: "Logical AND/OR",
             description: "&& and || operators for conditional execution",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "cmd1 && cmd2 || cmd3",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "background-job",
             name: "Background Jobs",
             description: "& to run command in background",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "long_cmd &",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "subshell",
             name: "Subshells",
             description: "(cmd) to run in subshell",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "(cd /tmp && pwd)",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "comment-syntax",
             name: "Comments",
             description: "# for single-line comments",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "# This is a comment",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
         // EXPANSIONS - 9 features
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "tilde-expansion",
             name: "Tilde Expansion",
             description: "~ expands to home directory",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "cd ~",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "glob-expansion",
             name: "Glob Expansion",
             description: "*, ?, [abc], {a,b,c} for pattern matching",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "ls *.txt",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "arithmetic-expand",
             name: "Arithmetic Expansion",
             description: "$((expr)) for arithmetic evaluation",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "echo $((5 + 3))",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "brace-expansion",
             name: "Brace Expansion",
             description: "{a,b,c} and {1..5} for list generation",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "echo {a,b,c} or echo {1..10}",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "string-slicing",
             name: "String Slicing",
             description: "${VAR:offset:length} for substring extraction",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "echo ${VAR:0:5}",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "pattern-removal",
             name: "Pattern Removal",
             description: "${VAR#pattern}, ${VAR##pattern}, etc.",
-            rush_status: RushSupportStatus::Planned,
+            aush_status: AUSHSupportStatus::Planned,
             bash_version: "2.0",
             bash_example: "echo ${VAR#prefix}",
             workaround: Some("Use external tools"),
-            rush_version: None,
+            aush_version: None,
             notes: "Planned",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "pattern-substitution",
             name: "Pattern Substitution",
             description: "${VAR/pattern/replacement}",
-            rush_status: RushSupportStatus::Planned,
+            aush_status: AUSHSupportStatus::Planned,
             bash_version: "2.0",
             bash_example: "echo ${VAR/old/new}",
             workaround: Some("Use sed"),
-            rush_version: None,
+            aush_version: None,
             notes: "Planned",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "default-expansion",
             name: "Default Value Expansion",
             description: "${VAR:-default}, ${VAR:=default}, ${VAR:?error}",
-            rush_status: RushSupportStatus::Supported,
+            aush_status: AUSHSupportStatus::Supported,
             bash_version: "2.0",
             bash_example: "echo ${VAR:-default_value}",
             workaround: None,
-            rush_version: Some("0.1"),
+            aush_version: Some("0.1"),
             notes: "Full support",
         },
-        RushCompatFeature {
+        AUSHCompatFeature {
             id: "case-conversion",
             name: "Case Conversion Expansion",
             description: "${VAR^}, ${VAR^^}, ${VAR,}, ${VAR,,}",
-            rush_status: RushSupportStatus::NotSupported,
+            aush_status: AUSHSupportStatus::NotSupported,
             bash_version: "4.0",
             bash_example: "echo ${VAR^^}",
             workaround: Some("Use tr or other tools"),
-            rush_version: None,
+            aush_version: None,
             notes: "Bash 4.0+",
         },
     ]
@@ -1252,7 +1252,7 @@ mod compatibility_tests {
 
     #[test]
     fn test_compat_features_count() {
-        let features = rush_compat_features();
+        let features = aush_compat_features();
         assert!(
             features.len() >= 50,
             "Must have at least 50 features, got {}",
@@ -1262,18 +1262,18 @@ mod compatibility_tests {
 
     #[test]
     fn test_compat_feature_stats() {
-        let features = rush_compat_features();
+        let features = aush_compat_features();
         let supported = features
             .iter()
-            .filter(|f| f.rush_status == RushSupportStatus::Supported)
+            .filter(|f| f.aush_status == AUSHSupportStatus::Supported)
             .count();
         let planned = features
             .iter()
-            .filter(|f| f.rush_status == RushSupportStatus::Planned)
+            .filter(|f| f.aush_status == AUSHSupportStatus::Planned)
             .count();
         let not_supported = features
             .iter()
-            .filter(|f| f.rush_status == RushSupportStatus::NotSupported)
+            .filter(|f| f.aush_status == AUSHSupportStatus::NotSupported)
             .count();
 
         assert_eq!(features.len(), supported + planned + not_supported);
@@ -1287,9 +1287,9 @@ mod compatibility_tests {
 
     #[test]
     fn test_unsupported_have_workarounds() {
-        let features = rush_compat_features();
+        let features = aush_compat_features();
         for feature in features.iter() {
-            if feature.rush_status == RushSupportStatus::NotSupported {
+            if feature.aush_status == AUSHSupportStatus::NotSupported {
                 assert!(
                     feature.workaround.is_some(),
                     "Feature '{}' is not supported but has no workaround",
