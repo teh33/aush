@@ -213,6 +213,9 @@ impl Executor {
                             if crate::executor::flow_signals::is_flow_control_signal(&e) {
                                 return Err(e);
                             }
+                            if cmd_name == "command" {
+                                return Err(e);
+                            }
                             Ok(ExecutionResult::error(format!("{}: {}\n", cmd_name, e)))
                         }
                     }

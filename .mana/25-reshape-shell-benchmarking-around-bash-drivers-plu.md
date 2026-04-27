@@ -5,7 +5,7 @@ slug: reshape-shell-benchmarking-around-bash-drivers-plu
 status: open
 priority: 1
 created_at: '2026-04-24T08:47:16.442724Z'
-updated_at: '2026-04-27T05:43:13.981953Z'
+updated_at: '2026-04-27T05:59:04.417823Z'
 notes: |-
   ---
   2026-04-24T08:54:03.854929+00:00
@@ -48,6 +48,10 @@ notes: |-
   ---
   2026-04-27T05:43:13.981950+00:00
   User requested next phase: continue fixing parser compatibility gaps and run the full benchmark suite. Plan: run full suite first to capture current gate/report/regression state, then prioritize parser gaps exposed by suite or known avoided workload forms.
+
+  ---
+  2026-04-27T05:59:04.417817+00:00
+  Ran full benchmark suite with `AUSH_BENCH_OUT_DIR=/tmp/aush-bench-full bash benches/aush_suite.sh ./target/release/aush full`. It timed out at 900s during `regress-criterion-agentic`, specifically `rapid_fire_git_status_1000x` wanted ~103s for sampling and continued past suite timeout. Completed stages before timeout all passed: compat-fast-smoke, compat-posix-core, compat-agentic-workloads, perf-startup, perf-agentic-hyperfine, perf-session, regress-criterion-startup, regress-criterion-builtins. Killed leftover tee process. Need to make full suite practical by reducing/ignoring expensive Criterion agentic workload or adding a quick regression profile before running full as a gate.
 labels:
 - benchmarks
 - aush

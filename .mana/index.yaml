@@ -378,7 +378,7 @@ units:
   - aush
   - release
   - verify
-  updated_at: '2026-04-27T05:34:22.846178Z'
+  updated_at: '2026-04-27T05:50:03.097820Z'
   has_verify: true
   verify: cd /Users/asher/rush && cargo test && cargo build --release --bins && tests/smoke_test.sh ./target/release/aush
   created_at: '2026-04-27T03:37:56.861412Z'
@@ -453,7 +453,7 @@ units:
   - aush
   - architecture
   - rush
-  updated_at: '2026-04-27T05:43:13.981953Z'
+  updated_at: '2026-04-27T05:59:04.417823Z'
   has_verify: true
   verify: cd /Users/asher/rush && test -d benches && true
   created_at: '2026-04-24T08:47:16.442724Z'
@@ -546,6 +546,25 @@ units:
   has_verify: true
   verify: cd /Users/asher/rush && ./target/release/rush --no-rc benches/shellbench.sh >/tmp/shellbench-next.log 2>&1 || true && tail -n 20 /tmp/shellbench-next.log
   created_at: '2026-04-24T14:50:12.724026Z'
+  attempts: 0
+  kind: task
+  feature: false
+  has_decisions: false
+- id: '25.5'
+  title: Make full benchmark suite finish within practical timeout
+  status: open
+  priority: 1
+  parent: '25'
+  labels:
+  - aush
+  - benchmarks
+  - criterion
+  - operability
+  - regression
+  updated_at: '2026-04-27T05:59:12.673719Z'
+  has_verify: true
+  verify: cd /Users/asher/rush && AUSH_BENCH_OUT_DIR=/tmp/aush-bench-full bash benches/aush_suite.sh ./target/release/aush full
+  created_at: '2026-04-27T05:59:12.673719Z'
   attempts: 0
   kind: task
   feature: false
