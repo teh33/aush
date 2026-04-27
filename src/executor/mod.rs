@@ -1043,10 +1043,8 @@ impl Executor {
                 // Embedded command substitution in string literal context
                 self.expand_command_substitutions_in_string(s)
             }
-            Expression::Literal(Literal::String(ref s)) if s.starts_with('$') => {
-                // Variable expansion in string literal context
-                let var_name = s.trim_start_matches('$');
-                Ok(self.runtime.get_variable(var_name).unwrap_or_default())
+            Expression::Literal(Literal::String(ref s)) if s.contains('$') => {
+                self.expand_variables_in_literal(s)
             }
             Expression::Literal(lit) => Ok(self.literal_to_string(lit)),
             Expression::Variable(name) => {

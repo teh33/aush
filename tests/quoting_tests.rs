@@ -487,6 +487,47 @@ fn test_adjacent_quoted_strings() {
 }
 
 #[test]
+fn test_adjacent_single_quoted_assignment_with_variable() {
+    let mut executor = Executor::new();
+    executor
+        .runtime_mut()
+        .set_variable("ITERATIONS".to_string(), "3".to_string());
+
+    let tokens = Lexer::tokenize("BODY='while [ $i -lt '$ITERATIONS' ]; do'; echo $BODY").unwrap();
+    let mut parser = Parser::new(tokens);
+    let statements = parser.parse().unwrap();
+
+    let result = executor.execute(statements).unwrap();
+    assert_eq!(result.stdout().as_str().trim(), "while [ $i -lt 3 ]; do");
+}
+
+#[test]
+fn test_empty_variable_uses_colon_default() {
+    let mut executor = Executor::new();
+    executor
+        .runtime_mut()
+        .set_variable("ITERATIONS".to_string(), String::new());
+
+    let tokens = Lexer::tokenize("ITERATIONS=${ITERATIONS:-1000}; echo $ITERATIONS").unwrap();
+    let mut parser = Parser::new(tokens);
+    let statements = parser.parse().unwrap();
+
+    let result = executor.execute(statements).unwrap();
+    assert_eq!(result.stdout().as_str().trim(), "1000");
+}
+
+#[test]
+fn test_positional_assignment_keeps_shift_consistent() {
+    let mut executor = Executor::new();
+    let tokens = Lexer::tokenize("f(){ shift; echo $1 $2; }; f sh -c body").unwrap();
+    let mut parser = Parser::new(tokens);
+    let statements = parser.parse().unwrap();
+
+    let result = executor.execute(statements).unwrap();
+    assert_eq!(result.stdout().as_str().trim(), "-c body");
+}
+
+#[test]
 fn test_quote_escaping_with_variable() {
     let mut executor = Executor::new();
     executor

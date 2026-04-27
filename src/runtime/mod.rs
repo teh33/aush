@@ -153,12 +153,46 @@ impl Runtime {
     }
 
     pub fn set_variable(&mut self, name: String, value: String) {
+        if matches!(name.as_str(), "#" | "@" | "*") || name.parse::<usize>().is_ok() {
+            self.set_positional_variable(name, value);
+            return;
+        }
+
         // If we're in a function scope, set the variable in the current scope
         if let Some(scope) = self.scopes.last_mut() {
             scope.insert(name, value);
         } else {
             // Otherwise set in global scope
             self.variables.insert(name, value);
+        }
+    }
+
+    fn set_positional_variable(&mut self, name: String, value: String) {
+        if name == "#" {
+            return;
+        }
+
+        if name == "@" || name == "*" {
+            let params = if value.is_empty() {
+                Vec::new()
+            } else {
+                value.split_whitespace().map(str::to_string).collect()
+            };
+            self.set_positional_params(params);
+            return;
+        }
+
+        if let Ok(index) = name.parse::<usize>() {
+            if index == 0 {
+                self.variables.insert(name, value);
+                return;
+            }
+
+            if self.positional_params.len() < index {
+                self.positional_params.resize(index, String::new());
+            }
+            self.positional_params[index - 1] = value;
+            self.update_positional_variables();
         }
     }
 
@@ -179,8 +213,11 @@ impl Runtime {
                 return Some(value.clone());
             }
         }
-        // Fall back to global variables
-        self.variables.get(name).cloned()
+        // Fall back to shell variables, then process environment
+        self.variables
+            .get(name)
+            .cloned()
+            .or_else(|| env::var(name).ok())
     }
 
     /// Remove a variable from the current scope or global scope
@@ -490,9 +527,15 @@ impl Runtime {
             VarExpansionOp::StringLength => Ok(var_value
                 .map(|v| v.len().to_string())
                 .unwrap_or_else(|| "0".to_string())),
-            VarExpansionOp::UseDefault(default) => Ok(var_value.unwrap_or_else(|| default.clone())),
+            VarExpansionOp::UseDefault(default) => {
+                if var_value.as_ref().is_some_and(|value| !value.is_empty()) {
+                    Ok(var_value.unwrap())
+                } else {
+                    Ok(default.clone())
+                }
+            }
             VarExpansionOp::AssignDefault(default) => {
-                if let Some(value) = var_value {
+                if let Some(value) = var_value.filter(|value| !value.is_empty()) {
                     Ok(value)
                 } else {
                     self.set_variable(expansion.name.clone(), default.clone());

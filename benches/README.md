@@ -42,6 +42,22 @@ cargo bench --bench daemon_latency
 
 Criterion reports are written under `target/criterion/`.
 
+### Resource usage
+
+Use this to compare one-shot shell invocations by CPU time, peak RSS, page faults, and context switches:
+
+```bash
+cargo build --release --bins
+bash benches/resource_usage.sh ./target/release/aush
+bash benches/large_resource_usage.sh ./target/release/aush
+```
+
+`resource_usage.sh` runs tiny one-shot workloads. `large_resource_usage.sh` runs larger script-style workloads such as the agentic core script, 200-file find/grep cases, a 1000-iteration loop, and a 1000-line external pipeline.
+
+This script currently targets macOS/BSD `/usr/bin/time -l`. It writes raw logs under `${AUSH_BENCH_OUT_DIR:-/tmp/aush-resource}` and compares `aush` with installed shells such as `bash`, `zsh`, and `dash`. It is optional and non-gating; use it to understand resource shape, not as a pass/fail release check. Its wall-time precision is coarse for very short commands; use Criterion or hyperfine for latency.
+
+The current one-shot RSS baseline is intentionally tracked as an optimization target. On the release machine, AUSH is heavier than Bash/Zsh/Dash for tiny one-shot workloads; a useful future goal is a roughly 4–5x reduction in peak RSS without giving up correctness or native-command capability.
+
 ### Daemon comparison
 
 Use this when working on `aushd` protocol latency:
@@ -91,6 +107,8 @@ Use the executed pass rate to track regressions in implemented POSIX behavior. U
 | `workloads/agentic_core.sh` | Core shell workload fixture | Used by compatibility suite |
 | `ai_agent_workloads.rs` | Criterion benchmark for agent-like operations | Measure native command paths |
 | `daemon_latency.rs` | Criterion daemon protocol benchmarks | Work on `aushd` latency |
+| `large_resource_usage.sh` | Larger script-style CPU/RSS/page-fault/context-switch benchmark | Resource usage checks for bigger workloads |
+| `resource_usage.sh` | Wall/CPU/RSS/page-fault/context-switch benchmark | Resource usage checks on macOS |
 | `aushd_compare.sh` | Scripted daemon vs CLI comparison | Quick before/after daemon check |
 | `startup.rs` | Startup/initialization Criterion benches | Work on startup cost |
 | `builtins.rs` | Builtin command Criterion benches | Work on native command speed |

@@ -190,6 +190,18 @@ Current benchmark interpretation:
 - one-shot `aush -c` still pays process startup and is measured in milliseconds;
 - daemon mode is most useful for resident clients, editor integrations, and agent runtimes that make many calls.
 
+### Resource usage
+
+Use `resource_usage.sh` when you want CPU time, peak RSS, page faults, and context-switch counts for one-shot shell workloads:
+
+```bash
+cargo build --release --bins
+bash benches/resource_usage.sh ./target/release/aush
+bash benches/large_resource_usage.sh ./target/release/aush
+```
+
+The script uses macOS/BSD `/usr/bin/time -l`, writes raw logs under `${AUSH_BENCH_OUT_DIR:-/tmp/aush-resource}`, and compares installed shells when available (`bash`, `zsh`, `dash`). It intentionally measures one-shot CLI invocations. `/usr/bin/time -l` is useful for resource shape, but its wall-time precision is coarse for very short commands; use Criterion or hyperfine for latency. Daemon protocol latency belongs in `aushd_compare.sh` and `daemon_latency.rs`.
+
 ## Compatibility notes
 
 AUSH is intended to be Unix-shell-shaped, not Bash-perfect on day one.
@@ -263,6 +275,9 @@ cargo test --benches --no-run
 cargo bench --bench startup
 cargo bench --bench builtins
 cargo bench --bench daemon_latency
+
+# Resource usage: wall time, CPU time, peak RSS, page faults, context switches
+bash benches/resource_usage.sh ./target/release/aush
 ```
 
 See [benches/README.md](benches/README.md) for the benchmark map and when to use each script.

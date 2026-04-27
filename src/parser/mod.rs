@@ -664,6 +664,34 @@ impl Parser {
                     _ => unreachable!(),
                 }
             }
+            Some(Token::String(_))
+            | Some(Token::SingleQuotedString(_))
+            | Some(Token::AnsiCString(_))
+            | Some(Token::Variable(_))
+            | Some(Token::SpecialVariable(_))
+            | Some(Token::CommandSubstitution(_))
+            | Some(Token::BacktickSubstitution(_))
+            | Some(Token::BracedVariable(_))
+                if self.tokens.get(self.position + 1) == Some(&Token::Adjacent) =>
+            {
+                match self.parse_argument()? {
+                    Argument::Literal(s)
+                    | Argument::SingleQuoted(s)
+                    | Argument::Variable(s)
+                    | Argument::BracedVariable(s)
+                    | Argument::CommandSubstitution(s) => Ok(s),
+                    Argument::Path(s) | Argument::Flag(s) | Argument::Glob(s) => Ok(s),
+                    Argument::DoubleQuoted(parts) => Ok(parts
+                        .into_iter()
+                        .map(|part| match part {
+                            ArgumentPart::Literal(s)
+                            | ArgumentPart::Variable(s)
+                            | ArgumentPart::BracedVariable(s)
+                            | ArgumentPart::CommandSubstitution(s) => s,
+                        })
+                        .collect()),
+                }
+            }
             Some(Token::String(_)) => match self.advance() {
                 Some(Token::String(s)) => {
                     let unquoted = Self::strip_outer_quotes(&s, '"');
