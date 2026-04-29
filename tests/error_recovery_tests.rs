@@ -44,12 +44,11 @@ fn test_execution_error_recovery() {
 
     let result = executor.execute(statements);
 
-    // Should return an error, not panic
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Command not found"));
+    // Shell execution errors should be reported as non-zero command results, not Rust errors.
+    assert!(result.is_ok());
+    let exec_result = result.unwrap();
+    assert_eq!(exec_result.exit_code, 127);
+    assert!(exec_result.stderr.contains("Command not found"));
 }
 
 #[test]
@@ -175,8 +174,11 @@ fn test_nested_error_recovery() {
     let statements = parser.parse().unwrap();
     let result = executor.execute(statements);
 
-    // Should return error, not panic
-    assert!(result.is_err());
+    // Subshell command failure should be reported as a non-zero result, not a Rust error.
+    assert!(result.is_ok());
+    let exec_result = result.unwrap();
+    assert_eq!(exec_result.exit_code, 127);
+    assert!(exec_result.stderr.contains("Command not found"));
 
     // Next command should work
     let tokens = Lexer::tokenize("echo recovered").unwrap();

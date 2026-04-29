@@ -31,8 +31,15 @@ fn test_exit_code_variable_after_failure() {
     let statements = parser.parse().unwrap();
     let result = executor.execute(statements);
 
-    // Should fail
-    assert!(result.is_err());
+    // Shell command failures are successful API calls with non-zero exit status.
+    let exec_result = result.unwrap();
+    assert_eq!(exec_result.exit_code, 127);
+    assert!(exec_result.stderr.contains("Command not found"));
+    assert_eq!(executor.runtime_mut().get_last_exit_code(), 127);
+    assert_eq!(
+        executor.runtime_mut().get_variable("?"),
+        Some("127".to_string())
+    );
 }
 
 #[test]

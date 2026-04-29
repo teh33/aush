@@ -1,11 +1,11 @@
 # AUSH
 
-[![CI](https://github.com/opus-workshop/aush/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/opus-workshop/aush/actions/workflows/integration-tests.yml)
+[![CI](https://github.com/kfcafe/aush/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/kfcafe/aush/actions/workflows/integration-tests.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-**Another Unix Shell** — a Rust shell for Unix-style command execution, native builtins, structured output, and automation-heavy workflows.
+**Actually Usable Shell** — a Rust shell for Unix-style command execution, native builtins, structured output, and automation-heavy workflows.
 
-AUSH is intentionally familiar: commands, pipelines, redirections, variables, functions, control flow, jobs, and exit codes should feel like a shell. The difference is that common operations are implemented natively and increasingly expose structured output for tools and coding agents.
+AUSH aims to feel familiar where it should: commands, pipelines, redirections, variables, functions, control flow, jobs, and exit codes all follow the shape of a Unix shell. The difference is that common operations can run natively, and more commands can return structured data for programs and coding agents.
 
 ```text
 ┌──────────────────────────── AUSH ────────────────────────────┐
@@ -27,14 +27,14 @@ AUSH is intentionally familiar: commands, pipelines, redirections, variables, fu
 
 Traditional shells are excellent at composition, but they were not designed for programs that make hundreds of short shell calls and need reliable machine-readable results.
 
-AUSH focuses on four things:
+AUSH focuses on four practical goals:
 
-1. **Shell compatibility where it matters** — scripts should keep using ordinary shell syntax.
-2. **Native builtins for hot paths** — avoid subprocess overhead for common commands.
-3. **Structured output** — prefer JSON/typed records when commands are used by programs.
-4. **Agent-friendly behavior** — deterministic startup, useful exit codes, and less stdout scraping.
+1. **Shell compatibility where it matters** — ordinary shell syntax should keep working.
+2. **Native hot paths** — common builtins avoid subprocess overhead when AUSH can handle the work directly.
+3. **Structured output** — JSON and typed records reduce fragile stdout scraping.
+4. **Agent-friendly behavior** — deterministic startup, useful exit codes, and clear failure modes for automation.
 
-AUSH is not trying to be a toy shell or a total reinvention of Unix. It is a practical shell with modern implementation choices.
+AUSH is not trying to replace every Bash or Zsh feature on day one. It is a pragmatic shell with modern implementation choices.
 
 ## Status
 
@@ -42,8 +42,8 @@ AUSH is early but usable for focused workflows. Treat it as a shell you can expe
 
 Good fits today:
 
-- `aush --no-rc -c '...'` command execution;
-- native builtin and file/text workflows;
+- deterministic `aush --no-rc -c '...'` command execution;
+- native file, text, and shell builtin workflows;
 - shell compatibility testing;
 - structured JSON-oriented automation;
 - coding-agent harnesses and benchmarks;
@@ -58,6 +58,8 @@ Use caution for:
 
 ## Install
 
+From crates.io, once published:
+
 ```bash
 cargo install aush
 ```
@@ -65,7 +67,7 @@ cargo install aush
 From source:
 
 ```bash
-git clone https://github.com/opus-workshop/aush.git
+git clone https://github.com/kfcafe/aush.git
 cd aush
 cargo install --path .
 ```
@@ -129,7 +131,7 @@ AUSH includes native implementations for common shell and utility commands, incl
 - tests/control: `test`, `[`, `true`, `false`, `return`, `shift`;
 - jobs/signals: `jobs`, `fg`, `bg`, `kill`, `wait`, `trap`;
 - files/directories: `ls`, `cat`, `mkdir`, `rm`, `cp`, `mv`, `chmod`, `readlink`, `find`;
-- text: `grep`, `head`, `tail`, `wc`, `sort`, `uniq`-style structured operators where available;
+- text: `grep`, `head`, `tail`, `wc`, `sort`, and related structured operators where available;
 - developer helpers: Git, HTTP, JSON, and structured-output commands behind the default feature set.
 
 Native builtins are ordinary shell commands from the user’s perspective, but they avoid fork/exec when AUSH can handle the operation itself.
@@ -190,19 +192,7 @@ Current benchmark interpretation:
 - one-shot `aush -c` still pays process startup and is measured in milliseconds;
 - daemon mode is most useful for resident clients, editor integrations, and agent runtimes that make many calls.
 
-### Resource usage
-
-Use `resource_usage.sh` when you want CPU time, peak RSS, page faults, and context-switch counts for one-shot shell workloads:
-
-```bash
-cargo build --release --bins
-bash benches/resource_usage.sh ./target/release/aush
-bash benches/large_resource_usage.sh ./target/release/aush
-```
-
-The script uses macOS/BSD `/usr/bin/time -l`, writes raw logs under `${AUSH_BENCH_OUT_DIR:-/tmp/aush-resource}`, and compares installed shells when available (`bash`, `zsh`, `dash`). It intentionally measures one-shot CLI invocations. `/usr/bin/time -l` is useful for resource shape, but its wall-time precision is coarse for very short commands; use Criterion or hyperfine for latency. Daemon protocol latency belongs in `aushd_compare.sh` and `daemon_latency.rs`.
-
-## Compatibility notes
+## Compatibility
 
 AUSH is intended to be Unix-shell-shaped, not Bash-perfect on day one.
 
@@ -243,8 +233,6 @@ cargo test --test posix_compliance_tests --quiet
 8 passed / 0 failed / 2 ignored
 ```
 
-The ShellSpec/Bats harness under `tests/posix/` is optional. With ShellSpec installed, the current direct ShellSpec run executes 142 examples before aborting on a spec syntax issue: **110 pass / 16 fail / 16 warnings**. Bats is installed locally, but the repository currently has **0 Bats test files** under `tests/posix/bats/`.
-
 The ignored Rust tests are explicit pending coverage for known gaps such as case bracket/fallthrough behavior, dynamic file descriptors, `read -d`, `cd -e`, break/continue semantics, `exec` of builtins, exit/return propagation, `set -u`, EXIT traps, bracket test syntax, background jobs, here-strings, quoting edge cases, arithmetic ternary/increment, and wait/trap behavior.
 
 ## Benchmarks and smoke tests
@@ -279,6 +267,8 @@ cargo bench --bench daemon_latency
 # Resource usage: wall time, CPU time, peak RSS, page faults, context switches
 bash benches/resource_usage.sh ./target/release/aush
 ```
+
+`benches/resource_usage.sh` uses macOS/BSD `/usr/bin/time -l`, writes raw logs under `${AUSH_BENCH_OUT_DIR:-/tmp/aush-resource}`, and compares installed shells when available (`bash`, `zsh`, `dash`). It intentionally measures one-shot CLI invocations. Use Criterion or hyperfine for latency; daemon protocol latency belongs in `aushd_compare.sh` and `daemon_latency.rs`.
 
 See [benches/README.md](benches/README.md) for the benchmark map and when to use each script.
 
@@ -339,7 +329,7 @@ examples/      sample shell scripts and usage patterns
 
 ## Name
 
-AUSH can be read as **Another Unix Shell**. It started from a simpler idea: make a shell that is actually pleasant to use from both humans and programs.
+AUSH can be read as **Actually Usable Shell** or **Another Unix Shell**. The project started from a simple idea: make a shell that is pleasant to use from both humans and programs.
 
 ## Contributing
 

@@ -52,7 +52,7 @@ For a typical AI agent task that:
 
 ```bash
 # From source
-git clone https://github.com/opus-workshop/aush
+git clone https://github.com/kfcafe/aush
 cd aush
 cargo install --path .
 
@@ -808,6 +808,6 @@ See the [examples/](../examples/) directory for complete working examples:
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/opus-workshop/aush/issues
+- GitHub Issues: https://github.com/kfcafe/aush/issues
 - Documentation: https://aush.dev/docs
-- Examples: https://github.com/opus-workshop/aush/tree/main/examples
+- Examples: https://github.com/kfcafe/aush/tree/main/examples
