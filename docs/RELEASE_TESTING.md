@@ -19,6 +19,43 @@ Before releasing a new version, complete these tests:
 - [ ] Documentation is up-to-date
 - [ ] Explicit approval received before publishing, tagging, pushing, or updating external registries
 
+## Crates.io Release Gate
+
+Use this gate before publishing `aush` to crates.io:
+
+```bash
+cargo test --quiet --lib --bins
+cargo publish --dry-run
+```
+
+Run `cargo publish --dry-run --allow-dirty` only while validating uncommitted release-documentation changes locally. The final pre-publish check must run without `--allow-dirty` from a clean worktree.
+
+This is the minimum required local gate for a crates.io package publish. It verifies the library and binary unit tests compile and pass, then proves Cargo can package and verify the crate exactly as crates.io will receive it.
+
+For the first `0.1.x` crates.io releases, do **not** require the entire integration suite to be green before publish unless each suite has been made hermetic. The current `cargo test --quiet --tests` set includes suites that are valuable for development but are not yet stable release gates because they depend on host shell environment, external services, shellspec fixture layout, terminal/process-group behavior, or known compatibility-roadmap work.
+
+Before publishing, record the current status of excluded suites in mana and make sure every exclusion has a follow-up task or a clear reason. Exclusions must be explicit; do not silently ignore failing tests.
+
+### Optional integration confidence pass
+
+When time allows, run targeted integration suites that are stable on the current platform:
+
+```bash
+cargo test --quiet --test error_recovery_tests --test exit_code_tests
+```
+
+Add more suites to this optional pass only after they are deterministic on clean machines.
+
+### Currently non-gating integration categories
+
+These categories are tracked separately until they are hermetic enough to become release gates:
+
+- host-environment-sensitive tests, such as login shell and shell variable initialization;
+- external-service tests, such as AI/pipe-ask flows that can make network requests;
+- shellspec/POSIX fixture tests that require a specific project layout or runner setup;
+- long-running or platform-sensitive terminal, signal, and process-group tests;
+- compatibility-roadmap tests for shell features that are known incomplete in `0.1.x`.
+
 ## Platform-Specific Tests
 
 ### macOS Intel (x86_64) Testing

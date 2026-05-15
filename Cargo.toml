@@ -10,30 +10,29 @@ homepage = "https://github.com/kfcafe/aush"
 repository = "https://github.com/kfcafe/aush"
 keywords = ["shell", "posix", "terminal", "rust", "cli"]
 categories = ["command-line-utilities"]
-exclude = [
-    ".github/**",
-    ".mana/**",
-    ".pi/**",
-    ".vibecheck/**",
-    "research/**",
-    "reports/**",
-    "historical/**",
-    "target/**",
-    "homebrew/**",
-    "pi-rush/**",
-    "docs/internal/**",
-    "docs/shell-comparison*.html",
-    "benchmarks/**",
-    "apply_*.py",
-    "rush-debug.sh",
-    "rush-login-debug.sh",
-    "rush-wrapper.sh",
-    "wishlist*",
-    "*.orig",
-    "$HOME/**",
-    "Cargo.toml.orig",
-    "*.log",
-    "*.tmp",
+include = [
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/LICENSE-MIT",
+    "/LICENSE-APACHE",
+    "/CHANGELOG.md",
+    "/ARCHITECTURE.md",
+    "/QUICKSTART.md",
+    "/STATUS.md",
+    "/src/**/*.rs",
+    "/docs/*.md",
+    "/docs/builtins/*.md",
+    "/docs/design/*.md",
+    "/examples/**/*.aush",
+    "/examples/**/*.md",
+    "/tests/*.rs",
+    "/tests/*.sh",
+    "/tests/posix/**",
+    "/benches/**/*.rs",
+    "/benches/**/*.sh",
+    "/benches/**/*.md",
+    "/benches/workloads/**",
 ]
 
 [lib]
@@ -108,6 +107,7 @@ terminal_size = "0.4"
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3"
+serde_yaml = "0.9"
 
 # Benchmark targets
 [[bench]]

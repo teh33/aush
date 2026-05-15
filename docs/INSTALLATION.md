@@ -1,6 +1,6 @@
 # Installing AUSH
 
-AUSH is a high-performance, POSIX-compliant shell written in Rust. This document covers all installation methods.
+AUSH is a Rust shell for Unix-style command execution, native builtins, structured output, and automation-heavy workflows. This document covers installation and safe alpha trial paths. AUSH 0.1.0 is public alpha / beta-candidate software, not a guaranteed drop-in login-shell replacement.
 
 ## Quick Start
 
@@ -101,40 +101,67 @@ sudo cp target/release/aush /usr/local/bin/
 - Rust 1.70 or later
 - Cargo
 
-## Setting as Default Shell
+## Trying AUSH as a Login Shell
 
-After installing, you can make AUSH your default shell:
+For the public alpha, prefer a terminal-specific trial before changing your
+system login shell. Keep a known-good shell such as `zsh` or `bash` available for
+rollback.
 
-### macOS (Homebrew)
+### Ghostty trial first
 
-```bash
-# Add AUSH to allowed shells
-echo "$(brew --prefix)/bin/aush" | sudo tee -a /etc/shells
+Configure Ghostty to launch AUSH without changing your account shell:
 
-# Change your shell
-chsh -s "$(brew --prefix)/bin/aush"
+```text
+command = /absolute/path/to/aush
+command-arg = --login
 ```
 
-### Linux / macOS (Binary Install)
+AUSH-specific startup files are:
+
+- `~/.aush_profile` for interactive login shells;
+- `~/.aushrc` for interactive shells.
+
+AUSH does not automatically source `/etc/profile`, `~/.profile`, `.zprofile`,
+`.zshrc`, or `.bashrc`. Put required PATH/tool setup in `~/.aush_profile`, or
+source a shared file explicitly.
+
+Smoke check a fresh terminal before doing real work:
 
 ```bash
-# Add AUSH to allowed shells
-echo "/usr/local/bin/aush" | sudo tee -a /etc/shells
-
-# Change your shell
-chsh -s /usr/local/bin/aush
+command -v aush
+aush --version
+echo "$PATH"
+command -v git
+command -v cargo
+command -v imp  # if you use imp
+type -a imp     # optional: inspect duplicates/precedence
 ```
 
-## Login Shell Setup
+Rollback is immediate: set Ghostty back to `/bin/zsh` or your previous shell and
+open a new window.
 
-To use AUSH as your login shell, add the AUSH path to `/etc/shells` and run `chsh`:
+### System-wide `chsh` after a successful trial
+
+Only after a successful terminal-specific trial, add AUSH to `/etc/shells` and
+change the account shell:
 
 ```bash
-echo "/usr/local/bin/aush" | sudo tee -a /etc/shells
-chsh -s /usr/local/bin/aush
+AUSH_PATH="$(command -v aush)"
+grep -qxF "$AUSH_PATH" /etc/shells || echo "$AUSH_PATH" | sudo tee -a /etc/shells
+chsh -s "$AUSH_PATH"
 ```
 
-AUSH reads `AUSH_*` environment variables and `~/.aushrc`. Release archives include the `aush` shell and install `aushd` when daemon support is packaged.
+Rollback:
+
+```bash
+chsh -s /bin/zsh
+# or, if your normal zsh is Homebrew-installed:
+# chsh -s /opt/homebrew/bin/zsh
+```
+
+Release archives include the `aush` shell and install `aushd` when daemon support
+is packaged. `aushd` is experimental and should only be run where local clients
+with access to its socket are trusted.
 
 ## Daemon Mode (Optional)
 

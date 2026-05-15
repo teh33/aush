@@ -15,6 +15,14 @@
 
 # Agent workspace state
 .mana/
+.imp/
+
+# Generated compatibility reports
+/reports/*.log
+/reports/brush-*.md
+
+# Scratch notes
+/4-28-idea.md
 
 # Agent artifacts
 *.bak
