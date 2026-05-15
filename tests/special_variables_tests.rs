@@ -212,6 +212,7 @@ fn test_exit_code_still_works() {
 fn test_braced_special_vars() {
     // Test braced versions of special variables
     let mut executor = Executor::new();
+    executor.runtime_mut().set_last_arg(String::new());
 
     // Test ${!}
     let output = execute_line("let X = ${!}; echo ${X:-EMPTY}", &mut executor).unwrap();
@@ -228,7 +229,8 @@ fn test_braced_special_vars() {
     );
 
     // Test ${_}
-    let output = execute_line("let X = ${_}; echo ${X:-EMPTY}", &mut executor).unwrap();
+    executor.runtime_mut().set_last_arg(String::new());
+    let output = execute_line("echo ${_:-EMPTY}", &mut executor).unwrap();
     assert_eq!(output, "EMPTY", "${{_}} should be empty initially");
 }
 

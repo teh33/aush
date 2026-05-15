@@ -49,8 +49,8 @@ fn test_sigint_in_script() {
     let script_path = script.path().to_str().unwrap();
 
     // Spawn aush with the script
-    let mut child = Command::new("cargo")
-        .args(&["run", "--", script_path])
+    let child = Command::new(env!("CARGO_BIN_EXE_aush"))
+        .arg(script_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -94,8 +94,8 @@ fn test_no_orphaned_processes() {
     let script_path = script.path().to_str().unwrap();
 
     // Spawn aush with the script
-    let mut child = Command::new("cargo")
-        .args(&["run", "--", script_path])
+    let child = Command::new(env!("CARGO_BIN_EXE_aush"))
+        .arg(script_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -152,8 +152,8 @@ fn test_signal_during_command_execution() {
     let script_path = script.path().to_str().unwrap();
 
     // Spawn aush with the script
-    let mut child = Command::new("cargo")
-        .args(&["run", "--", script_path])
+    let child = Command::new(env!("CARGO_BIN_EXE_aush"))
+        .arg(script_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -212,8 +212,8 @@ fn test_interactive_mode_ctrl_c() {
 #[test]
 fn test_command_flag_with_signal() {
     // Test the -c flag with signal handling
-    let mut child = Command::new("cargo")
-        .args(&["run", "--", "-c", "sleep 10"])
+    let child = Command::new(env!("CARGO_BIN_EXE_aush"))
+        .args(["-c", "sleep 10"])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -272,8 +272,8 @@ fn test_sighup_handling() {
     let script_path = script.path().to_str().unwrap();
 
     // Spawn aush with the script
-    let mut child = Command::new("cargo")
-        .args(&["run", "--", script_path])
+    let child = Command::new(env!("CARGO_BIN_EXE_aush"))
+        .arg(script_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()

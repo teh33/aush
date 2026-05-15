@@ -93,11 +93,9 @@ fn test_break_outside_loop() {
         prefix_env: vec![],
     })]);
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("only meaningful in a"));
+    let result = result.unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("only meaningful in a"));
 }
 
 #[test]
@@ -221,11 +219,9 @@ fn test_break_with_invalid_argument() {
 
     let result = executor.execute(vec![Statement::ForLoop(for_loop)]);
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("numeric argument required"));
+    let result = result.unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("numeric argument required"));
 }
 
 #[test]
@@ -249,11 +245,9 @@ fn test_break_with_zero() {
 
     let result = executor.execute(vec![Statement::ForLoop(for_loop)]);
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("loop count out of range"));
+    let result = result.unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("loop count out of range"));
 }
 
 #[test]
@@ -277,11 +271,9 @@ fn test_break_exceeds_loop_depth() {
 
     let result = executor.execute(vec![Statement::ForLoop(for_loop)]);
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("loop count out of range"));
+    let result = result.unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("loop count out of range"));
 }
 
 #[test]
@@ -308,11 +300,9 @@ fn test_break_too_many_arguments() {
 
     let result = executor.execute(vec![Statement::ForLoop(for_loop)]);
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("too many arguments"));
+    let result = result.unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("too many arguments"));
 }
 
 #[test]
@@ -531,11 +521,9 @@ fn test_continue_outside_loop() {
         prefix_env: vec![],
     })]);
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("only meaningful in a"));
+    let result = result.unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("only meaningful in a"));
 }
 
 #[test]
@@ -692,11 +680,9 @@ fn test_continue_with_invalid_argument() {
 
     let result = executor.execute(vec![Statement::ForLoop(for_loop)]);
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("numeric argument required"));
+    let result = result.unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("numeric argument required"));
 }
 
 #[test]
@@ -720,11 +706,9 @@ fn test_continue_with_zero() {
 
     let result = executor.execute(vec![Statement::ForLoop(for_loop)]);
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("loop count out of range"));
+    let result = result.unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("loop count out of range"));
 }
 
 #[test]
@@ -748,11 +732,9 @@ fn test_continue_exceeds_loop_depth() {
 
     let result = executor.execute(vec![Statement::ForLoop(for_loop)]);
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("loop count out of range"));
+    let result = result.unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("loop count out of range"));
 }
 
 #[test]
@@ -779,11 +761,9 @@ fn test_continue_too_many_arguments() {
 
     let result = executor.execute(vec![Statement::ForLoop(for_loop)]);
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("too many arguments"));
+    let result = result.unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("too many arguments"));
 }
 
 #[test]

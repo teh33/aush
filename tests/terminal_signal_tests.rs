@@ -2,7 +2,7 @@
 // Tests SIGTSTP, SIGTTIN, SIGTTOU handling
 
 use aush::signal::SignalHandler;
-use signal_hook::consts::{SIGTSTP, SIGTTIN, SIGTTOU};
+use signal_hook::consts::SIGTSTP;
 
 #[test]
 fn test_signal_handler_supports_terminal_signals() {
@@ -37,13 +37,7 @@ fn test_terminal_signal_exit_codes() {
     aush::signal::SIGNAL_NUMBER.store(SIGTSTP, Ordering::SeqCst);
     assert_eq!(handler.exit_code(), 148);
 
-    // Test SIGTTIN exit code (128 + 21 = 149)
-    aush::signal::SIGNAL_NUMBER.store(SIGTTIN, Ordering::SeqCst);
-    assert_eq!(handler.exit_code(), 149);
-
-    // Test SIGTTOU exit code (128 + 22 = 150)
-    aush::signal::SIGNAL_NUMBER.store(SIGTTOU, Ordering::SeqCst);
-    assert_eq!(handler.exit_code(), 150);
+    // SIGTTIN and SIGTTOU are ignored by the shell, so they do not map to shell exit codes.
 
     // Reset
     handler.reset();
@@ -165,8 +159,7 @@ mod job_control_tests {
 #[cfg(test)]
 mod integration_tests {
     use std::io::Write;
-    use std::process::{Command, Stdio};
-    use std::thread;
+    use std::process::Command;
 
     use tempfile::NamedTempFile;
 
@@ -208,14 +201,14 @@ mod integration_tests {
         // Create a test script that demonstrates job control
         let mut script = NamedTempFile::new().expect("Failed to create temp file");
         writeln!(script, "#!/usr/bin/env aush").unwrap();
-        writeln!(script, "sleep 100 &").unwrap();
+        writeln!(script, "sleep 1 >/dev/null 2>&1 &").unwrap();
         writeln!(script, "jobs").unwrap();
 
         let script_path = script.path().to_str().unwrap();
 
         // Run the script
-        let output = Command::new("cargo")
-            .args(&["run", "--", script_path])
+        let output = Command::new(env!("CARGO_BIN_EXE_aush"))
+            .arg(script_path)
             .output()
             .expect("Failed to run script");
 
@@ -230,16 +223,16 @@ mod integration_tests {
         // Create a script with multiple background jobs
         let mut script = NamedTempFile::new().expect("Failed to create temp file");
         writeln!(script, "#!/usr/bin/env aush").unwrap();
-        writeln!(script, "sleep 50 &").unwrap();
-        writeln!(script, "sleep 60 &").unwrap();
-        writeln!(script, "sleep 70 &").unwrap();
+        writeln!(script, "sleep 1 >/dev/null 2>&1 &").unwrap();
+        writeln!(script, "sleep 1 >/dev/null 2>&1 &").unwrap();
+        writeln!(script, "sleep 1 >/dev/null 2>&1 &").unwrap();
         writeln!(script, "jobs -l").unwrap();
 
         let script_path = script.path().to_str().unwrap();
 
         // Run the script
-        let output = Command::new("cargo")
-            .args(&["run", "--", script_path])
+        let output = Command::new(env!("CARGO_BIN_EXE_aush"))
+            .arg(script_path)
             .output()
             .expect("Failed to run script");
 

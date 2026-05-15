@@ -33,17 +33,8 @@ done
     file
 }
 
-/// Get the path to the aush binary
-fn rush_binary() -> String {
-    // Check for release binary first, then debug
-    let release_path = "./target/release/aush";
-    let debug_path = "./target/debug/aush";
-
-    if std::path::Path::new(release_path).exists() {
-        release_path.to_string()
-    } else {
-        debug_path.to_string()
-    }
+fn aush_binary() -> &'static str {
+    env!("CARGO_BIN_EXE_aush")
 }
 
 #[test]
@@ -51,7 +42,8 @@ fn test_pipe_ask_basic() {
     let mock_pi = create_mock_pi();
 
     // Run aush with mock pi in PATH
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
+        .env("AUSH_AI_PROVIDER", "disabled")
         .env("AUSH_PI_PATH", mock_pi.path()) // Override pi binary location
         .arg("-c")
         .arg(r#"echo "test" |? "respond""#)
@@ -77,7 +69,8 @@ fn test_pipe_ask_basic() {
 #[test]
 fn test_pipe_ask_no_pi() {
     // Verify helpful error when pi is not installed
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
+        .env("AUSH_AI_PROVIDER", "disabled")
         .env("AUSH_PI_PATH", "/nonexistent/pi") // Force failure
         .env("PATH", "") // Clear PATH
         .arg("-c")
@@ -99,7 +92,8 @@ fn test_pipe_ask_captures_stdin() {
     // Verify the command output is passed to pi
     let mock_pi = create_mock_pi();
 
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
+        .env("AUSH_AI_PROVIDER", "disabled")
         .env("AUSH_PI_PATH", mock_pi.path())
         .arg("-c")
         .arg(r#"echo "hello world" |? "summarize""#)
@@ -122,7 +116,8 @@ fn test_pipe_ask_in_pipeline() {
     // cat file | grep pattern |? "explain"
     let mock_pi = create_mock_pi();
 
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
+        .env("AUSH_AI_PROVIDER", "disabled")
         .env("AUSH_PI_PATH", mock_pi.path())
         .arg("-c")
         .arg(r#"echo -e "error: foo\nwarning: bar" | grep error |? "explain""#)
@@ -145,7 +140,8 @@ fn test_pipe_ask_empty_prompt() {
     // Test |? without explicit prompt (should use default)
     let mock_pi = create_mock_pi();
 
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
+        .env("AUSH_AI_PROVIDER", "disabled")
         .env("AUSH_PI_PATH", mock_pi.path())
         .arg("-c")
         .arg(r#"echo "test output" |?"#)
@@ -172,7 +168,8 @@ fn test_pipe_ask_empty_prompt() {
 fn test_pipe_ask_single_quoted_prompt() {
     let mock_pi = create_mock_pi();
 
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
+        .env("AUSH_AI_PROVIDER", "disabled")
         .env("AUSH_PI_PATH", mock_pi.path())
         .arg("-c")
         .arg(r#"echo "test" |? 'analyze this'"#)
@@ -194,7 +191,8 @@ fn test_pipe_ask_single_quoted_prompt() {
 fn test_pipe_ask_multiword_prompt() {
     let mock_pi = create_mock_pi();
 
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
+        .env("AUSH_AI_PROVIDER", "disabled")
         .env("AUSH_PI_PATH", mock_pi.path())
         .arg("-c")
         .arg(r#"ls -la |? "explain what each column means""#)

@@ -49,6 +49,7 @@ use parser::Parser;
 use reedline::{Prompt, PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal};
 use signal::SignalHandler;
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::env;
 use std::fs;
 use std::io::{BufRead, BufReader, IsTerminal};
@@ -67,6 +68,10 @@ fn main() -> Result<()> {
         let mut i = 1;
         while i < args.len() {
             match args[i].as_str() {
+                "--version" | "-V" => {
+                    println!("aush {}", env!("CARGO_PKG_VERSION"));
+                    std::process::exit(0);
+                }
                 "--profile" => {
                     enable_profile = true;
                     i += 1;
@@ -78,6 +83,9 @@ fn main() -> Result<()> {
                 "--max-output" if i + 1 < args.len() => {
                     max_output_str = Some(args[i + 1].clone());
                     i += 2;
+                }
+                "--login" | "--no-rc" | "--norc" | "--no-config" => {
+                    i += 1;
                 }
                 "-c" if i + 1 < args.len() => {
                     fast_execute_c(
@@ -165,7 +173,7 @@ fn main() -> Result<()> {
                     run_info_command(stat_name, json_output);
                     // run_info_command calls process::exit
                 }
-                "--login" | "-l" | "--no-rc" | "--norc" | "--no-config" => {
+                "-l" => {
                     i += 1;
                 }
                 _ => {
@@ -604,12 +612,71 @@ fn run_interactive_with_init(
     }
 }
 
-fn init_environment_variables() -> Result<()> {
-    // Set $SHELL only if not already set (avoids expensive current_exe() readlink)
-    if env::var("SHELL").is_err() {
-        if let Ok(exe) = env::current_exe() {
-            env::set_var("SHELL", exe);
+fn default_path_entries() -> Vec<String> {
+    let mut entries = Vec::new();
+    if let Some(home) = dirs::home_dir() {
+        entries.push(home.join("bin").to_string_lossy().to_string());
+        entries.push(home.join(".local/bin").to_string_lossy().to_string());
+    }
+    entries.extend([
+        "/usr/local/bin".to_string(),
+        "/opt/homebrew/bin".to_string(),
+        "/usr/bin".to_string(),
+        "/bin".to_string(),
+        "/usr/sbin".to_string(),
+        "/sbin".to_string(),
+    ]);
+    entries
+}
+
+fn default_path() -> String {
+    default_path_entries().join(":")
+}
+
+fn normalize_path_entry(entry: &str) -> String {
+    fs::canonicalize(entry)
+        .unwrap_or_else(|_| std::path::PathBuf::from(entry))
+        .to_string_lossy()
+        .to_string()
+}
+
+fn ensure_standard_path() {
+    let Some(path) = env::var_os("PATH") else {
+        env::set_var("PATH", default_path());
+        return;
+    };
+
+    if path.is_empty() {
+        env::set_var("PATH", default_path());
+        return;
+    }
+
+    let mut entries: Vec<String> = path
+        .to_string_lossy()
+        .split(':')
+        .filter(|entry| !entry.is_empty())
+        .map(str::to_string)
+        .collect();
+
+    for default_entry in default_path_entries() {
+        if !entries.iter().any(|entry| entry == &default_entry) {
+            entries.push(default_entry.to_string());
         }
+    }
+
+    let mut seen = HashSet::new();
+    entries.retain(|entry| seen.insert(normalize_path_entry(entry)));
+
+    env::set_var("PATH", entries.join(":"));
+}
+
+fn init_environment_variables() -> Result<()> {
+    ensure_standard_path();
+
+    // Set $SHELL to this aush binary for shell semantics. Do not inherit the
+    // parent interactive shell path (for example /bin/zsh) into the child shell.
+    if let Ok(exe) = env::current_exe() {
+        env::set_var("SHELL", exe);
     }
 
     // Set $TERM if not already set
@@ -1053,7 +1120,7 @@ fn print_help() {
     println!("Usage:");
     println!("  aush                Start interactive shell");
     println!(
-        "  aush --login        Start as login shell (sources ~/.aush_profile or ~/.aush_profile)"
+        "  aush --login        Start as login shell (sources ~/.aush_profile, then ~/.aushrc)"
     );
     println!("  aush --no-rc        Skip sourcing config files");
     println!("  aush --no-config    Skip sourcing config files (alias for --no-rc)");
@@ -1084,8 +1151,8 @@ fn print_help() {
     println!("  aush --info --json                   # Get all stats as JSON");
     println!();
     println!("Config Files:");
-    println!("  ~/.aush_profile     Sourced on login shells");
-    println!("  ~/.aushrc           Sourced on interactive shells");
+    println!("  ~/.aush_profile     Sourced first on interactive login shells");
+    println!("  ~/.aushrc           Sourced on interactive shells unless --no-rc");
 }
 
 fn execute_line(line: &str, executor: &mut Executor) -> Result<executor::ExecutionResult> {
@@ -1152,6 +1219,12 @@ fn fast_execute_c(
 
     let mut executor = Executor::new().with_profiling(enable_profile);
 
+    ensure_standard_path();
+
+    if let Ok(exe) = env::current_exe() {
+        env::set_var("SHELL", exe);
+    }
+
     // Minimal runtime init: enough environment for common non-interactive scripts.
     for key in ["PATH", "PWD", "HOME", "USER", "LOGNAME", "SHELL", "TERM"] {
         match key {
@@ -1177,7 +1250,26 @@ fn fast_execute_c(
         }
     }
 
-    match executor.execute(statements) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::parent_id;
+        executor
+            .runtime_mut()
+            .set_variable("PPID".to_string(), parent_id().to_string());
+        executor.runtime_mut().mark_readonly("PPID".to_string());
+    }
+
+    let shlvl = env::var("SHLVL")
+        .ok()
+        .and_then(|s| s.parse::<i32>().ok())
+        .unwrap_or(0)
+        + 1;
+    executor
+        .runtime_mut()
+        .set_variable("SHLVL".to_string(), shlvl.to_string());
+    env::set_var("SHLVL", shlvl.to_string());
+
+    match executor.execute_streaming(statements) {
         Ok(result) => {
             let mut stdout_text = result.stdout();
             if !result.stderr.is_empty() {

@@ -22,6 +22,13 @@ pub struct ShellOptions {
     pub verbose: bool,   // Print input lines as they are read (set -v)
 }
 
+/// Runtime state for an fd made durable by `exec` redirection.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PermanentFd {
+    Open(i32),
+    Closed,
+}
+
 /// Runtime environment for the shell
 #[derive(Clone)]
 pub struct Runtime {
@@ -46,6 +53,7 @@ pub struct Runtime {
     permanent_stdout: Option<i32>,
     permanent_stderr: Option<i32>,
     permanent_stdin: Option<i32>,
+    permanent_fds: std::collections::BTreeMap<i32, PermanentFd>,
     // Special variables tracking
     last_bg_pid: Option<u32>, // Track PID of last background job ($!)
     last_arg: String,         // Track last argument of previous command ($_)
@@ -88,12 +96,15 @@ impl Runtime {
             permanent_stdout: None,
             permanent_stderr: None,
             permanent_stdin: None,
+            permanent_fds: std::collections::BTreeMap::new(),
             last_bg_pid: None,
             last_arg: String::new(),
             dir_stack: Vec::new(),
             piped_stdin: None,
             agent_mode: crate::brand::env_flag("AUSH_AGENT_MODE", "1"),
         };
+
+        runtime.variables.extend(env::vars());
 
         // Initialize $? to 0
         runtime.set_last_exit_code(0);
@@ -156,6 +167,10 @@ impl Runtime {
         if matches!(name.as_str(), "#" | "@" | "*") || name.parse::<usize>().is_ok() {
             self.set_positional_variable(name, value);
             return;
+        }
+
+        if name == "PATH" {
+            env::set_var("PATH", &value);
         }
 
         // If we're in a function scope, set the variable in the current scope
@@ -364,7 +379,9 @@ impl Runtime {
     }
 
     pub fn get_env(&self) -> HashMap<String, String> {
-        env::vars().collect()
+        let mut vars: HashMap<String, String> = env::vars().collect();
+        vars.extend(self.variables.clone());
+        vars
     }
 
     pub fn set_env(&self, key: &str, value: &str) {
@@ -767,6 +784,43 @@ impl Runtime {
         self.permanent_stdin
     }
 
+    /// Set or clear an arbitrary permanent file descriptor mapping.
+    pub fn set_permanent_fd(&mut self, fd: i32, target_fd: Option<i32>) {
+        match target_fd {
+            Some(target) => {
+                self.permanent_fds.insert(fd, PermanentFd::Open(target));
+            }
+            None => {
+                self.permanent_fds.remove(&fd);
+            }
+        }
+    }
+
+    pub fn mark_permanent_fd_closed(&mut self, fd: i32) {
+        self.permanent_fds.insert(fd, PermanentFd::Closed);
+        match fd {
+            0 => self.permanent_stdin = None,
+            1 => self.permanent_stdout = None,
+            2 => self.permanent_stderr = None,
+            _ => {}
+        }
+    }
+
+    pub fn get_permanent_fd(&self, fd: i32) -> Option<i32> {
+        match self.permanent_fds.get(&fd) {
+            Some(PermanentFd::Open(raw_fd)) => Some(*raw_fd),
+            _ => None,
+        }
+    }
+
+    pub fn permanent_fds(&self) -> &std::collections::BTreeMap<i32, PermanentFd> {
+        &self.permanent_fds
+    }
+
+    pub fn close_permanent_fd(&mut self, fd: i32) {
+        self.mark_permanent_fd_closed(fd);
+    }
+
     // Trap handler management
 
     /// Set a trap handler for a signal
@@ -936,6 +990,7 @@ impl Runtime {
         self.permanent_stdout = None;
         self.permanent_stderr = None;
         self.permanent_stdin = None;
+        self.permanent_fds.clear();
 
         // Clear special variables
         self.last_bg_pid = None;

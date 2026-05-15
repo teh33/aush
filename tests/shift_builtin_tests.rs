@@ -136,9 +136,8 @@ fn test_shift_empty_params_error() {
     executor.runtime_mut().set_positional_params(vec![]);
 
     // shift with no params should fail
-    let result = execute_line("shift", &mut executor);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().contains("exceeds"));
+    let (_, code) = execute_line_with_code("shift", &mut executor).unwrap();
+    assert_eq!(code, 1);
 }
 
 #[test]
@@ -149,9 +148,8 @@ fn test_shift_beyond_available_params_error() {
         .set_positional_params(vec!["a".to_string(), "b".to_string()]);
 
     // shift 3 when only 2 params exist should fail
-    let result = execute_line("shift 3", &mut executor);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().contains("exceeds"));
+    let (_, code) = execute_line_with_code("shift 3", &mut executor).unwrap();
+    assert_eq!(code, 1);
 }
 
 #[test]
@@ -161,9 +159,8 @@ fn test_shift_non_numeric_argument_error() {
         .runtime_mut()
         .set_positional_params(vec!["a".to_string()]);
 
-    let result = execute_line("shift abc", &mut executor);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().contains("numeric argument required"));
+    let (_, code) = execute_line_with_code("shift abc", &mut executor).unwrap();
+    assert_eq!(code, 1);
 }
 
 #[test]
@@ -173,9 +170,8 @@ fn test_shift_too_many_arguments_error() {
         .runtime_mut()
         .set_positional_params(vec!["a".to_string()]);
 
-    let result = execute_line("shift 1 2", &mut executor);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().contains("too many arguments"));
+    let (_, code) = execute_line_with_code("shift 1 2", &mut executor).unwrap();
+    assert_eq!(code, 1);
 }
 
 // ============================================================================

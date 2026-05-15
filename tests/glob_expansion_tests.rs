@@ -157,23 +157,23 @@ fn test_glob_dotfiles_matched_explicitly() {
 }
 
 #[test]
-fn test_glob_empty_results_error() {
+fn test_unmatched_glob_uses_posix_literal_fallback() {
     let temp = TempDir::new().unwrap();
     let temp_path = temp.path();
 
     let mut executor = Executor::new();
     executor.runtime_mut().set_cwd(temp_path.to_path_buf());
 
-    // Test pattern with no matches
-    let tokens = Lexer::tokenize("cat *.nonexistent").unwrap();
+    // POSIX shells leave unmatched glob patterns unchanged. The command may
+    // still fail later if it cannot open the literal path.
+    let tokens = Lexer::tokenize("printf '%s\\n' *.nonexistent").unwrap();
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
 
-    let result = executor.execute(statements);
+    let result = executor.execute(statements).unwrap();
 
-    // Should return an error, not execute with literal pattern
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("No matches found"));
+    assert_eq!(result.exit_code, 0);
+    assert_eq!(result.stdout(), "*.nonexistent\n");
 }
 
 #[test]

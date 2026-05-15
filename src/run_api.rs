@@ -203,19 +203,25 @@ fn execute_inner(command: &str, options: &RunOptions) -> Result<RunResult> {
     let mut truncated = false;
 
     // Apply stdout budget. Per spec: applies to stdout only (stderr is typically
-    // small). When exceeded, truncate to the byte limit and append a notice so
-    // callers know output is incomplete.
+    // small). When exceeded, keep the returned stdout within the byte limit,
+    // including the truncation notice, so callers can rely on the bound.
     if let Some(max_bytes) = max_output_bytes {
         if stdout.len() > max_bytes {
             truncated = true;
-            // Truncate at a UTF-8 boundary to avoid producing invalid strings.
-            let safe_end = floor_char_boundary(&stdout, max_bytes);
             let bytes_written = stdout.len();
-            stdout.truncate(safe_end);
-            stdout.push_str(&format!(
+            let notice = format!(
                 "\n[Output truncated: {} bytes, limit {} bytes]",
                 bytes_written, max_bytes
-            ));
+            );
+
+            if notice.len() >= max_bytes {
+                stdout = notice.chars().take(max_bytes).collect();
+            } else {
+                let content_budget = max_bytes - notice.len();
+                let safe_end = floor_char_boundary(&stdout, content_budget);
+                stdout.truncate(safe_end);
+                stdout.push_str(&notice);
+            }
         }
     }
 

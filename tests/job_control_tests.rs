@@ -186,11 +186,10 @@ fn test_background_builtin_fails() {
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
 
-    let result = executor.execute(statements);
-    assert!(result.is_err());
+    let result = executor.execute(statements).unwrap();
+    assert_eq!(result.exit_code, 1);
     assert!(result
-        .unwrap_err()
-        .to_string()
+        .stderr
         .contains("Builtin commands cannot be run in background"));
 }
 
@@ -204,10 +203,10 @@ fn test_background_with_conditional_and() {
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
 
-    let result = executor.execute(statements);
+    let result = executor.execute(statements).unwrap();
     // Should fail because echo is a builtin
-    assert!(result.is_err());
-    let error_msg = result.unwrap_err().to_string();
+    assert_eq!(result.exit_code, 1);
+    let error_msg = result.stderr;
     assert!(
         error_msg.contains("Builtin commands cannot be run in background")
             || error_msg.contains("cannot be run in background")

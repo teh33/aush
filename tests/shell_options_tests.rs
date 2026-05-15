@@ -45,12 +45,11 @@ fn test_set_nounset_errors_on_undefined_var() {
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
 
-    let result = executor.execute(statements);
+    let result = executor.execute(statements).unwrap();
 
-    // Should error on undefined variable
-    assert!(result.is_err());
-    let err_msg = result.unwrap_err().to_string();
-    assert!(err_msg.contains("unbound variable") || err_msg.contains("UNDEFINED_VAR"));
+    // Expansion errors are reported as non-zero command results.
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("unbound variable") || result.stderr.contains("UNDEFINED_VAR"));
 }
 
 #[test]
@@ -225,10 +224,11 @@ fn test_set_invalid_option() {
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
 
-    let result = executor.execute(statements);
+    let result = executor.execute(statements).unwrap();
 
-    // Should error
-    assert!(result.is_err());
+    // Should fail as a normal command error.
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("Unknown option") || result.stderr.contains("set"));
 }
 
 #[test]

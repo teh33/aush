@@ -105,10 +105,11 @@ fn test_invalid_redirect_target() {
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
 
-    let result = executor.execute(statements);
+    let result = executor.execute(statements).unwrap();
 
-    // Should return an error, not panic
-    assert!(result.is_err());
+    // Shell command redirection failures are reported as non-zero command results.
+    assert_ne!(result.exit_code, 0);
+    assert!(!result.stderr.is_empty());
 }
 
 #[test]

@@ -41,9 +41,9 @@ impl std::error::Error for ExitSignal {}
 ///   exit        # Exit with code 0
 ///   exit 1      # Exit with code 1
 ///   exit $?     # Exit with last command's exit code
-pub fn builtin_exit(args: &[String], _runtime: &mut Runtime) -> Result<ExecutionResult> {
+pub fn builtin_exit(args: &[String], runtime: &mut Runtime) -> Result<ExecutionResult> {
     let code = if args.is_empty() {
-        0
+        runtime.get_last_exit_code()
     } else {
         args[0].parse::<i32>().unwrap_or(0)
     };
@@ -58,11 +58,12 @@ mod tests {
     #[test]
     fn test_exit_no_args() {
         let mut runtime = crate::runtime::Runtime::new();
+        runtime.set_last_exit_code(5);
         let result = builtin_exit(&[], &mut runtime);
         assert!(result.is_err());
         let err = result.unwrap_err();
         let signal = err.downcast_ref::<ExitSignal>().unwrap();
-        assert_eq!(signal.exit_code, 0);
+        assert_eq!(signal.exit_code, 5);
     }
 
     #[test]

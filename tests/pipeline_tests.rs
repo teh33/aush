@@ -4,7 +4,7 @@ use std::process::Command;
 
 /// Helper to run aush with a command
 fn run_aush(cmd: &str) -> std::process::Output {
-    Command::new("./target/release/aush")
+    Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
         .arg(cmd)
         .output()
@@ -28,7 +28,7 @@ fn test_for_loop_left_side_pipeline() {
 
     let aush = std::env::current_dir()
         .expect("current dir")
-        .join("target/release/aush");
+        .join(env!("CARGO_BIN_EXE_aush"));
     let output = Command::new(aush)
         .arg("--no-rc")
         .arg("-c")

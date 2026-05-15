@@ -2,18 +2,13 @@
 
 use std::process::Command;
 
-fn rush_binary() -> String {
-    // Use the release binary for realistic testing
-    let mut path = std::env::current_dir().unwrap();
-    path.push("target");
-    path.push("release");
-    path.push("aush");
-    path.to_string_lossy().to_string()
+fn aush_binary() -> &'static str {
+    env!("CARGO_BIN_EXE_aush")
 }
 
 #[test]
 fn test_c_flag_echo() {
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("-c")
         .arg("echo hello world")
         .output()
@@ -25,7 +20,7 @@ fn test_c_flag_echo() {
 
 #[test]
 fn test_c_flag_pwd() {
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("-c")
         .arg("pwd")
         .output()
@@ -41,7 +36,7 @@ fn test_c_flag_cat() {
     let test_content = "test content\nline 2\n";
     std::fs::write("/tmp/aush_test_cat.txt", test_content).unwrap();
 
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("-c")
         .arg("cat /tmp/aush_test_cat.txt")
         .output()
@@ -56,7 +51,7 @@ fn test_c_flag_cat() {
 
 #[test]
 fn test_c_flag_ls() {
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("-c")
         .arg("ls")
         .output()
@@ -70,7 +65,7 @@ fn test_c_flag_ls() {
 
 #[test]
 fn test_c_flag_pipeline() {
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("-c")
         .arg("echo test | cat")
         .output()
@@ -82,7 +77,7 @@ fn test_c_flag_pipeline() {
 
 #[test]
 fn test_c_flag_exit_code_success() {
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("-c")
         .arg("echo success")
         .output()
@@ -94,7 +89,7 @@ fn test_c_flag_exit_code_success() {
 
 #[test]
 fn test_c_flag_multiple_commands() {
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("-c")
         .arg("echo first && echo second")
         .output()
@@ -108,7 +103,7 @@ fn test_c_flag_multiple_commands() {
 
 #[test]
 fn test_help_flag() {
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("--help")
         .output()
         .expect("Failed to execute");
@@ -122,7 +117,7 @@ fn test_help_flag() {
 
 #[test]
 fn test_h_flag() {
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("-h")
         .output()
         .expect("Failed to execute");
@@ -134,7 +129,7 @@ fn test_h_flag() {
 
 #[test]
 fn test_c_flag_find() {
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("-c")
         .arg("find . -name \"Cargo.toml\"")
         .output()
@@ -150,7 +145,7 @@ fn test_c_flag_grep() {
     // Create a test file
     std::fs::write("/tmp/aush_test_grep.txt", "line 1\nFOUND\nline 3\n").unwrap();
 
-    let output = Command::new(rush_binary())
+    let output = Command::new(aush_binary())
         .arg("-c")
         .arg("grep FOUND /tmp/aush_test_grep.txt")
         .output()

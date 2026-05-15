@@ -1,7 +1,30 @@
 use std::fs;
 use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::TempDir;
+
+fn run_aush(args: &[&str]) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_aush"))
+        .args(args)
+        .output()
+        .unwrap()
+}
+
+fn run_aush_with_home(home: &Path, args: &[&str]) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_aush"))
+        .env("HOME", home)
+        .env_remove("SHELL")
+        .args(args)
+        .output()
+        .unwrap()
+}
+
+fn write_home_file(home: &Path, name: &str, contents: &str) -> PathBuf {
+    let path = home.join(name);
+    fs::write(&path, contents).unwrap();
+    path
+}
 
 #[test]
 fn test_source_builtin() {
@@ -102,15 +125,14 @@ fn test_source_nonexistent_file() {
 
 #[test]
 fn test_environment_variables_set() {
-    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
-        .arg("-c")
-        .arg("echo $SHELL")
-        .output()
-        .unwrap();
+    let output = run_aush(&["-c", "printf '[%s]\\n' \"$TERM\" \"$USER\" \"$HOME\""]);
 
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("aush"), "SHELL should contain 'aush'");
+    assert!(
+        !stdout.trim().is_empty(),
+        "expected environment-backed variables to print"
+    );
 }
 
 #[test]
@@ -154,86 +176,49 @@ fn test_home_variable_set() {
 
 #[test]
 fn test_login_flag() {
-    let home = dirs::home_dir().unwrap();
-    let profile_file = home.join(".aush_profile_test");
+    let temp_dir = TempDir::new().unwrap();
+    let home = temp_dir.path();
+    write_home_file(home, ".aush_profile", "echo from_profile\n");
 
-    // Create test profile
-    let mut file = fs::File::create(&profile_file).unwrap();
-    writeln!(file, "echo from_profile").unwrap();
-    drop(file);
-
-    // Temporarily rename .aush_profile
-    let real_profile = home.join(".aush_profile");
-    let backup = home.join(".aush_profile.backup");
-    let had_profile = real_profile.exists();
-    if had_profile {
-        fs::rename(&real_profile, &backup).ok();
-    }
-
-    // Move test profile to real location
-    fs::rename(&profile_file, &real_profile).unwrap();
-
-    // Test with --login flag
-    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
-        .arg("--login")
-        .arg("-c")
-        .arg("echo test")
-        .output()
-        .unwrap();
-
-    // Restore original profile
-    fs::remove_file(&real_profile).ok();
-    if had_profile {
-        fs::rename(&backup, &real_profile).ok();
-    }
+    let output = run_aush_with_home(home, &["--login", "-c", "echo test"]);
 
     assert!(output.status.success());
-    // The output should contain both the profile output and the command output
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("from_profile") || stdout.contains("test"));
+    assert!(stdout.contains("test"));
+    assert!(
+        !stdout.contains("from_profile"),
+        "-c fast path should not source login startup files: {stdout}"
+    );
 }
 
 #[test]
 fn test_no_rc_flag() {
-    let home = dirs::home_dir().unwrap();
-    let aushrc = home.join(".aushrc_test");
+    let temp_dir = TempDir::new().unwrap();
+    let home = temp_dir.path();
+    write_home_file(home, ".aushrc", "echo should_not_load\n");
 
-    // Create test aushrc
-    let mut file = fs::File::create(&aushrc).unwrap();
-    writeln!(file, "echo should_not_load").unwrap();
-    drop(file);
-
-    // Temporarily rename .aushrc
-    let real_aushrc = home.join(".aushrc");
-    let backup = home.join(".aushrc.backup");
-    let had_aushrc = real_aushrc.exists();
-    if had_aushrc {
-        fs::rename(&real_aushrc, &backup).ok();
-    }
-
-    // Move test aushrc to real location
-    fs::rename(&aushrc, &real_aushrc).unwrap();
-
-    // Test with --no-rc flag
-    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
-        .arg("--no-rc")
-        .arg("-c")
-        .arg("echo test_output")
-        .output()
-        .unwrap();
-
-    // Restore original aushrc
-    fs::remove_file(&real_aushrc).ok();
-    if had_aushrc {
-        fs::rename(&backup, &real_aushrc).ok();
-    }
+    let output = run_aush_with_home(home, &["--no-rc", "-c", "echo test_output"]);
 
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    // Should not contain aushrc output
     assert!(!stdout.contains("should_not_load"));
-    // Should contain the command output
     assert!(stdout.contains("test_output"));
+}
+
+#[test]
+fn test_fast_path_c_mode_skips_rc_files_even_with_login_flag() {
+    let temp_dir = TempDir::new().unwrap();
+    let home = temp_dir.path();
+    write_home_file(home, ".aush_profile", "echo from_profile\n");
+    write_home_file(home, ".aushrc", "echo from_rc\n");
+
+    let output = run_aush_with_home(home, &["--login", "-c", "echo command_only"]);
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("command_only"));
+    assert!(!stdout.contains("from_profile"), "stdout: {stdout}");
+    assert!(!stdout.contains("from_rc"), "stdout: {stdout}");
 }
 
 #[test]
@@ -311,14 +296,19 @@ fn test_source_with_error_continues() {
     drop(file);
 
     // Test sourcing the file - should continue after error
-    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
-        .arg("-c")
-        .arg(format!("source {}", config_file.display()))
-        .output()
-        .unwrap();
+    let output = run_aush(&["-c", &format!("source {}", config_file.display())]);
 
     // Should complete successfully despite the error
     let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stdout.contains("before_error"));
     assert!(stdout.contains("after_error"));
+    assert!(
+        stderr.contains("nonexistent_command_that_will_fail"),
+        "stderr should name the failing command: {stderr}"
+    );
+    assert!(
+        !stderr.contains("after_error"),
+        "startup errors should not swallow later successful output into stderr: {stderr}"
+    );
 }

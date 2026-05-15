@@ -121,9 +121,9 @@ fn test_error_if_unset_with_unset_variable() {
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
 
-    let result = executor.execute(statements);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("variable not set"));
+    let result = executor.execute(statements).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("variable not set"));
 }
 
 #[test]
@@ -395,10 +395,7 @@ fn test_error_if_unset_with_empty_variable() {
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
 
-    let result = executor.execute(statements);
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("variable is empty"));
+    let result = executor.execute(statements).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("variable is empty"));
 }

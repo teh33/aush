@@ -34,9 +34,9 @@ fn test_exec_builtin_error() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    let err_msg = result.unwrap_err().to_string();
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    let err_msg = result.stderr;
     assert!(
         err_msg.contains("cannot execute builtin"),
         "Expected 'cannot execute builtin' error, got: {}",
@@ -58,9 +58,9 @@ fn test_exec_nonexistent_command() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    let err_msg = result.unwrap_err().to_string();
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    let err_msg = result.stderr;
     assert!(
         err_msg.contains("command not found"),
         "Expected 'command not found' error, got: {}",
@@ -82,8 +82,8 @@ fn test_exec_absolute_path_not_found() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
 }
 
 /// Test exec errors when trying to execute a builtin (echo)
@@ -101,12 +101,9 @@ fn test_exec_echo_builtin_error() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("cannot execute builtin"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("cannot execute builtin"));
 }
 
 /// Test exec errors when trying to execute true builtin
@@ -121,12 +118,9 @@ fn test_exec_true_builtin_error() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("cannot execute builtin"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("cannot execute builtin"));
 }
 
 /// Test exec errors when trying to execute false builtin
@@ -141,12 +135,9 @@ fn test_exec_false_builtin_error() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("cannot execute builtin"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("cannot execute builtin"));
 }
 
 /// Test exec errors when trying to execute pwd builtin
@@ -161,12 +152,9 @@ fn test_exec_pwd_builtin_error() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("cannot execute builtin"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("cannot execute builtin"));
 }
 
 /// Test exec errors when trying to execute test builtin
@@ -185,12 +173,9 @@ fn test_exec_test_builtin_error() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("cannot execute builtin"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("cannot execute builtin"));
 }
 
 /// Test exec errors when trying to execute set builtin
@@ -208,12 +193,9 @@ fn test_exec_set_builtin_error() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("cannot execute builtin"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("cannot execute builtin"));
 }
 
 /// Test exec with relative path to nonexistent file
@@ -228,8 +210,8 @@ fn test_exec_relative_path_not_found() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
 }
 
 // Note: We cannot test actual process replacement in unit tests

@@ -297,10 +297,10 @@ impl Parser {
         let name = match self.advance() {
             Some(Token::Identifier(s)) | Some(Token::Path(s)) | Some(Token::GlobPattern(s)) => s.clone(),
             Some(Token::LeftBracket) => "[".to_string(),
-            Some(Token::DoubleLeftBracket) => "[[".to_string(),
+            Some(Token::DoubleLeftBracket) => "test".to_string(),
             Some(Token::Colon) => ":".to_string(),
             Some(Token::Dot) => ".".to_string(),
-            _ => return Err(anyhow!("Expected command name")),
+            _ => return Err(anyhow!("Expected command name: {:?}", self.peek())),
         };
 
         let mut args = Vec::new();
@@ -312,8 +312,8 @@ impl Parser {
             && !self.match_token(&Token::ParallelPipe)
             && !self.match_token(&Token::Newline)
             && !self.match_token(&Token::Semicolon)
-            && !self.match_token(&Token::And)
-            && !self.match_token(&Token::Or)
+            && !matches!(self.peek(), Some(Token::And))
+            && !matches!(self.peek(), Some(Token::Or))
             && !self.match_token(&Token::Ampersand)
             && !self.match_token(&Token::RightParen)
             && !self.match_token(&Token::Then)
@@ -325,6 +325,7 @@ impl Parser {
             && !self.match_token(&Token::Esac)
             && !self.match_token(&Token::DoubleSemicolon)
             && !self.match_token(&Token::RightBrace)
+            && !self.match_token(&Token::DoubleRightBracket)
         {
             match self.peek() {
                 Some(Token::GreaterThan) => {
@@ -411,6 +412,10 @@ impl Parser {
                     args.push(self.parse_argument()?);
                 }
             }
+        }
+
+        if name == "test" && matches!(self.peek(), Some(Token::DoubleRightBracket)) {
+            self.advance();
         }
 
         Ok(Command {

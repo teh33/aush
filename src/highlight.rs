@@ -131,6 +131,8 @@ impl Highlighter for AUSHHighlighter {
                     | Token::StderrRedirect
                     | Token::StdinRedirect
                     | Token::StderrToStdout
+                    | Token::StdoutToStderr
+                    | Token::InvalidBothAppendRedirect
                     | Token::BothRedirect
                     | Token::HereDoc
                     | Token::HereDocStrip => {

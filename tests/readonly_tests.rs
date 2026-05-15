@@ -63,11 +63,10 @@ fn test_readonly_cannot_reassign_via_readonly() {
     let tokens = Lexer::tokenize("readonly VAR=newvalue").unwrap();
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
-    let result = executor.execute(statements);
+    let result = executor.execute(statements).unwrap();
 
-    assert!(result.is_err());
-    let err_msg = result.unwrap_err().to_string();
-    assert!(err_msg.contains("readonly variable"));
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("readonly variable"));
 
     // Value should not have changed
     assert_eq!(
@@ -90,12 +89,11 @@ fn test_readonly_cannot_unset() {
     let tokens = Lexer::tokenize("unset VAR").unwrap();
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
-    let result = executor.execute(statements);
+    let result = executor.execute(statements).unwrap();
 
-    assert!(result.is_err());
-    let err_msg = result.unwrap_err().to_string();
-    assert!(err_msg.contains("cannot unset"));
-    assert!(err_msg.contains("readonly"));
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("cannot unset"));
+    assert!(result.stderr.contains("readonly"));
 
     // Variable should still exist
     assert_eq!(
@@ -191,11 +189,10 @@ fn test_readonly_invalid_identifier() {
     let tokens = Lexer::tokenize("readonly 123VAR=value").unwrap();
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
-    let result = executor.execute(statements);
+    let result = executor.execute(statements).unwrap();
 
-    assert!(result.is_err());
-    let err_msg = result.unwrap_err().to_string();
-    assert!(err_msg.contains("not a valid identifier"));
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("not a valid identifier"));
 }
 
 #[test]
@@ -340,20 +337,25 @@ fn test_readonly_output_format() {
 }
 
 #[test]
-fn test_readonly_special_characters_in_value() {
+fn test_readonly_value_expands_variables_in_assignment_word() {
     let mut executor = Executor::new();
 
-    // Value with special characters
-    let tokens = Lexer::tokenize(r#"readonly VAR='$PATH:/extra'"#).unwrap();
+    executor
+        .runtime_mut()
+        .set_variable("BASE".to_string(), "/tmp/base:/extra".to_string());
+
+    // readonly receives NAME=VALUE as a command argument, so the assignment word
+    // is expanded before the builtin sees it.
+    let tokens = Lexer::tokenize(r#"readonly VAR=$BASE"#).unwrap();
     let mut parser = Parser::new(tokens);
     let statements = parser.parse().unwrap();
     let result = executor.execute(statements);
     assert!(result.is_ok());
 
-    // Variable should preserve the literal string
+    // Variable references in readonly assignment arguments are expanded.
     assert_eq!(
         executor.runtime_mut().get_variable("VAR"),
-        Some("$PATH:/extra".to_string())
+        Some("/tmp/base:/extra".to_string())
     );
     assert!(executor.runtime_mut().is_readonly("VAR"));
 }

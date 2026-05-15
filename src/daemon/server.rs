@@ -84,7 +84,11 @@ impl CustomStatCached {
 
     /// Update the stat by executing its command
     fn update(&mut self) {
-        let result = Command::new("sh").arg("-c").arg(&self.command).output();
+        let result = Command::new("sh")
+            .env("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
+            .arg("-c")
+            .arg(&self.command)
+            .output();
 
         match result {
             Ok(output) => {

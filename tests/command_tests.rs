@@ -177,9 +177,9 @@ fn test_command_no_arguments() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("usage"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("usage"));
 }
 
 #[test]
@@ -196,9 +196,9 @@ fn test_command_invalid_flag() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("invalid option"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("invalid option"));
 }
 
 #[test]
@@ -298,9 +298,9 @@ fn test_command_nonexistent() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("not found"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("not found"));
 }
 
 #[test]
@@ -416,4 +416,54 @@ fn test_command_multiple_args_to_builtin() {
     let result = executor.execute(vec![cmd]).unwrap();
     assert_eq!(result.stdout(), "one two three\n");
     assert_eq!(result.exit_code, 0);
+}
+
+#[test]
+fn test_command_v_preserves_path_precedence() {
+    use std::fs;
+    use tempfile::TempDir;
+
+    let temp = TempDir::new().unwrap();
+    let user_bin = temp.path().join("user-bin");
+    let system_bin = temp.path().join("system-bin");
+    fs::create_dir_all(&user_bin).unwrap();
+    fs::create_dir_all(&system_bin).unwrap();
+    fs::write(user_bin.join("imp"), "#!/bin/sh\necho user\n").unwrap();
+    fs::write(system_bin.join("imp"), "#!/bin/sh\necho system\n").unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(user_bin.join("imp"), fs::Permissions::from_mode(0o755)).unwrap();
+        fs::set_permissions(system_bin.join("imp"), fs::Permissions::from_mode(0o755)).unwrap();
+    }
+
+    let old_path = std::env::var_os("PATH");
+    std::env::set_var(
+        "PATH",
+        format!("{}:{}", user_bin.display(), system_bin.display()),
+    );
+
+    let mut executor = Executor::new();
+    let result = executor
+        .execute(vec![Statement::Command(Command {
+            name: "command".to_string(),
+            args: vec![
+                Argument::Literal("-v".to_string()),
+                Argument::Literal("imp".to_string()),
+            ],
+            redirects: vec![],
+            prefix_env: vec![],
+        })])
+        .unwrap();
+
+    match old_path {
+        Some(path) => std::env::set_var("PATH", path),
+        None => std::env::remove_var("PATH"),
+    }
+
+    assert_eq!(result.exit_code, 0);
+    assert_eq!(
+        result.stdout().trim(),
+        user_bin.join("imp").to_string_lossy()
+    );
 }

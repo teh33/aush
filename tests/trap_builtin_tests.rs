@@ -246,9 +246,9 @@ fn test_trap_invalid_signal() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("invalid signal"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("invalid signal"));
 }
 
 #[test]
@@ -263,9 +263,9 @@ fn test_trap_single_arg_error() {
         prefix_env: vec![],
     });
 
-    let result = executor.execute(vec![cmd]);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("usage"));
+    let result = executor.execute(vec![cmd]).unwrap();
+    assert_eq!(result.exit_code, 1);
+    assert!(result.stderr.contains("usage"));
 }
 
 #[test]
