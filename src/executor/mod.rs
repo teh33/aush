@@ -1,4 +1,4 @@
-mod commands;
+pub(crate) mod commands;
 mod control_flow;
 pub mod error_formatter;
 mod flow_signals;
@@ -130,6 +130,18 @@ impl Executor {
     }
 
     pub fn execute(&mut self, statements: Vec<Statement>) -> Result<ExecutionResult> {
+        self.execute_with_options(statements, false)
+    }
+
+    pub fn execute_streaming(&mut self, statements: Vec<Statement>) -> Result<ExecutionResult> {
+        self.execute_with_options(statements, true)
+    }
+
+    fn execute_with_options(
+        &mut self,
+        statements: Vec<Statement>,
+        streaming_output: bool,
+    ) -> Result<ExecutionResult> {
         let mut accumulated_stdout = String::new();
         let mut accumulated_stderr = String::new();
         let mut last_exit_code = 0;
@@ -175,9 +187,25 @@ impl Executor {
                 }
             }
 
-            let result = self.execute_statement(statement)?;
-            accumulated_stdout.push_str(&result.stdout());
-            accumulated_stderr.push_str(&result.stderr);
+            let result = match self.execute_statement(statement) {
+                Ok(result) => result,
+                Err(err) => ExecutionResult::error(err.to_string()),
+            };
+            if streaming_output {
+                use std::io::Write;
+                let stdout = result.stdout();
+                if !stdout.is_empty() {
+                    let _ = std::io::stdout().write_all(stdout.as_bytes());
+                    let _ = std::io::stdout().flush();
+                }
+                if !result.stderr.is_empty() {
+                    let _ = std::io::stderr().write_all(result.stderr.as_bytes());
+                    let _ = std::io::stderr().flush();
+                }
+            } else {
+                accumulated_stdout.push_str(&result.stdout());
+                accumulated_stderr.push_str(&result.stderr);
+            }
             last_exit_code = result.exit_code;
             last_output = result.output;
 
@@ -221,9 +249,13 @@ impl Executor {
         // When the final statement produced structured data, return it as-is so that
         // callers (e.g. tests, interactive rendering) can work with the typed output.
         // For text output, return the accumulated string as before.
-        let final_output = match last_output {
-            Output::Structured(_) => last_output,
-            Output::Text(_) => Output::Text(accumulated_stdout),
+        let final_output = if streaming_output {
+            Output::Text(String::new())
+        } else {
+            match last_output {
+                Output::Structured(_) => last_output,
+                Output::Text(_) => Output::Text(accumulated_stdout),
+            }
         };
 
         Ok(ExecutionResult {
@@ -239,6 +271,7 @@ impl Executor {
             Statement::Command(cmd) => self.execute_command(cmd),
             Statement::Pipeline(pipeline) => self.execute_pipeline(pipeline),
             Statement::ParallelExecution(parallel) => self.execute_parallel(parallel),
+            Statement::WordAssignment(assignment) => self.execute_word_assignment(assignment),
             Statement::Assignment(assignment) => self.execute_assignment(assignment),
             Statement::FunctionDef(func) => self.execute_function_def(func),
             Statement::IfStatement(if_stmt) => self.execute_if_statement(if_stmt),
@@ -252,6 +285,13 @@ impl Executor {
             Statement::Subshell(statements) => self.execute_subshell(statements),
             Statement::BackgroundCommand(cmd) => self.execute_background(*cmd),
             Statement::BraceGroup(statements) => self.execute_brace_group(statements),
+            Statement::RedirectedCompound {
+                statement,
+                redirects,
+            } => {
+                let result = self.execute_statement(*statement)?;
+                self.apply_redirects(result, &redirects)
+            }
             Statement::PipeAsk(pipe_ask) => self.execute_pipe_ask(pipe_ask),
         }
     }
@@ -399,6 +439,19 @@ impl Executor {
         })
     }
 
+    fn expand_assignment_value(&mut self, value: &AssignmentValue) -> Result<String> {
+        let mut result = String::new();
+
+        for part in &value.parts {
+            match part {
+                AssignmentPart::Literal(s) => result.push_str(s),
+                AssignmentPart::Expand(s) => result.push_str(&self.expand_variables_in_literal(s)?),
+            }
+        }
+
+        Ok(result)
+    }
+
     /// Expand a string value that may contain variable references ($VAR, ${VAR}, etc.)
     fn expand_string_value(&self, value: &str) -> Result<String> {
         if value.contains("$(") || value.contains('`') {
@@ -421,6 +474,8 @@ impl Executor {
     }
 
     fn expand_variables_in_literal(&mut self, input: &str) -> Result<String> {
+        let input = self.expand_process_substitutions_in_literal(input)?;
+        let input = input.as_str();
         let mut result = String::with_capacity(input.len());
         let mut chars = input.chars().peekable();
 
@@ -472,7 +527,33 @@ impl Executor {
                             // Use parse_braced_var_expansion and expand_variable
                             let braced_var = format!("${{{}}}", braced_content);
                             let expansion = self.parse_braced_var_expansion(&braced_var)?;
-                            let value = self.runtime.expand_variable(&expansion)?;
+                            let value = if expansion.name == "_" {
+                                let value = self.runtime.get_last_arg().to_string();
+                                match &expansion.operator {
+                                    VarExpansionOp::Simple => value,
+                                    VarExpansionOp::UseDefault(default) => {
+                                        if value.is_empty() {
+                                            default.clone()
+                                        } else {
+                                            value
+                                        }
+                                    }
+                                    VarExpansionOp::UseAlternate(alternate) => {
+                                        if value.is_empty() {
+                                            String::new()
+                                        } else {
+                                            alternate.clone()
+                                        }
+                                    }
+                                    _ => {
+                                        let mut temp_runtime = self.runtime.clone();
+                                        temp_runtime.set_variable("_".to_string(), value);
+                                        temp_runtime.expand_variable(&expansion)?
+                                    }
+                                }
+                            } else {
+                                self.runtime.expand_variable(&expansion)?
+                            };
                             result.push_str(&value);
                         }
                         // Special variables
@@ -939,6 +1020,12 @@ impl Executor {
         })
     }
 
+    fn execute_word_assignment(&mut self, assignment: WordAssignment) -> Result<ExecutionResult> {
+        let value = self.expand_assignment_value(&assignment.value)?;
+        self.runtime.set_variable_checked(assignment.name, value)?;
+        Ok(ExecutionResult::default())
+    }
+
     fn execute_assignment(&mut self, assignment: Assignment) -> Result<ExecutionResult> {
         let value = self.evaluate_expression(assignment.value)?;
         self.runtime.set_variable_checked(assignment.name, value)?;
@@ -1120,6 +1207,12 @@ impl Executor {
     fn resolve_argument(&mut self, arg: &Argument) -> Result<String> {
         match arg {
             Argument::Literal(s) => {
+                if s.starts_with("__AUSH_PROCESS_SUBST_ARG__")
+                    || s.starts_with("__AUSH_PROCESS_SUBST__")
+                    || s.starts_with("__AUSH_PROCESS_SUBST_OUT__")
+                {
+                    return Ok(s.clone());
+                }
                 // Expand variables and command substitutions in literal strings
                 self.expand_variables_in_literal(s)
             }
@@ -1170,8 +1263,12 @@ impl Executor {
                     }
                 }
 
-                // Regular variable - just get its value
-                Ok(self.runtime.get_variable(var_name).unwrap_or_default())
+                // Regular variable - respect nounset when enabled
+                if self.runtime.options.nounset {
+                    self.runtime.get_variable_checked(var_name)
+                } else {
+                    Ok(self.runtime.get_variable(var_name).unwrap_or_default())
+                }
             }
             Argument::BracedVariable(braced_var) => {
                 // Parse the braced variable expansion
@@ -1192,8 +1289,29 @@ impl Executor {
                     // ${-} - current option flags (no operators allowed)
                     return Ok(self.runtime.get_option_flags());
                 } else if expansion.name == "_" {
-                    // ${_} - last argument of previous command (no operators allowed)
-                    return Ok(self.runtime.get_last_arg().to_string());
+                    let value = self.runtime.get_last_arg().to_string();
+                    return match &expansion.operator {
+                        VarExpansionOp::Simple => Ok(value),
+                        VarExpansionOp::UseDefault(default) => {
+                            if value.is_empty() {
+                                Ok(default.clone())
+                            } else {
+                                Ok(value)
+                            }
+                        }
+                        VarExpansionOp::UseAlternate(alternate) => {
+                            if value.is_empty() {
+                                Ok(String::new())
+                            } else {
+                                Ok(alternate.clone())
+                            }
+                        }
+                        _ => {
+                            let mut temp_runtime = self.runtime.clone();
+                            temp_runtime.set_variable("_".to_string(), value);
+                            temp_runtime.expand_variable(&expansion)
+                        }
+                    };
                 } else if expansion.name == "#" {
                     // ${#} - number of positional parameters
                     return Ok(self.runtime.param_count().to_string());
@@ -1418,8 +1536,9 @@ impl Executor {
                             Ok(matches) => {
                                 expanded_args.extend(matches);
                             }
-                            Err(error) => {
-                                return Err(error);
+                            Err(_) => {
+                                // Invalid/no-match glob patterns from expanded data remain literal.
+                                expanded_args.push(field.to_string());
                             }
                         }
                     } else {
@@ -1434,14 +1553,26 @@ impl Executor {
                         Ok(matches) => {
                             expanded_args.extend(matches);
                         }
-                        Err(error) => {
-                            return Err(error);
+                        Err(_) => {
+                            // Invalid/no-match glob patterns from expanded data remain literal.
+                            expanded_args.push(resolved);
                         }
                     }
                 } else {
                     expanded_args.push(resolved);
                 }
             } else {
+                let resolved = if let Some(path) =
+                    crate::executor::commands::materialize_process_substitution_argument(&resolved)
+                {
+                    path
+                } else if let Some((path, _)) =
+                    crate::executor::commands::split_process_substitution_argument(&resolved)
+                {
+                    path
+                } else {
+                    resolved
+                };
                 // Quoted literal or flag - no glob expansion
                 expanded_args.push(resolved);
             }
@@ -1451,6 +1582,62 @@ impl Executor {
     }
 
     /// Execute a command substitution and return its stdout, trimmed
+    fn expand_process_substitutions_in_literal(&mut self, input: &str) -> Result<String> {
+        let mut result = String::with_capacity(input.len());
+        let mut rest = input;
+
+        while let Some(start) = rest.find("<(") {
+            result.push_str(&rest[..start]);
+            let after_marker = &rest[start + 2..];
+            let mut depth = 1usize;
+            let mut end = None;
+            for (idx, ch) in after_marker.char_indices() {
+                match ch {
+                    '(' => depth += 1,
+                    ')' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            end = Some(idx);
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let Some(end_idx) = end else {
+                result.push_str(&rest[start..]);
+                return Ok(result);
+            };
+            let command = &after_marker[..end_idx];
+            let path = self.materialize_input_process_substitution(command)?;
+            result.push_str(&path);
+            rest = &after_marker[end_idx + 1..];
+        }
+
+        result.push_str(rest);
+        Ok(result)
+    }
+
+    pub(crate) fn materialize_input_process_substitution(&self, command: &str) -> Result<String> {
+        use std::fs::OpenOptions;
+        use std::io::Write;
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let output = self.execute_command_substitution(command)?;
+        let path = std::env::temp_dir().join(format!(
+            "aush-process-subst-{}-{}",
+            std::process::id(),
+            SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+        ));
+        let mut file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&path)?;
+        file.write_all(output.as_bytes())?;
+        drop(file);
+        Ok(path.to_string_lossy().to_string())
+    }
+
     fn execute_command_substitution(&self, cmd_str: &str) -> Result<String> {
         // Check for arithmetic expansion: $((expr))
         if cmd_str.starts_with("$((") && cmd_str.ends_with("))") {
@@ -1470,6 +1657,8 @@ impl Executor {
         } else {
             cmd_str
         };
+
+        let redirect_fds = self.prepare_command_substitution_fds(command)?;
 
         // Parse and execute the command
         let tokens = Lexer::tokenize(command)
@@ -1492,9 +1681,15 @@ impl Executor {
             profile_data: None,
             enable_profiling: false,
         };
+        for (fd, raw_fd) in redirect_fds {
+            sub_executor.runtime.set_permanent_fd(fd, Some(raw_fd));
+        }
 
         // Execute the command and capture output
         let result = sub_executor.execute(statements)?;
+        if !result.stderr.is_empty() {
+            eprint!("{}", result.stderr);
+        }
         let mut output = result.stdout();
         let max = max_substitution_output();
         if output.len() > max {
@@ -1510,6 +1705,31 @@ impl Executor {
 
         // Return stdout with trailing newlines trimmed (bash behavior)
         Ok(output.trim_end().to_string())
+    }
+
+    fn prepare_command_substitution_fds(&self, command: &str) -> Result<Vec<(i32, i32)>> {
+        use std::fs::OpenOptions;
+        use std::os::fd::IntoRawFd;
+
+        let mut prepared = Vec::new();
+        let mut words = command.split_whitespace().peekable();
+        while let Some(word) = words.next() {
+            if let Some(fd_text) = word.strip_suffix('>') {
+                if let Ok(fd) = fd_text.parse::<i32>() {
+                    if fd > 2 {
+                        if let Some(target) = words.peek() {
+                            let file = OpenOptions::new()
+                                .create(true)
+                                .write(true)
+                                .truncate(true)
+                                .open(self.runtime.get_cwd().join(target))?;
+                            prepared.push((fd, file.into_raw_fd()));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(prepared)
     }
 
     /// Expand all command substitution sequences ($(...) and `...`) within a string.

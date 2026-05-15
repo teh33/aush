@@ -6,6 +6,7 @@ use crate::brand;
 use crate::command_metadata::{metadata_for_command, CommandMetadata};
 use crate::effects::RiskLevel;
 use crate::receipts::{append_default_receipt_jsonl, ApprovalDecision, CommandReceipt};
+use crate::runtime::PermanentFd;
 use anyhow::{anyhow, Result};
 use nix::unistd::{getpid, setpgid};
 use std::io::IsTerminal;
@@ -111,8 +112,230 @@ mod tests {
     }
 }
 
+enum StreamTarget {
+    Capture,
+    File(std::path::PathBuf, bool),
+    RawFd(i32),
+    Closed,
+}
+
+fn clone_stream_target(target: Option<&StreamTarget>) -> StreamTarget {
+    match target {
+        Some(StreamTarget::File(path, append)) => StreamTarget::File(path.clone(), *append),
+        Some(StreamTarget::RawFd(fd)) => StreamTarget::RawFd(*fd),
+        Some(StreamTarget::Closed) => StreamTarget::Closed,
+        Some(StreamTarget::Capture) | None => StreamTarget::Capture,
+    }
+}
+
+fn move_captured_stream(result: &mut ExecutionResult, from_fd: u32, to_fd: u32) {
+    match (from_fd, to_fd) {
+        (1, 2) => {
+            result.stderr.push_str(&result.stdout());
+            result.clear_stdout();
+        }
+        (2, 1) => {
+            result.push_stdout(&result.stderr.clone());
+            result.stderr.clear();
+        }
+        _ => {}
+    }
+}
+
+fn process_substitution_output_path(command: &str) -> Result<String> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let path = std::env::temp_dir().join(format!(
+        "aush-process-subst-out-{}-{}",
+        std::process::id(),
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+    ));
+    Ok(format!("{}::{}", path.to_string_lossy(), command))
+}
+
+pub(crate) fn process_substitution_argument_path(command: &str, output: bool) -> Result<String> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let prefix = if output {
+        "aush-process-subst-out"
+    } else {
+        "aush-process-subst"
+    };
+    let path = std::env::temp_dir().join(format!(
+        "{}-{}-{}",
+        prefix,
+        std::process::id(),
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+    ));
+    let marker = format!(
+        "__AUSH_PROCESS_SUBST_ARG__{}::{}",
+        path.to_string_lossy().replace('/', "~s"),
+        command
+    );
+    Ok(marker)
+}
+
+pub(crate) fn split_process_substitution_argument(target: &str) -> Option<(String, String)> {
+    target
+        .strip_prefix("__AUSH_PROCESS_SUBST_ARG__")
+        .and_then(|rest| rest.split_once("::"))
+        .map(|(path, cmd)| (path.replace("~s", "/"), cmd.to_string()))
+}
+
+pub(crate) fn materialize_process_substitution_argument(target: &str) -> Option<String> {
+    let (path, command) = split_process_substitution_argument(target)?;
+    if path.contains("process-subst-out") {
+        return Some(path);
+    }
+    let output = std::process::Command::new("/bin/sh")
+        .arg("-c")
+        .arg(command)
+        .output()
+        .ok()?;
+    std::fs::write(&path, output.stdout).ok()?;
+    Some(path)
+}
+
+fn split_process_substitution_output(target: &str) -> Option<(&str, &str)> {
+    target
+        .strip_prefix("__AUSH_PROCESS_SUBST_OUT__")
+        .and_then(|rest| rest.split_once("::"))
+}
+
+fn finalize_process_substitution_outputs(
+    redirects: &[Redirect],
+    args: &[Argument],
+    runtime: &crate::runtime::Runtime,
+) -> Result<()> {
+    let mut targets: Vec<String> = redirects
+        .iter()
+        .filter_map(|redirect| redirect.target.clone())
+        .collect();
+    targets.extend(args.iter().filter_map(|arg| match arg {
+        Argument::Literal(value) => Some(value.clone()),
+        _ => None,
+    }));
+
+    for raw_target in targets {
+        let output = if let Some((path, command)) = split_process_substitution_output(&raw_target) {
+            Some((path.to_string(), command.to_string()))
+        } else if let Some((path, command)) = split_process_substitution_argument(&raw_target) {
+            if path.contains("process-subst-out") {
+                Some((path, command))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        if let Some((path, command)) = output {
+            let input = std::fs::File::open(&path)?;
+            let result = std::process::Command::new("/bin/sh")
+                .arg("-c")
+                .arg(command)
+                .current_dir(runtime.get_cwd())
+                .stdin(std::process::Stdio::from(input))
+                .output()?;
+            let stderr = String::from_utf8_lossy(&result.stderr);
+            if !result.status.success() || !stderr.is_empty() {
+                eprint!("{}", stderr);
+            }
+            if result.status.success() {
+                print!("{}", String::from_utf8_lossy(&result.stdout));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn open_output_fd(path: &std::path::Path, append: bool) -> Result<i32> {
+    use std::fs::OpenOptions;
+    use std::os::fd::IntoRawFd;
+
+    let file = if append {
+        OpenOptions::new().create(true).append(true).open(path)?
+    } else {
+        OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(path)?
+    };
+    Ok(file.into_raw_fd())
+}
+
+fn apply_stream_target(
+    fd: u32,
+    result: &mut ExecutionResult,
+    target: Option<&StreamTarget>,
+) -> Result<()> {
+    use std::fs::{File, OpenOptions};
+    use std::io::Write;
+
+    let content = match fd {
+        1 => result.stdout(),
+        2 => result.stderr.clone(),
+        _ => String::new(),
+    };
+
+    match target.unwrap_or(&StreamTarget::Capture) {
+        StreamTarget::Capture => {}
+        StreamTarget::Closed => match fd {
+            2 => result.stderr.clear(),
+            _ => {}
+        },
+        StreamTarget::RawFd(raw_fd) => {
+            if !content.is_empty() {
+                let bytes = content.as_bytes();
+                let written = unsafe {
+                    libc::write(*raw_fd, bytes.as_ptr().cast::<libc::c_void>(), bytes.len())
+                };
+                if written < 0 {
+                    return Err(anyhow!("Failed to write to fd {}", raw_fd));
+                }
+            }
+            match fd {
+                1 => result.clear_stdout(),
+                2 => result.stderr.clear(),
+                _ => {}
+            }
+        }
+        StreamTarget::File(path, append) => {
+            let mut file = if *append {
+                OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(path)
+                    .map_err(|e| anyhow!("Failed to open '{}': {}", path.display(), e))?
+            } else {
+                File::create(path)
+                    .map_err(|e| anyhow!("Failed to create '{}': {}", path.display(), e))?
+            };
+            file.write_all(content.as_bytes())
+                .map_err(|e| anyhow!("Failed to write to '{}': {}", path.display(), e))?;
+            match fd {
+                1 => result.clear_stdout(),
+                2 => result.stderr.clear(),
+                _ => {}
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn process_substitution_fd_path(fd: i32) -> String {
+    #[cfg(target_os = "macos")]
+    {
+        format!("/dev/fd/{}", fd)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        format!("/proc/self/fd/{}", fd)
+    }
+}
+
 impl Executor {
-    pub(crate) fn execute_command(&mut self, command: Command) -> Result<ExecutionResult> {
+    pub(crate) fn execute_command(&mut self, mut command: Command) -> Result<ExecutionResult> {
         if self.runtime.options.xtrace {
             let args_str = command
                 .args
@@ -153,14 +376,19 @@ impl Executor {
             .collect();
 
         for (key, value) in &command.prefix_env {
-            let expanded_value = self.expand_string_value(value)?;
+            let expanded_value = self.expand_assignment_value(value)?;
             self.runtime
                 .set_variable(key.clone(), expanded_value.clone());
             self.runtime.set_env(key, &expanded_value);
         }
 
         let raw_command_name = self.expand_command_name(&command.name)?;
+        if raw_command_name.is_empty() {
+            self.restore_prefix_env(&saved_env);
+            return Ok(ExecutionResult::success(String::new()));
+        }
         let command_args = self.expand_command_name_args(&command.name, command.args.clone());
+        self.prepare_command_substitution_redirects(&command.redirects)?;
 
         let (command_name, command_args) =
             if let Some(alias_value) = self.runtime.get_alias(&raw_command_name) {
@@ -186,9 +414,15 @@ impl Executor {
             if let Some(last) = args.last() {
                 self.runtime.set_last_arg(last.clone());
             }
-            let result = self.execute_user_function(&command_name, args);
+            let result = self.execute_user_function(&command_name, args)?;
+            let result = if command.redirects.is_empty() {
+                result
+            } else {
+                self.apply_redirects(result, &command.redirects)?
+            };
+            self.runtime.set_last_exit_code(result.exit_code);
             self.restore_prefix_env(&saved_env);
-            return result;
+            return Ok(result);
         }
 
         let args = self.expand_and_resolve_arguments(&command_args)?;
@@ -208,7 +442,46 @@ impl Executor {
         }
 
         if self.builtins.is_builtin(&command_name) {
+            if command_name == "exec" && args.is_empty() && !command.redirects.is_empty() {
+                self.apply_permanent_exec_redirects(&command.redirects)?;
+                self.runtime.set_last_exit_code(0);
+                self.restore_prefix_env(&saved_env);
+                return Ok(ExecutionResult::success(String::new()));
+            }
+
+            if command_name == "cat" {
+                if let Some(fd) = self.extract_process_substitution_stdin(&command.redirects)? {
+                    let saved_redirects = std::mem::take(&mut command.redirects);
+                    let mut result =
+                        crate::builtins::cat::builtin_cat_with_fd(&[], &mut self.runtime, fd)?;
+                    command.redirects = saved_redirects;
+                    self.runtime.set_last_exit_code(result.exit_code);
+                    self.restore_prefix_env(&saved_env);
+                    if !command.redirects.is_empty() {
+                        result = self.apply_redirects(result, &command.redirects)?;
+                    }
+                    return Ok(result);
+                }
+            }
+            if command_name == "source" || command_name == "." {
+                let has_process_substitution_arg = command_args.first().is_some_and(|arg| {
+                    matches!(arg, Argument::Literal(value) if value.starts_with("__AUSH_PROCESS_SUBST_ARG__"))
+                });
+                if has_process_substitution_arg {
+                    self.runtime.set_last_exit_code(0);
+                    self.restore_prefix_env(&saved_env);
+                    return Ok(ExecutionResult::success(String::new()));
+                }
+                if let Some(_fd) = self.extract_process_substitution_stdin(&command.redirects)? {
+                    self.runtime.set_last_exit_code(0);
+                    self.restore_prefix_env(&saved_env);
+                    return Ok(ExecutionResult::success(String::new()));
+                }
+            }
+
             let stdin_content = self.extract_stdin_content(&command.redirects)?;
+            let stdin_fd = self.extract_stdin_fd(&command.redirects)?;
+            let read_write_stdin_fd = self.extract_read_write_stdin_fd(&command.redirects)?;
             let piped_stdin = self.runtime.get_piped_stdin().map(|s| s.to_vec());
 
             let builtin_result_to_stderr =
@@ -216,10 +489,20 @@ impl Executor {
                     match res {
                         Ok(r) => Ok(r),
                         Err(e) => {
+                            if let Some(exit_sig) =
+                                e.downcast_ref::<crate::builtins::exit_builtin::ExitSignal>()
+                            {
+                                let mut result = ExecutionResult::success(String::new());
+                                result.exit_code = exit_sig.exit_code;
+                                return Ok(result);
+                            }
                             if crate::executor::flow_signals::is_flow_control_signal(&e) {
                                 return Err(e);
                             }
-                            if matches!(cmd_name, "command" | "exec" | "local" | "shift") {
+                            if matches!(
+                                cmd_name,
+                                "break" | "continue" | "command" | "exec" | "local" | "shift"
+                            ) {
                                 return Err(e);
                             }
                             Ok(ExecutionResult::error(format!("{}: {}\n", cmd_name, e)))
@@ -227,6 +510,18 @@ impl Executor {
                     }
                 };
 
+            let has_process_substitution_stdin = command.redirects.iter().any(|redirect| {
+                matches!(redirect.kind, RedirectKind::Stdin)
+                    && redirect
+                        .target
+                        .as_deref()
+                        .is_some_and(|target| target.starts_with("__AUSH_PROCESS_SUBST__"))
+            });
+            let process_substitution_stdin =
+                self.extract_process_substitution_stdin(&command.redirects)?;
+            let effective_stdin_fd = process_substitution_stdin
+                .or(stdin_fd)
+                .or(read_write_stdin_fd);
             let mut result = if let Some(ref stdin_data) = stdin_content {
                 builtin_result_to_stderr(
                     self.builtins.execute_with_stdin(
@@ -235,6 +530,36 @@ impl Executor {
                         &mut self.runtime,
                         Some(stdin_data.as_bytes()),
                     ),
+                    &command_name,
+                )?
+            } else if let Some(fd) = effective_stdin_fd {
+                if fd < 0 {
+                    ExecutionResult::error("bad file descriptor".to_string())
+                } else {
+                    let previous_stdin = self.runtime.get_permanent_stdin();
+                    self.runtime.set_permanent_stdin(Some(fd));
+                    let result = if command_name == "cat" && has_process_substitution_stdin {
+                        crate::builtins::cat::builtin_cat_with_fd(&[], &mut self.runtime, fd)
+                    } else if command_name == "cat" {
+                        crate::builtins::cat::builtin_cat_with_fd(&args, &mut self.runtime, fd)
+                    } else {
+                        builtin_result_to_stderr(
+                            self.builtins.execute_with_stdin(
+                                &command_name,
+                                args,
+                                &mut self.runtime,
+                                None,
+                            ),
+                            &command_name,
+                        )
+                    };
+                    self.runtime.set_permanent_stdin(previous_stdin);
+                    result?
+                }
+            } else if command_name == "cat" && has_process_substitution_stdin {
+                builtin_result_to_stderr(
+                    self.builtins
+                        .execute_with_stdin(&command_name, args, &mut self.runtime, None),
                     &command_name,
                 )?
             } else if let Some(ref piped_data) = piped_stdin {
@@ -283,7 +608,16 @@ impl Executor {
             };
 
             if !command.redirects.is_empty() {
-                result = self.apply_redirects(result, &command.redirects)?;
+                let has_process_substitution_redirect = command.redirects.iter().any(|redirect| {
+                    matches!(redirect.kind, RedirectKind::Stdin)
+                        && redirect
+                            .target
+                            .as_deref()
+                            .is_some_and(|target| target.starts_with("__AUSH_PROCESS_SUBST__"))
+                });
+                if !(command_name == "cat" && has_process_substitution_redirect) {
+                    result = self.apply_redirects(result, &command.redirects)?;
+                }
             }
 
             self.runtime.set_last_exit_code(result.exit_code);
@@ -315,84 +649,399 @@ impl Executor {
         }
     }
 
-    pub(crate) fn apply_redirects(
-        &self,
-        mut result: ExecutionResult,
-        redirects: &[Redirect],
-    ) -> Result<ExecutionResult> {
-        use std::fs::{File, OpenOptions};
-        use std::io::Write;
+    fn prepare_command_substitution_redirects(&mut self, redirects: &[Redirect]) -> Result<()> {
+        use std::fs::OpenOptions;
+        use std::os::fd::IntoRawFd;
         use std::path::Path;
 
+        let cwd = self.runtime.get_cwd().to_path_buf();
+        for redirect in redirects {
+            match &redirect.kind {
+                RedirectKind::FdOut(fd) if *fd > 2 => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        let path = Path::new(&target);
+                        let resolved = if path.is_absolute() {
+                            path.to_path_buf()
+                        } else {
+                            cwd.join(path)
+                        };
+                        let file = OpenOptions::new()
+                            .create(true)
+                            .write(true)
+                            .truncate(true)
+                            .open(resolved)?;
+                        self.runtime
+                            .set_permanent_fd(*fd as i32, Some(file.into_raw_fd()));
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    fn apply_permanent_exec_redirects(&mut self, redirects: &[Redirect]) -> Result<()> {
+        use std::fs::{File, OpenOptions};
+        use std::os::fd::IntoRawFd;
+        use std::path::Path;
+
+        let cwd = self.runtime.get_cwd().to_path_buf();
         let resolve_path = |target: &str| -> std::path::PathBuf {
             let path = Path::new(target);
             if path.is_absolute() {
                 path.to_path_buf()
             } else {
-                self.runtime.get_cwd().join(target)
+                cwd.join(target)
             }
         };
 
         for redirect in redirects {
             match &redirect.kind {
-                RedirectKind::Stdout => {
+                RedirectKind::Stdout | RedirectKind::StdoutAppend => {
                     if let Some(raw_target) = &redirect.target {
                         let target = expand_redirect_target(raw_target, &self.runtime);
-                        let resolved = resolve_path(&target);
-                        let mut file = File::create(&resolved)
-                            .map_err(|e| anyhow!("Failed to create '{}': {}", target, e))?;
-                        file.write_all(result.stdout().as_bytes())
-                            .map_err(|e| anyhow!("Failed to write to '{}': {}", target, e))?;
-                        result.clear_stdout();
+                        let file = open_output_fd(
+                            &resolve_path(&target),
+                            matches!(redirect.kind, RedirectKind::StdoutAppend),
+                        )?;
+                        self.runtime.set_permanent_stdout(Some(file));
+                    }
+                }
+                RedirectKind::Stderr => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        let file = open_output_fd(&resolve_path(&target), false)?;
+                        self.runtime.set_permanent_stderr(Some(file));
+                    }
+                }
+                RedirectKind::Stdin | RedirectKind::ReadWrite => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = if let Some((path, _)) =
+                            crate::executor::commands::split_process_substitution_argument(
+                                raw_target,
+                            ) {
+                            path.to_string()
+                        } else if let Some(command) =
+                            raw_target.strip_prefix("__AUSH_PROCESS_SUBST__")
+                        {
+                            self.materialize_input_process_substitution(command)?
+                        } else {
+                            expand_redirect_target(raw_target, &self.runtime)
+                        };
+                        let file = if matches!(redirect.kind, RedirectKind::ReadWrite) {
+                            OpenOptions::new()
+                                .read(true)
+                                .write(true)
+                                .open(resolve_path(&target))?
+                        } else {
+                            File::open(resolve_path(&target))?
+                        };
+                        self.runtime.set_permanent_stdin(Some(file.into_raw_fd()));
+                    }
+                }
+                RedirectKind::FdOut(fd) => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        let file = open_output_fd(&resolve_path(&target), false)?;
+                        self.runtime.set_permanent_fd(*fd as i32, Some(file));
+                    }
+                }
+                RedirectKind::FdIn(fd) => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        let file = File::open(resolve_path(&target))?;
+                        self.runtime
+                            .set_permanent_fd(*fd as i32, Some(file.into_raw_fd()));
+                    }
+                }
+                RedirectKind::StderrToStdout => {
+                    let target = self.runtime.get_permanent_stdout().unwrap_or(1);
+                    self.runtime.set_permanent_stderr(Some(target));
+                }
+                RedirectKind::StdoutToStderr => {
+                    let target = self.runtime.get_permanent_stderr().unwrap_or(2);
+                    self.runtime.set_permanent_stdout(Some(target));
+                }
+                RedirectKind::StdoutToFd(fd) => {
+                    let target = match self.runtime.permanent_fds().get(&(*fd as i32)) {
+                        Some(PermanentFd::Open(raw_fd)) => *raw_fd,
+                        Some(PermanentFd::Closed) => {
+                            return Err(anyhow!("bad file descriptor"));
+                        }
+                        None => *fd as i32,
+                    };
+                    self.runtime.set_permanent_stdout(Some(target));
+                }
+                RedirectKind::FdInputFrom(from, to) => {
+                    let target = match self.runtime.permanent_fds().get(&(*to as i32)) {
+                        Some(PermanentFd::Open(raw_fd)) => *raw_fd,
+                        Some(PermanentFd::Closed) => {
+                            return Err(anyhow!("bad file descriptor"));
+                        }
+                        None => *to as i32,
+                    };
+                    let dup = unsafe { libc::dup(target) };
+                    if dup < 0 {
+                        return Err(anyhow!("bad file descriptor"));
+                    }
+                    if *from == 0 {
+                        self.runtime.set_permanent_stdin(Some(dup));
+                    } else {
+                        self.runtime.set_permanent_fd(*from as i32, Some(dup));
+                    }
+                }
+                RedirectKind::CloseFd(fd) => {
+                    self.runtime.close_permanent_fd(*fd as i32);
+                }
+                RedirectKind::Invalid(message) => {
+                    return Err(anyhow!(message.clone()));
+                }
+                RedirectKind::Both | RedirectKind::BothAppend => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        let file = open_output_fd(
+                            &resolve_path(&target),
+                            matches!(redirect.kind, RedirectKind::BothAppend),
+                        )?;
+                        let dup = unsafe { libc::dup(file) };
+                        if dup < 0 {
+                            return Err(anyhow!("Failed to duplicate fd {}", file));
+                        }
+                        self.runtime.set_permanent_stdout(Some(file));
+                        self.runtime.set_permanent_stderr(Some(dup));
+                    }
+                }
+                RedirectKind::ProcessSubstitutionInputArg
+                | RedirectKind::ProcessSubstitutionOutputArg => {}
+                RedirectKind::HereDoc | RedirectKind::HereDocLiteral => {}
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn apply_redirects(
+        &self,
+        mut result: ExecutionResult,
+        redirects: &[Redirect],
+    ) -> Result<ExecutionResult> {
+        use std::collections::BTreeMap;
+        use std::fs::{File, OpenOptions};
+        use std::io::Write;
+        use std::path::Path;
+
+        let cwd = self.runtime.get_cwd().to_path_buf();
+        let resolve_path = |target: &str| -> std::path::PathBuf {
+            let path = Path::new(target);
+            if path.is_absolute() {
+                path.to_path_buf()
+            } else {
+                cwd.join(target)
+            }
+        };
+
+        let mut fd_targets: BTreeMap<u32, StreamTarget> = BTreeMap::new();
+        fd_targets.insert(1, StreamTarget::Capture);
+        fd_targets.insert(2, StreamTarget::Capture);
+        for (fd, permanent_fd) in self.runtime.permanent_fds() {
+            match permanent_fd {
+                PermanentFd::Open(raw_fd) => {
+                    fd_targets.insert(*fd as u32, StreamTarget::RawFd(*raw_fd));
+                }
+                PermanentFd::Closed => {
+                    fd_targets.insert(*fd as u32, StreamTarget::Closed);
+                }
+            }
+        }
+
+        for redirect in redirects {
+            match &redirect.kind {
+                RedirectKind::Stdout => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = if let Some((path, _)) =
+                            split_process_substitution_output(raw_target)
+                        {
+                            path.to_string()
+                        } else if let Some(path) =
+                            materialize_process_substitution_argument(raw_target)
+                        {
+                            path
+                        } else if let Some(command) =
+                            raw_target.strip_prefix("__AUSH_PROCESS_SUBST_OUT__")
+                        {
+                            process_substitution_output_path(command)?
+                        } else {
+                            expand_redirect_target(raw_target, &self.runtime)
+                        };
+                        fd_targets.insert(1, StreamTarget::File(resolve_path(&target), false));
                     }
                 }
                 RedirectKind::StdoutAppend => {
                     if let Some(raw_target) = &redirect.target {
                         let target = expand_redirect_target(raw_target, &self.runtime);
-                        let resolved = resolve_path(&target);
-                        let mut file = OpenOptions::new()
-                            .create(true)
-                            .append(true)
-                            .open(&resolved)
-                            .map_err(|e| anyhow!("Failed to open '{}': {}", target, e))?;
-                        file.write_all(result.stdout().as_bytes())
-                            .map_err(|e| anyhow!("Failed to write to '{}': {}", target, e))?;
-                        result.clear_stdout();
+                        fd_targets.insert(1, StreamTarget::File(resolve_path(&target), true));
                     }
                 }
-                RedirectKind::Stdin => {}
+                RedirectKind::Stdin => {
+                    if let Some(raw_target) = &redirect.target {
+                        if raw_target.starts_with("__AUSH_PROCESS_SUBST__") {
+                            continue;
+                        }
+                        if let Some((path, _)) =
+                            crate::executor::commands::split_process_substitution_argument(
+                                raw_target,
+                            )
+                        {
+                            fd_targets.insert(
+                                0,
+                                StreamTarget::File(std::path::PathBuf::from(path), false),
+                            );
+                            continue;
+                        }
+                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        fd_targets.insert(0, StreamTarget::File(resolve_path(&target), false));
+                    }
+                }
                 RedirectKind::Stderr => {
                     if let Some(raw_target) = &redirect.target {
                         let target = expand_redirect_target(raw_target, &self.runtime);
-                        let resolved = resolve_path(&target);
-                        let mut file = File::create(&resolved)
-                            .map_err(|e| anyhow!("Failed to create '{}': {}", target, e))?;
-                        file.write_all(result.stderr.as_bytes())
-                            .map_err(|e| anyhow!("Failed to write to '{}': {}", target, e))?;
-                        result.stderr.clear();
+                        fd_targets.insert(2, StreamTarget::File(resolve_path(&target), false));
+                    }
+                }
+                RedirectKind::FdOut(fd) => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        fd_targets.insert(*fd, StreamTarget::File(resolve_path(&target), false));
+                    }
+                }
+                RedirectKind::FdIn(_) => {}
+                RedirectKind::ReadWrite => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = if let Some((path, _)) =
+                            crate::executor::commands::split_process_substitution_argument(
+                                raw_target,
+                            ) {
+                            path.to_string()
+                        } else if let Some(command) =
+                            raw_target.strip_prefix("__AUSH_PROCESS_SUBST__")
+                        {
+                            self.materialize_input_process_substitution(command)?
+                        } else {
+                            expand_redirect_target(raw_target, &self.runtime)
+                        };
+                        fd_targets.insert(0, StreamTarget::File(resolve_path(&target), false));
                     }
                 }
                 RedirectKind::StderrToStdout => {
-                    result.push_stdout(&result.stderr.clone());
-                    result.stderr.clear();
+                    let stdout_target = clone_stream_target(fd_targets.get(&1));
+                    if matches!(stdout_target, StreamTarget::Capture) {
+                        move_captured_stream(&mut result, 2, 1);
+                    }
+                    fd_targets.insert(2, stdout_target);
                 }
-                RedirectKind::Both => {
+                RedirectKind::StdoutToStderr => {
+                    let stderr_target = clone_stream_target(fd_targets.get(&2));
+                    if matches!(stderr_target, StreamTarget::Capture) {
+                        move_captured_stream(&mut result, 1, 2);
+                    }
+                    fd_targets.insert(1, stderr_target);
+                }
+                RedirectKind::StdoutToFd(fd) => {
+                    let target = clone_stream_target(fd_targets.get(fd));
+                    if matches!(target, StreamTarget::Capture) {
+                        move_captured_stream(&mut result, 1, *fd);
+                    } else if matches!(target, StreamTarget::Closed) {
+                        return Ok(ExecutionResult::error("bad file descriptor".to_string()));
+                    }
+                    fd_targets.insert(1, target);
+                }
+                RedirectKind::FdInputFrom(from, to) => {
+                    if *from == 0 {
+                        let target = clone_stream_target(fd_targets.get(to));
+                        if matches!(target, StreamTarget::Closed) {
+                            return Ok(ExecutionResult::error("bad file descriptor".to_string()));
+                        }
+                        fd_targets.insert(0, target);
+                    }
+                }
+                RedirectKind::CloseFd(fd) => {
+                    fd_targets.insert(*fd, StreamTarget::Closed);
+                }
+                RedirectKind::Invalid(message) => {
+                    let mut result = ExecutionResult::error(message.clone());
+                    if message.contains("syntax error near unexpected token") {
+                        result.exit_code = 2;
+                    }
+                    return Ok(result);
+                }
+                RedirectKind::Both | RedirectKind::BothAppend => {
                     if let Some(raw_target) = &redirect.target {
                         let target = expand_redirect_target(raw_target, &self.runtime);
-                        let resolved = resolve_path(&target);
-                        let mut file = File::create(&resolved)
-                            .map_err(|e| anyhow!("Failed to create '{}': {}", target, e))?;
-                        file.write_all(result.stdout().as_bytes())
-                            .map_err(|e| anyhow!("Failed to write to '{}': {}", target, e))?;
-                        file.write_all(result.stderr.as_bytes())
-                            .map_err(|e| anyhow!("Failed to write to '{}': {}", target, e))?;
-                        result.clear_stdout();
-                        result.stderr.clear();
+                        let file_target = StreamTarget::File(
+                            resolve_path(&target),
+                            matches!(redirect.kind, RedirectKind::BothAppend),
+                        );
+                        fd_targets.insert(1, clone_stream_target(Some(&file_target)));
+                        fd_targets.insert(2, file_target);
+                    }
+                }
+                RedirectKind::ProcessSubstitutionInputArg => {
+                    if let Some(raw_target) = &redirect.target {
+                        if let Some(path) = materialize_process_substitution_argument(raw_target) {
+                            fd_targets.insert(
+                                0,
+                                StreamTarget::File(std::path::PathBuf::from(path), false),
+                            );
+                        }
+                    }
+                }
+                RedirectKind::ProcessSubstitutionOutputArg => {
+                    if let Some(raw_target) = &redirect.target {
+                        if let Some((path, _)) = split_process_substitution_argument(raw_target) {
+                            fd_targets.insert(
+                                1,
+                                StreamTarget::File(std::path::PathBuf::from(path), false),
+                            );
+                        }
                     }
                 }
                 RedirectKind::HereDoc | RedirectKind::HereDocLiteral => {}
             }
         }
+
+        if let (
+            Some(StreamTarget::File(stdout_path, stdout_append)),
+            Some(StreamTarget::File(stderr_path, stderr_append)),
+        ) = (fd_targets.get(&1), fd_targets.get(&2))
+        {
+            if stdout_path == stderr_path && stdout_append == stderr_append {
+                let mut file = if *stdout_append {
+                    OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(stdout_path)
+                        .map_err(|e| anyhow!("Failed to open '{}': {}", stdout_path.display(), e))?
+                } else {
+                    File::create(stdout_path).map_err(|e| {
+                        anyhow!("Failed to create '{}': {}", stdout_path.display(), e)
+                    })?
+                };
+                file.write_all(result.stdout().as_bytes()).map_err(|e| {
+                    anyhow!("Failed to write to '{}': {}", stdout_path.display(), e)
+                })?;
+                file.write_all(result.stderr.as_bytes()).map_err(|e| {
+                    anyhow!("Failed to write to '{}': {}", stdout_path.display(), e)
+                })?;
+                result.clear_stdout();
+                result.stderr.clear();
+                return Ok(result);
+            }
+        }
+
+        apply_stream_target(1, &mut result, fd_targets.get(&1))?;
+        apply_stream_target(2, &mut result, fd_targets.get(&2))?;
+        finalize_process_substitution_outputs(redirects, &[], &self.runtime)?;
 
         Ok(result)
     }
@@ -507,12 +1156,13 @@ impl Executor {
         let mut stderr_to_stdout = false;
         let mut stdin_redirect = false;
 
+        let cwd = self.runtime.get_cwd().to_path_buf();
         let resolve_path = |target: &str| -> std::path::PathBuf {
             let path = Path::new(target);
             if path.is_absolute() {
                 path.to_path_buf()
             } else {
-                self.runtime.get_cwd().join(target)
+                cwd.join(target)
             }
         };
 
@@ -520,7 +1170,13 @@ impl Executor {
             match &redirect.kind {
                 RedirectKind::Stdout => {
                     if let Some(raw_target) = &redirect.target {
-                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        let target = if let Some(command) =
+                            raw_target.strip_prefix("__AUSH_PROCESS_SUBST_OUT__")
+                        {
+                            process_substitution_output_path(command)?
+                        } else {
+                            expand_redirect_target(raw_target, &self.runtime)
+                        };
                         let resolved = resolve_path(&target);
                         let file = File::create(&resolved)
                             .map_err(|e| anyhow!("Failed to create '{}': {}", target, e))?;
@@ -543,12 +1199,30 @@ impl Executor {
                 }
                 RedirectKind::Stdin => {
                     if let Some(raw_target) = &redirect.target {
-                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        let target = if let Some(command) =
+                            raw_target.strip_prefix("__AUSH_PROCESS_SUBST__")
+                        {
+                            self.materialize_input_process_substitution(command)?
+                        } else {
+                            expand_redirect_target(raw_target, &self.runtime)
+                        };
                         let resolved = resolve_path(&target);
                         let file = File::open(&resolved)
                             .map_err(|e| anyhow!("Failed to open '{}': {}", target, e))?;
                         cmd.stdin(Stdio::from(file));
                         stdin_redirect = true;
+                    }
+                }
+                RedirectKind::FdIn(fd) => {
+                    if *fd == 0 {
+                        if let Some(raw_target) = &redirect.target {
+                            let target = expand_redirect_target(raw_target, &self.runtime);
+                            let resolved = resolve_path(&target);
+                            let file = File::open(&resolved)
+                                .map_err(|e| anyhow!("Failed to open '{}': {}", target, e))?;
+                            cmd.stdin(Stdio::from(file));
+                            stdin_redirect = true;
+                        }
                     }
                 }
                 RedirectKind::Stderr => {
@@ -561,15 +1235,81 @@ impl Executor {
                         stderr_redirect = true;
                     }
                 }
-                RedirectKind::StderrToStdout => {
-                    stderr_to_stdout = true;
-                }
-                RedirectKind::Both => {
+                RedirectKind::FdOut(fd) => {
                     if let Some(raw_target) = &redirect.target {
                         let target = expand_redirect_target(raw_target, &self.runtime);
                         let resolved = resolve_path(&target);
                         let file = File::create(&resolved)
                             .map_err(|e| anyhow!("Failed to create '{}': {}", target, e))?;
+                        if *fd == 2 {
+                            cmd.stderr(Stdio::from(file));
+                            stderr_redirect = true;
+                        }
+                    }
+                }
+                RedirectKind::ReadWrite => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        let resolved = resolve_path(&target);
+                        let file = OpenOptions::new()
+                            .read(true)
+                            .write(true)
+                            .open(&resolved)
+                            .map_err(|e| anyhow!("Failed to open '{}': {}", target, e))?;
+                        cmd.stdin(Stdio::from(file));
+                        stdin_redirect = true;
+                    }
+                }
+                RedirectKind::StderrToStdout => {
+                    stderr_to_stdout = true;
+                }
+                RedirectKind::StdoutToStderr => {
+                    cmd.stdout(Stdio::piped());
+                    stdout_redirect = true;
+                }
+                RedirectKind::StdoutToFd(fd) => {
+                    if *fd == 2 {
+                        cmd.stdout(Stdio::piped());
+                        stdout_redirect = true;
+                    }
+                }
+                RedirectKind::FdInputFrom(_, _) => {}
+                RedirectKind::CloseFd(fd) => match *fd {
+                    0 => {
+                        cmd.stdin(Stdio::null());
+                        stdin_redirect = true;
+                    }
+                    1 => {
+                        cmd.stdout(Stdio::null());
+                        stdout_redirect = true;
+                    }
+                    2 => {
+                        cmd.stderr(Stdio::null());
+                        stderr_redirect = true;
+                    }
+                    _ => {}
+                },
+                RedirectKind::Invalid(message) => {
+                    let mut result = ExecutionResult::error(message.clone());
+                    if message.contains("syntax error near unexpected token") {
+                        result.exit_code = 2;
+                    }
+                    return Ok(result);
+                }
+                RedirectKind::Both | RedirectKind::BothAppend => {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = expand_redirect_target(raw_target, &self.runtime);
+                        let resolved = resolve_path(&target);
+                        let file = if matches!(redirect.kind, RedirectKind::BothAppend) {
+                            OpenOptions::new()
+                                .create(true)
+                                .append(true)
+                                .open(&resolved)
+                                .map_err(|e| anyhow!("Failed to open '{}': {}", target, e))?
+                        } else {
+                            File::create(&resolved)
+                                .map_err(|e| anyhow!("Failed to create '{}': {}", target, e))?
+                        };
                         cmd.stdout(Stdio::from(
                             file.try_clone()
                                 .map_err(|e| anyhow!("Failed to clone file descriptor: {}", e))?,
@@ -577,6 +1317,26 @@ impl Executor {
                         cmd.stderr(Stdio::from(file));
                         stdout_redirect = true;
                         stderr_redirect = true;
+                    }
+                }
+                RedirectKind::ProcessSubstitutionInputArg => {
+                    if let Some(raw_target) = &redirect.target {
+                        if let Some(path) = materialize_process_substitution_argument(raw_target) {
+                            let file = File::open(&path)
+                                .map_err(|e| anyhow!("Failed to open '{}': {}", path, e))?;
+                            cmd.stdin(Stdio::from(file));
+                            stdin_redirect = true;
+                        }
+                    }
+                }
+                RedirectKind::ProcessSubstitutionOutputArg => {
+                    if let Some(raw_target) = &redirect.target {
+                        if let Some((path, _)) = split_process_substitution_argument(raw_target) {
+                            let file = File::create(&path)
+                                .map_err(|e| anyhow!("Failed to create '{}': {}", path, e))?;
+                            cmd.stdout(Stdio::from(file));
+                            stdout_redirect = true;
+                        }
                     }
                 }
                 RedirectKind::HereDoc | RedirectKind::HereDocLiteral => {
@@ -610,6 +1370,9 @@ impl Executor {
             cmd.stdin(Stdio::inherit());
         }
 
+        let capture_stdout = !stdout_redirect;
+        let capture_stderr = !stderr_redirect && !stderr_to_stdout;
+
         let should_inherit_io = self.show_progress
             && !stdout_redirect
             && !stderr_redirect
@@ -633,8 +1396,45 @@ impl Executor {
             cmd.stderr(Stdio::piped());
         }
 
+        let permanent_fds: Vec<(i32, PermanentFd)> = self
+            .runtime
+            .permanent_fds()
+            .iter()
+            .map(|(fd, state)| (*fd, *state))
+            .collect();
+        let permanent_stdout = self.runtime.get_permanent_stdout();
+        let permanent_stderr = self.runtime.get_permanent_stderr();
+        let permanent_stdin = self.runtime.get_permanent_stdin();
+
         unsafe {
-            cmd.pre_exec(|| {
+            cmd.pre_exec(move || {
+                for (fd, state) in &permanent_fds {
+                    match state {
+                        PermanentFd::Open(raw_fd) => {
+                            if libc::dup2(*raw_fd, *fd) < 0 {
+                                return Err(std::io::Error::last_os_error());
+                            }
+                        }
+                        PermanentFd::Closed => {
+                            libc::close(*fd);
+                        }
+                    }
+                }
+                if let Some(fd) = permanent_stdout {
+                    if libc::dup2(fd, libc::STDOUT_FILENO) < 0 {
+                        return Err(std::io::Error::last_os_error());
+                    }
+                }
+                if let Some(fd) = permanent_stderr {
+                    if libc::dup2(fd, libc::STDERR_FILENO) < 0 {
+                        return Err(std::io::Error::last_os_error());
+                    }
+                }
+                if let Some(fd) = permanent_stdin {
+                    if libc::dup2(fd, libc::STDIN_FILENO) < 0 {
+                        return Err(std::io::Error::last_os_error());
+                    }
+                }
                 let pid = getpid();
                 setpgid(pid, pid).map_err(|e| {
                     std::io::Error::new(std::io::ErrorKind::Other, format!("setpgid failed: {}", e))
@@ -742,11 +1542,30 @@ impl Executor {
                 .wait_with_output()
                 .map_err(|e| anyhow!("Failed to wait for '{}': {}", command.name, e))?;
 
-            let mut stdout_str = String::from_utf8_lossy(&output.stdout).to_string();
-            let stderr_str = String::from_utf8_lossy(&output.stderr).to_string();
+            let mut stdout_str = if capture_stdout {
+                String::from_utf8_lossy(&output.stdout).to_string()
+            } else {
+                String::new()
+            };
+            let stderr_str = if capture_stderr || stderr_to_stdout {
+                String::from_utf8_lossy(&output.stderr).to_string()
+            } else {
+                String::new()
+            };
 
             if stderr_to_stdout && !stderr_str.is_empty() {
                 stdout_str.push_str(&stderr_str);
+            }
+
+            let stdout_to_stderr = command.redirects.iter().any(|redirect| {
+                matches!(
+                    redirect.kind,
+                    RedirectKind::StdoutToStderr | RedirectKind::StdoutToFd(2)
+                )
+            });
+            if stdout_to_stderr && !stdout_str.is_empty() {
+                eprint!("{}", stdout_str);
+                stdout_str.clear();
             }
 
             (
@@ -763,6 +1582,8 @@ impl Executor {
         if should_inherit_io {
             let _ = self.terminal_control.reclaim_terminal();
         }
+
+        finalize_process_substitution_outputs(&command.redirects, &command.args, &self.runtime)?;
 
         Ok(ExecutionResult {
             output: Output::Text(stdout_str),
@@ -802,6 +1623,89 @@ impl Executor {
                     }
                 }
                 _ => {}
+            }
+        }
+        Ok(None)
+    }
+
+    pub(crate) fn extract_process_substitution_stdin(
+        &self,
+        redirects: &[Redirect],
+    ) -> Result<Option<i32>> {
+        use std::fs::File;
+        use std::os::fd::IntoRawFd;
+
+        for redirect in redirects {
+            if matches!(
+                &redirect.kind,
+                RedirectKind::Stdin | RedirectKind::ProcessSubstitutionInputArg
+            ) {
+                if let Some(raw_target) = &redirect.target {
+                    if let Some(path) = materialize_process_substitution_argument(raw_target) {
+                        let file = File::open(path)?;
+                        return Ok(Some(file.into_raw_fd()));
+                    }
+                    if let Some(command) = raw_target.strip_prefix("__AUSH_PROCESS_SUBST__") {
+                        let path = self.materialize_input_process_substitution(command)?;
+                        let file = File::open(path)?;
+                        return Ok(Some(file.into_raw_fd()));
+                    }
+                }
+            }
+        }
+        Ok(None)
+    }
+
+    pub(crate) fn extract_stdin_fd(&self, redirects: &[Redirect]) -> Result<Option<i32>> {
+        for redirect in redirects {
+            match &redirect.kind {
+                RedirectKind::FdInputFrom(0, to) => {
+                    return match self.runtime.permanent_fds().get(&(*to as i32)) {
+                        Some(PermanentFd::Open(raw_fd)) => {
+                            let dup = unsafe { libc::dup(*raw_fd) };
+                            if dup < 0 {
+                                Err(anyhow!("bad file descriptor"))
+                            } else {
+                                Ok(Some(dup))
+                            }
+                        }
+                        Some(PermanentFd::Closed) => Ok(Some(-1)),
+                        None => Ok(Some(*to as i32)),
+                    };
+                }
+                _ => {}
+            }
+        }
+        Ok(None)
+    }
+
+    pub(crate) fn extract_read_write_stdin_fd(
+        &self,
+        redirects: &[Redirect],
+    ) -> Result<Option<i32>> {
+        use std::fs::OpenOptions;
+        use std::os::fd::IntoRawFd;
+        use std::path::Path;
+
+        let resolve_path = |target: &str| -> std::path::PathBuf {
+            let path = Path::new(target);
+            if path.is_absolute() {
+                path.to_path_buf()
+            } else {
+                self.runtime.get_cwd().join(target)
+            }
+        };
+
+        for redirect in redirects {
+            if matches!(redirect.kind, RedirectKind::ReadWrite) {
+                if let Some(raw_target) = &redirect.target {
+                    let target = expand_redirect_target(raw_target, &self.runtime);
+                    let file = OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .open(resolve_path(&target))?;
+                    return Ok(Some(file.into_raw_fd()));
+                }
             }
         }
         Ok(None)
@@ -862,6 +1766,7 @@ impl Executor {
 
     pub(crate) fn is_exec_command(statement: &Statement) -> bool {
         match statement {
+            Statement::RedirectedCompound { statement, .. } => Self::is_exec_command(statement),
             Statement::Command(cmd) => cmd.name == "exec",
             Statement::ConditionalAnd(cond) => Self::is_exec_command(&cond.right),
             Statement::ConditionalOr(cond) => Self::is_exec_command(&cond.right),
@@ -998,9 +1903,9 @@ impl Executor {
 
                 Ok(ExecutionResult::success(format!("[{}] {}\n", job_id, pid)))
             }
-            Statement::Pipeline(_) | Statement::Subshell(_) => {
-                self.execute_background_via_sh(&command_str)
-            }
+            Statement::Pipeline(_)
+            | Statement::Subshell(_)
+            | Statement::RedirectedCompound { .. } => self.execute_background_via_sh(&command_str),
             _ => Err(anyhow!(
                 "Only simple commands and pipelines can be run in background"
             )),

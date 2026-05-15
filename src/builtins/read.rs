@@ -176,6 +176,65 @@ pub fn builtin_read_with_stdin(
     Ok(ExecutionResult::success(String::new()))
 }
 
+/// Execute read from an already-open file descriptor.
+pub fn builtin_read_with_fd(
+    args: &[String],
+    runtime: &mut Runtime,
+    fd: i32,
+) -> Result<ExecutionResult> {
+    #[cfg(unix)]
+    {
+        use std::fs::File;
+        use std::os::fd::{FromRawFd, IntoRawFd};
+
+        let opts = ReadOptions::parse(args)?;
+        let file = unsafe { File::from_raw_fd(fd) };
+        let mut reader = io::BufReader::new(file);
+        let mut line = String::new();
+        let read_result = reader.read_line(&mut line);
+        let file = reader.into_inner();
+        let _ = file.into_raw_fd();
+
+        match read_result {
+            Ok(0) => {
+                return Ok(ExecutionResult {
+                    output: Output::Text(String::new()),
+                    stderr: String::new(),
+                    exit_code: 1,
+                    error: None,
+                });
+            }
+            Ok(_) => {
+                if line.ends_with('\n') {
+                    line.pop();
+                    if line.ends_with('\r') {
+                        line.pop();
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(anyhow!("read: error reading from fd {}: {}", fd, e));
+            }
+        }
+
+        let processed_line = if opts.raw {
+            line
+        } else {
+            process_backslash_escapes(&line)
+        };
+        assign_variables(&opts.variables, &processed_line, runtime);
+        Ok(ExecutionResult::success(String::new()))
+    }
+
+    #[cfg(not(unix))]
+    {
+        let _ = (args, runtime, fd);
+        Err(anyhow!(
+            "read: file descriptor input is not supported on this platform"
+        ))
+    }
+}
+
 /// Read a line from stdin
 fn read_line(silent: bool) -> Result<Option<String>> {
     if silent {

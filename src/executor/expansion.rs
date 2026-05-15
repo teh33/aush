@@ -39,6 +39,42 @@ fn truncate_output(output: &mut String, max: usize) -> bool {
 }
 
 impl Executor {
+    fn expand_process_substitutions_in_literal(&mut self, input: &str) -> Result<String> {
+        let mut result = String::with_capacity(input.len());
+        let mut rest = input;
+
+        while let Some(start) = rest.find("<(") {
+            result.push_str(&rest[..start]);
+            let after_marker = &rest[start + 2..];
+            let mut depth = 1usize;
+            let mut end = None;
+            for (idx, ch) in after_marker.char_indices() {
+                match ch {
+                    '(' => depth += 1,
+                    ')' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            end = Some(idx);
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let Some(end_idx) = end else {
+                result.push_str(&rest[start..]);
+                return Ok(result);
+            };
+            let command = &after_marker[..end_idx];
+            let marker = crate::executor::commands::process_substitution_argument_path(command, false)?;
+            result.push_str(&marker);
+            rest = &after_marker[end_idx + 1..];
+        }
+
+        result.push_str(rest);
+        Ok(result)
+    }
+
     /// Expand a string value that may contain variable references ($VAR, ${VAR}, etc.)
     pub(crate) fn expand_string_value(&self, value: &str) -> Result<String> {
         if value.contains("$(") || value.contains('`') {
@@ -61,6 +97,8 @@ impl Executor {
     }
 
     pub(crate) fn expand_variables_in_literal(&mut self, input: &str) -> Result<String> {
+        let input = self.expand_process_substitutions_in_literal(input)?;
+        let input = input.as_str();
         let mut result = String::with_capacity(input.len());
         let mut chars = input.chars().peekable();
 
@@ -440,8 +478,12 @@ impl Executor {
                     }
                 }
 
-                // Regular variable - just get its value
-                Ok(self.runtime.get_variable(var_name).unwrap_or_default())
+                // Regular variable - respect nounset when enabled
+                if self.runtime.options.nounset {
+                    self.runtime.get_variable_checked(var_name)
+                } else {
+                    Ok(self.runtime.get_variable(var_name).unwrap_or_default())
+                }
             }
             Argument::BracedVariable(braced_var) => {
                 // Parse the braced variable expansion

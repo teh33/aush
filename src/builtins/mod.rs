@@ -2,16 +2,18 @@ use crate::correction::Corrector;
 use crate::executor::{ExecutionResult, Output};
 use crate::lua::LuaRuntime;
 use crate::runtime::Runtime;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use std::collections::HashMap;
 use std::env;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Re-export so callers can use `builtins::LuaBuiltin` without knowing the lua module path.
 pub use crate::lua::LuaBuiltin;
 
-mod cat;
+pub mod cat;
 mod edit_file;
 mod find;
 mod getopts;
@@ -46,6 +48,7 @@ pub mod return_builtin; // Public so executor can access ReturnSignal
 mod rm;
 mod set;
 mod shift;
+mod shopt;
 mod tail;
 mod test;
 pub mod time; // Public so executor can access timing functions
@@ -83,6 +86,7 @@ static BUILTIN_MAP: LazyLock<HashMap<&'static str, BuiltinFn>> = LazyLock::new(|
     m.insert("fg", jobs::builtin_fg);
     m.insert("bg", jobs::builtin_bg);
     m.insert("set", set::builtin_set);
+    m.insert("shopt", shopt::builtin_shopt);
     m.insert("tail", tail::builtin_tail);
     m.insert("alias", alias::builtin_alias);
     m.insert("unalias", alias::builtin_unalias);
@@ -194,6 +198,23 @@ impl Builtins {
         args: Vec<String>,
         runtime: &mut Runtime,
     ) -> Result<ExecutionResult> {
+        if name == "source" || name == "." {
+            let source_args = args
+                .iter()
+                .map(|arg| {
+                    if let Some(command) = arg.strip_prefix("__AUSH_PROCESS_SUBST__") {
+                        materialize_input_process_substitution(runtime, command)
+                            .map(|path| path.to_string_lossy().to_string())
+                            .unwrap_or_else(|_| arg.clone())
+                    } else {
+                        arg.clone()
+                    }
+                })
+                .collect::<Vec<_>>();
+            if let Some(func) = BUILTIN_MAP.get(name) {
+                return func(&source_args, runtime);
+            }
+        }
         if let Some(func) = BUILTIN_MAP.get(name) {
             return func(&args, runtime);
         }
@@ -216,6 +237,9 @@ impl Builtins {
             if let Some(stdin_data) = stdin {
                 return cat::builtin_cat_with_stdin(&args, runtime, stdin_data);
             }
+            if let Some(fd) = runtime.get_permanent_stdin() {
+                return cat::builtin_cat_with_fd(&args, runtime, fd);
+            }
         }
 
         // Special handling for grep with stdin
@@ -236,6 +260,9 @@ impl Builtins {
         if name == "read" {
             if let Some(stdin_data) = stdin {
                 return read::builtin_read_with_stdin(&args, runtime, stdin_data);
+            }
+            if let Some(fd) = runtime.get_permanent_stdin() {
+                return read::builtin_read_with_fd(&args, runtime, fd);
             }
         }
 
@@ -648,7 +675,10 @@ pub(crate) fn builtin_source(args: &[String], runtime: &mut Runtime) -> Result<E
     use std::io::{BufRead, BufReader};
 
     let file_path = &args[0];
-    let path = if file_path.starts_with('~') {
+    let path = if file_path.starts_with("__AUSH_PROCESS_SUBST__") {
+        let command = file_path.trim_start_matches("__AUSH_PROCESS_SUBST__");
+        PathBuf::from(materialize_input_process_substitution(runtime, command)?)
+    } else if file_path.starts_with('~') {
         let home = dirs::home_dir().ok_or_else(|| anyhow!("Could not determine home directory"))?;
         home.join(file_path.trim_start_matches("~/"))
     } else {
@@ -747,6 +777,29 @@ pub(crate) fn builtin_source(args: &[String], runtime: &mut Runtime) -> Result<E
     runtime.exit_function_context();
 
     Ok(ExecutionResult::success(String::new()))
+}
+
+fn materialize_input_process_substitution(
+    runtime: &Runtime,
+    command: &str,
+) -> Result<std::path::PathBuf> {
+    let output = std::process::Command::new("/bin/sh")
+        .arg("-c")
+        .arg(command)
+        .current_dir(runtime.get_cwd())
+        .output()
+        .with_context(|| format!("process substitution failed: {}", command))?;
+    let path = std::env::temp_dir().join(format!(
+        "aush-process-subst-{}-{}",
+        std::process::id(),
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+    ));
+    let mut file = std::fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&path)?;
+    file.write_all(&output.stdout)?;
+    Ok(path)
 }
 
 fn should_skip_sourced_file(path: &Path) -> Result<bool> {

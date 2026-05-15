@@ -107,6 +107,12 @@ pub enum Token {
     #[token("}")]
     RightBrace,
 
+    #[token("[[", priority = 20)]
+    DoubleLeftBracket,
+
+    #[token("]]", priority = 20)]
+    DoubleRightBracket,
+
     #[token("[", priority = 10)]
     LeftBracket,
 
@@ -181,6 +187,16 @@ pub enum Token {
     #[regex(r"\+[a-zA-Z0-9]+", |lex| lex.slice().to_string())]
     PlusFlag(String),
 
+    #[regex(r">\([^)]*\)", |lex| lex.slice().to_string(), priority = 20)]
+    ProcessSubstitutionOutputRedirect(String),
+
+    #[regex(r"<[[:space:]]*<\([^)]*\)", |lex| lex.slice().to_string(), priority = 20)]
+    #[regex(r"<\([^)]*\)", |lex| lex.slice().to_string(), priority = 20)]
+    ProcessSubstitutionInputRedirect(String),
+
+    #[regex(r"<[[:space:]]+[^<(][^|;&()<>[:space:]]*", |lex| lex.slice().to_string(), priority = 20)]
+    SpacedStdinRedirect(String),
+
     // Identifiers and commands — catch-all for shell words.
     // In POSIX, a word is any sequence of non-metacharacter chars. This covers:
     //   filenames: README.md          paths: src/main.rs
@@ -234,14 +250,55 @@ pub enum Token {
     #[token(">>")]
     StdoutAppend,
 
-    #[token("2>&1")]
+    #[regex(r"[0-9]+>[&]-", |lex| lex.slice().to_string(), priority = 9)]
+    FdClose(String),
+
+    #[regex(r"[0-9]+<[&]-", |lex| lex.slice().to_string(), priority = 9)]
+    FdInputClose(String),
+
+    #[token(">&-")]
+    StdoutClose,
+
+    #[token("<>")]
+    ReadWriteRedirect,
+
+    #[regex(r"[0-9]*<&[0-9]+", |lex| lex.slice().to_string(), priority = 4)]
+    FdInputDuplicate(String),
+
+    #[regex(r"[0-9]+<", |lex| lex.slice().to_string(), priority = 4)]
+    FdInputRedirect(String),
+
+    #[regex(r"[0-9]+>&[0-9]+", |lex| lex.slice().to_string(), priority = 4)]
+    FdDuplicate(String),
+
+    #[regex(r"[0-9]+>&", |lex| lex.slice().to_string(), priority = 4)]
+    InvalidFdDuplicate(String),
+
+    #[regex(r"[0-9]+>", |lex| lex.slice().to_string(), priority = 4)]
+    FdOutputRedirect(String),
+
+    #[token("2>&1", priority = 8)]
     StderrToStdout,
 
-    #[token("2>")]
+    #[token("1>&2", priority = 8)]
+    #[token(">&2", priority = 8)]
+    StdoutToStderr,
+
+    #[regex(r">&[0-9]+", |lex| lex.slice().to_string(), priority = 4)]
+    StdoutToFd(String),
+
+    #[token("2>", priority = 8)]
     StderrRedirect,
 
+    #[token("&>>", priority = 9)]
+    InvalidBothAppendRedirect,
+
     #[token("&>")]
+    #[token(">&")]
     BothRedirect,
+
+    #[token("&>>", priority = 1)]
+    BothAppendRedirect,
 
     // Here-document operators (must come before StdinRedirect for precedence)
     #[token("<<-")]
@@ -303,7 +360,8 @@ fn strip_comments(input: &str) -> String {
                 }
             }
             '#' if !in_single && !in_double => {
-                if output.ends_with("${")
+                if output.ends_with('$')
+                    || output.ends_with("${")
                     || output.contains("${")
                         && !output.rsplit('$').next().unwrap_or("").contains('}')
                 {

@@ -81,9 +81,19 @@ pub fn builtin_cat(args: &[String], runtime: &mut Runtime) -> Result<ExecutionRe
                 exit_code = 1;
             }
         } else {
+            let file_path = if file_path.starts_with("__AUSH_PROCESS_SUBST_ARG__") {
+                crate::executor::commands::materialize_process_substitution_argument(file_path)
+                    .unwrap_or_else(|| file_path.clone())
+            } else if let Some(command) = file_path.strip_prefix("__AUSH_PROCESS_SUBST__") {
+                materialize_input_process_substitution(runtime, command)
+                    .map(|path| path.to_string_lossy().to_string())
+                    .unwrap_or_else(|_| file_path.clone())
+            } else {
+                file_path.clone()
+            };
             // Read from file
             if let Err(e) = read_file(
-                file_path,
+                &file_path,
                 runtime.get_cwd(),
                 &mut output,
                 &mut line_number,
@@ -134,6 +144,71 @@ pub fn builtin_cat_with_stdin(
     Ok(ExecutionResult::success(output))
 }
 
+/// Execute cat from an already-open file descriptor.
+pub fn builtin_cat_with_fd(
+    args: &[String],
+    runtime: &mut Runtime,
+    fd: i32,
+) -> Result<ExecutionResult> {
+    #[cfg(unix)]
+    {
+        use std::fs::File;
+        use std::os::fd::FromRawFd;
+
+        let opts = CatOptions::parse(args)?;
+        if !opts.files.is_empty()
+            && !opts.files.iter().any(|file| file == "-")
+            && !opts
+                .files
+                .iter()
+                .any(|file| file.starts_with("__AUSH_PROCESS_SUBST__"))
+        {
+            return builtin_cat(args, runtime);
+        }
+
+        let file = unsafe { File::from_raw_fd(fd) };
+        let reader = std::io::BufReader::new(file);
+        let mut output = String::new();
+        let mut line_number = 1;
+        read_with_line_numbers(reader, &mut output, &mut line_number, opts.number_lines)?;
+        Ok(ExecutionResult::success(output))
+    }
+
+    #[cfg(not(unix))]
+    {
+        let _ = (args, runtime, fd);
+        Err(anyhow!(
+            "cat: file descriptor input is not supported on this platform"
+        ))
+    }
+}
+
+fn materialize_input_process_substitution(
+    runtime: &Runtime,
+    command: &str,
+) -> Result<std::path::PathBuf> {
+    use std::io::Write;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let output = std::process::Command::new("/bin/sh")
+        .arg("-c")
+        .arg(command)
+        .current_dir(runtime.get_cwd())
+        .output()
+        .with_context(|| format!("process substitution failed: {}", command))?;
+    let path = std::env::temp_dir().join(format!(
+        "aush-process-subst-{}-{}",
+        std::process::id(),
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+    ));
+    let mut file = std::fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&path)?;
+    file.write_all(&output.stdout)?;
+    Ok(path)
+}
+
 /// Read a file using either memory-mapped I/O or buffered reading
 fn read_file(
     path: &str,
@@ -173,6 +248,12 @@ fn read_file(
 }
 
 fn resolve_path(path: &str, cwd: &Path) -> std::path::PathBuf {
+    if let Some(path) = crate::executor::commands::materialize_process_substitution_argument(path) {
+        return std::path::PathBuf::from(path);
+    }
+    if path.starts_with("__AUSH_PROCESS_SUBST__") {
+        return std::path::PathBuf::from(path);
+    }
     let file_path = Path::new(path);
     if file_path.is_absolute() {
         file_path.to_path_buf()

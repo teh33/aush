@@ -6,6 +6,7 @@ pub enum Statement {
     Pipeline(Pipeline),
     ParallelExecution(ParallelExecution),
     Assignment(Assignment),
+    WordAssignment(WordAssignment),
     FunctionDef(FunctionDef),
     IfStatement(IfStatement),
     ForLoop(ForLoop),
@@ -19,6 +20,10 @@ pub enum Statement {
     BackgroundCommand(Box<Statement>),
     /// Brace group: { commands; } - executes in current shell context
     BraceGroup(Vec<Statement>),
+    RedirectedCompound {
+        statement: Box<Statement>,
+        redirects: Vec<Redirect>,
+    },
     /// Pipe to AI: cmd |? "prompt"
     PipeAsk(PipeAsk),
 }
@@ -30,7 +35,7 @@ pub struct Command {
     pub redirects: Vec<Redirect>,
     /// Prefix environment assignments (e.g., `FOO=bar cmd` sets FOO only for cmd)
     #[serde(default)]
-    pub prefix_env: Vec<(String, String)>,
+    pub prefix_env: Vec<(String, AssignmentValue)>,
 }
 
 /// An element in a pipeline - either a regular command, subshell, compound command, or structured op
@@ -125,6 +130,40 @@ pub struct ParallelExecution {
 pub struct Assignment {
     pub name: String,
     pub value: Expression,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WordAssignment {
+    pub name: String,
+    pub value: AssignmentValue,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AssignmentValue {
+    pub parts: Vec<AssignmentPart>,
+}
+
+impl AssignmentValue {
+    pub fn from_literal(value: impl Into<String>) -> Self {
+        Self {
+            parts: vec![AssignmentPart::Literal(value.into())],
+        }
+    }
+
+    pub fn to_source(&self) -> String {
+        self.parts
+            .iter()
+            .map(|part| match part {
+                AssignmentPart::Literal(s) | AssignmentPart::Expand(s) => s.as_str(),
+            })
+            .collect()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AssignmentPart {
+    Literal(String),
+    Expand(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -354,12 +393,23 @@ pub struct Redirect {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum RedirectKind {
-    Stdout,         // >
-    StdoutAppend,   // >>
-    Stdin,          // <
-    Stderr,         // 2>
-    StderrToStdout, // 2>&1
-    Both,           // &>
-    HereDoc,        // <<WORD (body in target, expand vars)
-    HereDocLiteral, // <<'WORD' or <<"WORD" (body in target, no expansion)
+    Stdout,       // >
+    StdoutAppend, // >>
+    Stdin,        // <
+    Stderr,       // 2>
+    FdOut(u32),   // N>
+    FdIn(u32),    // N<
+    ReadWrite,    // <>
+    ProcessSubstitutionInputArg,
+    ProcessSubstitutionOutputArg,
+    StderrToStdout,        // 2>&1
+    StdoutToStderr,        // >&2 or 1>&2
+    StdoutToFd(u32),       // >&N or 1>&N
+    FdInputFrom(u32, u32), // N<&M
+    CloseFd(u32),          // N>&- or N<&-
+    Invalid(String),       // invalid redirect preserved as command failure
+    Both,                  // &> or >& file
+    BothAppend,            // &>>
+    HereDoc,               // <<WORD (body in target, expand vars)
+    HereDocLiteral,        // <<'WORD' or <<"WORD" (body in target, no expansion)
 }

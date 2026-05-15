@@ -517,17 +517,62 @@ fn apply_redirects_to_result(
                     result.stderr.clear();
                 }
             }
+            crate::parser::ast::RedirectKind::FdOut(fd) => {
+                if *fd == 2 {
+                    if let Some(raw_target) = &redirect.target {
+                        let target = super::expand_redirect_target(raw_target, runtime);
+                        let resolved = resolve_path(&target);
+                        let mut file = File::create(&resolved)
+                            .map_err(|e| anyhow!("Failed to create '{}': {}", target, e))?;
+                        file.write_all(result.stderr.as_bytes())
+                            .map_err(|e| anyhow!("Failed to write to '{}': {}", target, e))?;
+                        result.stderr.clear();
+                    }
+                }
+            }
+            crate::parser::ast::RedirectKind::FdIn(_) => {}
+            crate::parser::ast::RedirectKind::ReadWrite => {}
             crate::parser::ast::RedirectKind::StderrToStdout => {
                 // Merge stderr into stdout
                 result.push_stdout(&result.stderr.clone());
                 result.stderr.clear();
             }
-            crate::parser::ast::RedirectKind::Both => {
+            crate::parser::ast::RedirectKind::StdoutToStderr => {
+                result.stderr.push_str(&result.stdout());
+                result.clear_stdout();
+            }
+            crate::parser::ast::RedirectKind::StdoutToFd(fd) => {
+                if *fd == 2 {
+                    result.stderr.push_str(&result.stdout());
+                    result.clear_stdout();
+                }
+            }
+            crate::parser::ast::RedirectKind::FdInputFrom(_, _) => {}
+            crate::parser::ast::RedirectKind::CloseFd(fd) => match *fd {
+                1 => result.clear_stdout(),
+                2 => result.stderr.clear(),
+                _ => {}
+            },
+            crate::parser::ast::RedirectKind::Invalid(message) => {
+                result.exit_code = 1;
+                result.stderr.push_str(message);
+            }
+            crate::parser::ast::RedirectKind::Both
+            | crate::parser::ast::RedirectKind::BothAppend => {
                 if let Some(raw_target) = &redirect.target {
                     let target = super::expand_redirect_target(raw_target, runtime);
                     let resolved = resolve_path(&target);
-                    let mut file = File::create(&resolved)
-                        .map_err(|e| anyhow!("Failed to create '{}': {}", target, e))?;
+                    let mut file =
+                        if matches!(redirect.kind, crate::parser::ast::RedirectKind::BothAppend) {
+                            OpenOptions::new()
+                                .create(true)
+                                .append(true)
+                                .open(&resolved)
+                                .map_err(|e| anyhow!("Failed to open '{}': {}", target, e))?
+                        } else {
+                            File::create(&resolved)
+                                .map_err(|e| anyhow!("Failed to create '{}': {}", target, e))?
+                        };
                     file.write_all(result.stdout().as_bytes())
                         .map_err(|e| anyhow!("Failed to write to '{}': {}", target, e))?;
                     file.write_all(result.stderr.as_bytes())
@@ -536,6 +581,8 @@ fn apply_redirects_to_result(
                     result.stderr.clear();
                 }
             }
+            crate::parser::ast::RedirectKind::ProcessSubstitutionInputArg
+            | crate::parser::ast::RedirectKind::ProcessSubstitutionOutputArg => {}
             crate::parser::ast::RedirectKind::HereDoc
             | crate::parser::ast::RedirectKind::HereDocLiteral => {
                 // Here-documents provide stdin - not applicable in pipeline context for output redirection

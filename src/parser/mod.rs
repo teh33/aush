@@ -4,9 +4,78 @@ use crate::lexer::Token;
 use anyhow::{anyhow, Result};
 use ast::*;
 
+fn parse_redirect_fd(raw: &str, suffix: &str) -> Result<u32> {
+    if let Some(value) = raw.strip_suffix(suffix) {
+        return value
+            .parse::<u32>()
+            .map_err(|_| anyhow!("Invalid file descriptor redirect"));
+    }
+    if let Some(value) = raw.strip_prefix(suffix) {
+        return value
+            .parse::<u32>()
+            .map_err(|_| anyhow!("Invalid file descriptor redirect"));
+    }
+    Err(anyhow!("Invalid file descriptor redirect"))
+}
+
+fn fd_duplicate_kind(from: u32, to: u32) -> RedirectKind {
+    match (from, to) {
+        (2, 1) => RedirectKind::StderrToStdout,
+        (1, 2) => RedirectKind::StdoutToStderr,
+        (1, fd) => RedirectKind::StdoutToFd(fd),
+        (fd, _) => RedirectKind::FdOut(fd),
+    }
+}
+
+fn parse_fd_duplicate(raw: &str) -> Result<(u32, u32)> {
+    if let Some((from, to)) = raw.split_once(">&") {
+        return Ok((
+            from.parse::<u32>()
+                .map_err(|_| anyhow!("Invalid file descriptor redirect"))?,
+            to.parse::<u32>()
+                .map_err(|_| anyhow!("Invalid file descriptor redirect"))?,
+        ));
+    }
+    if let Some((from, to)) = raw.split_once("<&") {
+        return Ok((
+            if from.is_empty() {
+                0
+            } else {
+                from.parse::<u32>()
+                    .map_err(|_| anyhow!("Invalid file descriptor redirect"))?
+            },
+            to.parse::<u32>()
+                .map_err(|_| anyhow!("Invalid file descriptor redirect"))?,
+        ));
+    }
+    Err(anyhow!("Invalid file descriptor redirect"))
+}
+
+fn parse_process_substitution_input(raw: &str) -> String {
+    raw.trim_start_matches('<')
+        .trim_start_matches('>')
+        .trim_start()
+        .trim_start_matches("<(")
+        .trim_start_matches(">(")
+        .trim_start_matches('(')
+        .trim_end_matches(')')
+        .to_string()
+}
+
+fn parse_fd_close(raw: &str) -> Result<u32> {
+    let fd = raw
+        .split_once('>')
+        .or_else(|| raw.split_once('<'))
+        .map(|(fd, _)| fd)
+        .ok_or_else(|| anyhow!("Invalid file descriptor redirect"))?;
+    fd.parse::<u32>()
+        .map_err(|_| anyhow!("Invalid file descriptor redirect"))
+}
+
 pub struct Parser {
     tokens: Vec<Token>,
     position: usize,
+    structured_pipeline_started: bool,
 }
 
 impl Parser {
@@ -14,6 +83,7 @@ impl Parser {
         Self {
             tokens,
             position: 0,
+            structured_pipeline_started: false,
         }
     }
 
@@ -21,8 +91,11 @@ impl Parser {
         let mut statements = Vec::new();
 
         while !self.is_at_end() {
-            // Skip newlines between statements
-            while self.match_token(&Token::Newline) || self.match_token(&Token::CrLf) {
+            // Skip newlines and semicolons between statements
+            while self.match_token(&Token::Newline)
+                || self.match_token(&Token::CrLf)
+                || self.match_token(&Token::Semicolon)
+            {
                 self.advance();
             }
 
@@ -31,11 +104,6 @@ impl Parser {
             }
 
             statements.push(self.parse_conditional_statement()?);
-
-            // Handle semicolon as statement separator
-            if self.match_token(&Token::Semicolon) {
-                self.advance();
-            }
         }
 
         Ok(statements)
@@ -45,14 +113,14 @@ impl Parser {
         let mut left = self.parse_statement()?;
 
         loop {
-            if self.match_token(&Token::And) {
+            if matches!(self.peek(), Some(Token::And)) {
                 self.advance();
                 let right = self.parse_statement()?;
                 left = Statement::ConditionalAnd(ConditionalAnd {
                     left: Box::new(left),
                     right: Box::new(right),
                 });
-            } else if self.match_token(&Token::Or) {
+            } else if matches!(self.peek(), Some(Token::Or)) {
                 self.advance();
                 let right = self.parse_statement()?;
                 left = Statement::ConditionalOr(ConditionalOr {
@@ -111,6 +179,13 @@ impl Parser {
 
         let first_statement = self.parse_pipeline_element()?;
 
+        if matches!(
+            first_statement,
+            Statement::Assignment(_) | Statement::WordAssignment(_)
+        ) {
+            return Ok(first_statement);
+        }
+
         // Check if this is a parallel execution
         let result = if self.match_token(&Token::ParallelPipe) {
             // Only commands can be in parallel execution for now
@@ -142,6 +217,9 @@ impl Parser {
         else if self.match_token(&Token::Pipe) {
             // Build elements list supporting commands, subshells, compound commands, and structured ops
             let first_element = Self::statement_to_pipeline_element(first_statement)?;
+            let previous_structured = self.structured_pipeline_started;
+            self.structured_pipeline_started =
+                matches!(first_element, PipelineElement::StructuredOp(_));
 
             self.advance();
             let mut elements = vec![first_element];
@@ -157,6 +235,8 @@ impl Parser {
                     Self::statement_to_pipeline_element(stmt)?
                 };
                 elements.push(elem);
+                self.structured_pipeline_started |=
+                    matches!(elements.last(), Some(PipelineElement::StructuredOp(_)));
 
                 if !self.match_token(&Token::Pipe) {
                     break;
@@ -180,6 +260,8 @@ impl Parser {
                     // This would require extending the Pipeline struct
                 }
             }
+
+            self.structured_pipeline_started = previous_structured;
 
             // Build backward-compatible commands vec from command-only elements
             let commands: Vec<Command> = elements
@@ -267,13 +349,54 @@ impl Parser {
                 | Some(Token::StdinRedirect)
                 | Some(Token::StderrRedirect)
                 | Some(Token::StderrToStdout)
+                | Some(Token::StdoutToStderr)
+                | Some(Token::StdoutToFd(_))
+                | Some(Token::FdDuplicate(_))
+                | Some(Token::InvalidFdDuplicate(_))
+                | Some(Token::FdInputDuplicate(_))
+                | Some(Token::FdOutputRedirect(_))
+                | Some(Token::FdInputRedirect(_))
+                | Some(Token::FdClose(_))
+                | Some(Token::FdInputClose(_))
+                | Some(Token::StdoutClose)
+                | Some(Token::ReadWriteRedirect)
+                | Some(Token::InvalidBothAppendRedirect)
                 | Some(Token::BothRedirect)
+                | Some(Token::BothAppendRedirect)
         )
     }
 
     /// Parse a single redirect token and its target
     fn parse_single_redirect(&mut self) -> Result<Redirect> {
         match self.peek() {
+            Some(Token::ProcessSubstitutionInputRedirect(raw)) => {
+                let command = parse_process_substitution_input(raw);
+                let marker =
+                    crate::executor::commands::process_substitution_argument_path(&command, false)?;
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::ProcessSubstitutionInputArg,
+                    target: Some(marker),
+                })
+            }
+            Some(Token::ProcessSubstitutionOutputRedirect(raw)) => {
+                let command = parse_process_substitution_input(raw);
+                let marker =
+                    crate::executor::commands::process_substitution_argument_path(&command, true)?;
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::ProcessSubstitutionOutputArg,
+                    target: Some(marker),
+                })
+            }
+            Some(Token::SpacedStdinRedirect(raw)) => {
+                let target = raw.trim_start_matches('<').trim().to_string();
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::Stdin,
+                    target: Some(target),
+                })
+            }
             Some(Token::GreaterThan) => {
                 self.advance();
                 let target = self.parse_redirect_target()?;
@@ -313,11 +436,110 @@ impl Parser {
                     target: None,
                 })
             }
+            Some(Token::StdoutToStderr) => {
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::StdoutToStderr,
+                    target: None,
+                })
+            }
+            Some(Token::StdoutToFd(raw)) => {
+                let fd = parse_redirect_fd(raw, ">&")?;
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::StdoutToFd(fd),
+                    target: None,
+                })
+            }
+            Some(Token::FdDuplicate(raw)) => {
+                let (from, to) = parse_fd_duplicate(raw)?;
+                self.advance();
+                Ok(Redirect {
+                    kind: fd_duplicate_kind(from, to),
+                    target: None,
+                })
+            }
+            Some(Token::InvalidFdDuplicate(_)) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::Invalid(format!("{}: ambiguous redirect", target)),
+                    target: None,
+                })
+            }
+            Some(Token::FdInputDuplicate(raw)) => {
+                let (from, to) = parse_fd_duplicate(raw)?;
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::FdInputFrom(from, to),
+                    target: None,
+                })
+            }
+            Some(Token::FdOutputRedirect(raw)) => {
+                let fd = parse_redirect_fd(raw, ">")?;
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: if fd == 1 {
+                        RedirectKind::Stdout
+                    } else {
+                        RedirectKind::FdOut(fd)
+                    },
+                    target: Some(target),
+                })
+            }
+            Some(Token::FdInputRedirect(raw)) => {
+                let fd = parse_redirect_fd(raw, "<")?;
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: if fd == 0 {
+                        RedirectKind::Stdin
+                    } else {
+                        RedirectKind::FdIn(fd)
+                    },
+                    target: Some(target),
+                })
+            }
+            Some(Token::FdClose(raw)) | Some(Token::FdInputClose(raw)) => {
+                let fd = parse_fd_close(raw)?;
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::CloseFd(fd),
+                    target: None,
+                })
+            }
+            Some(Token::StdoutClose) => {
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::CloseFd(1),
+                    target: None,
+                })
+            }
+            Some(Token::ReadWriteRedirect) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::ReadWrite,
+                    target: Some(target),
+                })
+            }
+            Some(Token::InvalidBothAppendRedirect) => {
+                Err(anyhow!("syntax error near unexpected token `>'"))
+            }
             Some(Token::BothRedirect) => {
                 self.advance();
                 let target = self.parse_redirect_target()?;
                 Ok(Redirect {
                     kind: RedirectKind::Both,
+                    target: Some(target),
+                })
+            }
+            Some(Token::BothAppendRedirect) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::BothAppend,
                     target: Some(target),
                 })
             }
@@ -378,7 +600,15 @@ impl Parser {
 
         self.expect_token(&Token::RightBrace)?;
 
-        Ok(Statement::BraceGroup(statements))
+        let redirects = self.parse_trailing_redirects()?;
+        Ok(if redirects.is_empty() {
+            Statement::BraceGroup(statements)
+        } else {
+            Statement::RedirectedCompound {
+                statement: Box::new(Statement::BraceGroup(statements)),
+                redirects,
+            }
+        })
     }
 
     /// Try to parse a structured pipeline operator at the current position.
@@ -395,6 +625,8 @@ impl Parser {
             _ => return Ok(None),
         };
 
+        let use_structured_sort = self.pipeline_input_is_structured();
+
         match keyword.as_str() {
             "where" => {
                 self.advance(); // consume "where"
@@ -402,6 +634,26 @@ impl Parser {
                 let op = self.parse_compare_op()?;
                 let value = self.parse_op_value()?;
                 Ok(Some(StructuredOp::Where { field, op, value }))
+            }
+            "sort" if use_structured_sort => {
+                self.advance();
+                let mut reverse = false;
+                if matches!(self.peek(), Some(Token::Identifier(s)) if s == "-r")
+                    || matches!(self.peek(), Some(Token::String(s)) if s == "-r")
+                    || matches!(self.peek(), Some(Token::ShortFlag(s)) if s == "-r")
+                {
+                    reverse = true;
+                    self.advance();
+                }
+                let field = match self.peek() {
+                    Some(Token::Identifier(s)) => {
+                        let field = s.clone();
+                        self.advance();
+                        Some(field)
+                    }
+                    _ => None,
+                };
+                Ok(Some(StructuredOp::Sort { field, reverse }))
             }
             "select" => {
                 self.advance(); // consume "select"
@@ -428,11 +680,37 @@ impl Parser {
                 let n = self.parse_optional_count(1)?;
                 Ok(Some(StructuredOp::Last(n)))
             }
+            "uniq" if use_structured_sort => {
+                self.advance();
+                let field = match self.peek() {
+                    Some(Token::Identifier(s)) => {
+                        let field = s.clone();
+                        self.advance();
+                        Some(field)
+                    }
+                    _ => None,
+                };
+                Ok(Some(StructuredOp::Uniq { field }))
+            }
             _ => Ok(None),
         }
     }
 
     /// Parse a comparison operator for `where` expressions.
+    fn pipeline_input_is_structured(&self) -> bool {
+        let Some(pipe_index) = self.tokens[..self.position]
+            .iter()
+            .rposition(|token| matches!(token, Token::Pipe))
+        else {
+            return false;
+        };
+
+        self.tokens[..pipe_index].iter().any(|token| {
+            matches!(token, Token::SingleQuotedString(s) if s.trim_start().starts_with("'[") || s.trim_start().starts_with("'{"))
+                || matches!(token, Token::Identifier(s) if matches!(s.as_str(), "where" | "select" | "first" | "last"))
+        })
+    }
+
     fn parse_compare_op(&mut self) -> Result<CompareOp> {
         match self.peek() {
             Some(Token::DoubleEquals) => {
@@ -584,7 +862,7 @@ impl Parser {
     /// If only assignments with no command following, returns Assignment statement(s).
     /// If assignments are followed by a command, returns a Command with prefix_env.
     fn parse_bare_assignment_or_command(&mut self) -> Result<Statement> {
-        let mut assignments: Vec<(String, String)> = Vec::new();
+        let mut assignments: Vec<(String, AssignmentValue)> = Vec::new();
 
         // Collect all leading NAME=VALUE pairs
         while self.is_bare_assignment() {
@@ -594,7 +872,7 @@ impl Parser {
             };
             self.expect_token(&Token::Equals)?;
 
-            // Parse the value: can be an identifier, string, integer, variable, path, or empty
+            // Parse the value as a shell word so quoting controls later expansion.
             let value = self.parse_assignment_value()?;
             assignments.push((name, value));
         }
@@ -606,10 +884,11 @@ impl Parser {
             && !self.match_token(&Token::CrLf)
             && !self.match_token(&Token::Pipe)
             && !self.match_token(&Token::ParallelPipe)
-            && !self.match_token(&Token::And)
-            && !self.match_token(&Token::Or)
+            && !matches!(self.peek(), Some(Token::And))
+            && !matches!(self.peek(), Some(Token::Or))
             && !self.match_token(&Token::Ampersand)
-            && !self.match_token(&Token::RightParen);
+            && !self.match_token(&Token::RightParen)
+            && !self.match_token(&Token::Adjacent);
 
         if has_command {
             // FOO=bar cmd args -- parse as command with prefix env
@@ -623,157 +902,93 @@ impl Parser {
             // This is acceptable since multi-assignment without command is rare;
             // the primary use case is `A=1 B=2 cmd` which uses prefix_env.
             let (name, value) = assignments.into_iter().last().unwrap();
-            Ok(Statement::Assignment(Assignment {
-                name,
-                value: Expression::Literal(Literal::String(value)),
-            }))
+            Ok(Statement::WordAssignment(WordAssignment { name, value }))
         }
     }
 
     /// Parse the value part of a bare assignment (after the `=`).
     /// Returns the value as a string. Handles identifiers, strings, integers,
     /// variables, paths, or empty values.
-    fn parse_assignment_value(&mut self) -> Result<String> {
-        match self.peek() {
-            // Empty value: FOO= (followed by space/semicolon/newline/end)
-            None
-            | Some(Token::Semicolon)
-            | Some(Token::Newline)
-            | Some(Token::CrLf)
-            | Some(Token::Pipe)
-            | Some(Token::And)
-            | Some(Token::Or)
-            | Some(Token::Ampersand) => Ok(String::new()),
-            // Check if next token is another assignment (FOO= BAR=baz)
-            Some(Token::Identifier(_)) => {
-                // Could be: FOO=value or FOO= BAR=...
-                // If the identifier is followed by =, this is an empty assignment value
-                // and the identifier starts the next assignment
-                if self.tokens.get(self.position + 1) == Some(&Token::Equals) {
-                    // Check if it's a valid variable name (for the next assignment)
-                    if let Some(Token::Identifier(name)) = self.tokens.get(self.position) {
-                        if name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-                            // This is the start of the next assignment, current value is empty
-                            return Ok(String::new());
-                        }
-                    }
+    fn parse_assignment_value(&mut self) -> Result<AssignmentValue> {
+        let mut parts = Vec::new();
+        let mut allow_adjacent = false;
+
+        loop {
+            match self.peek() {
+                Some(Token::Adjacent) if allow_adjacent => {
+                    self.advance();
+                    allow_adjacent = false;
+                    continue;
                 }
-                // Otherwise, consume as value
-                match self.advance() {
-                    Some(Token::Identifier(s)) => Ok(s.clone()),
-                    _ => unreachable!(),
+                Some(Token::Adjacent)
+                | None
+                | Some(Token::Semicolon)
+                | Some(Token::Newline)
+                | Some(Token::CrLf)
+                | Some(Token::Pipe)
+                | Some(Token::And)
+                | Some(Token::Or)
+                | Some(Token::Ampersand)
+                | Some(Token::RightParen) => break,
+                Some(Token::Identifier(_))
+                    if self.tokens.get(self.position + 1) == Some(&Token::Equals) =>
+                {
+                    break;
                 }
-            }
-            Some(Token::String(_))
-            | Some(Token::SingleQuotedString(_))
-            | Some(Token::AnsiCString(_))
-            | Some(Token::Variable(_))
-            | Some(Token::SpecialVariable(_))
-            | Some(Token::CommandSubstitution(_))
-            | Some(Token::BacktickSubstitution(_))
-            | Some(Token::BracedVariable(_))
-                if self.tokens.get(self.position + 1) == Some(&Token::Adjacent) =>
-            {
-                match self.parse_argument()? {
-                    Argument::Literal(s)
-                    | Argument::SingleQuoted(s)
-                    | Argument::Variable(s)
-                    | Argument::BracedVariable(s)
-                    | Argument::CommandSubstitution(s) => Ok(s),
-                    Argument::Path(s) | Argument::Flag(s) | Argument::Glob(s) => Ok(s),
-                    Argument::DoubleQuoted(parts) => Ok(parts
-                        .into_iter()
-                        .map(|part| match part {
-                            ArgumentPart::Literal(s)
-                            | ArgumentPart::Variable(s)
-                            | ArgumentPart::BracedVariable(s)
-                            | ArgumentPart::CommandSubstitution(s) => s,
-                        })
-                        .collect()),
+                Some(Token::LeftBracket) => {
+                    self.advance();
+                    parts.push(AssignmentPart::Literal("[".to_string()));
+                    allow_adjacent = true;
+                }
+                Some(Token::RightBracket) => {
+                    self.advance();
+                    parts.push(AssignmentPart::Literal("]".to_string()));
+                    allow_adjacent = true;
+                }
+                _ => {
+                    let arg = self.parse_single_argument()?;
+                    parts.extend(Self::assignment_parts_from_argument(arg));
+                    allow_adjacent = true;
                 }
             }
-            Some(Token::String(_)) => match self.advance() {
-                Some(Token::String(s)) => {
-                    let unquoted = Self::strip_outer_quotes(&s, '"');
-                    Ok(Self::process_double_quote_escapes(&unquoted))
-                }
-                _ => unreachable!(),
-            },
-            Some(Token::SingleQuotedString(_)) => match self.advance() {
-                Some(Token::SingleQuotedString(s)) => Ok(Self::strip_outer_quotes(&s, '\'')),
-                _ => unreachable!(),
-            },
-            Some(Token::AnsiCString(_)) => {
-                match self.advance() {
-                    Some(Token::AnsiCString(s)) => {
-                        // Already processed by lexer, return as-is
-                        Ok(s.clone())
-                    }
-                    _ => unreachable!(),
-                }
+
+            if self.peek() != Some(&Token::Adjacent) {
+                break;
             }
-            Some(Token::Integer(_)) => match self.advance() {
-                Some(Token::Integer(n)) => Ok(n.to_string()),
-                _ => unreachable!(),
-            },
-            Some(Token::Variable(_)) | Some(Token::SpecialVariable(_)) => {
-                match self.advance() {
-                    Some(Token::Variable(s)) | Some(Token::SpecialVariable(s)) => {
-                        // Keep the $ prefix -- the executor will expand it
-                        Ok(s.clone())
-                    }
-                    _ => unreachable!(),
-                }
+        }
+
+        Ok(AssignmentValue { parts })
+    }
+
+    fn assignment_parts_from_argument(arg: Argument) -> Vec<AssignmentPart> {
+        match arg {
+            Argument::SingleQuoted(s) => vec![AssignmentPart::Literal(s)],
+            Argument::DoubleQuoted(parts) => parts
+                .into_iter()
+                .map(|part| match part {
+                    ArgumentPart::Literal(s) => AssignmentPart::Literal(s),
+                    ArgumentPart::Variable(s)
+                    | ArgumentPart::BracedVariable(s)
+                    | ArgumentPart::CommandSubstitution(s) => AssignmentPart::Expand(s),
+                })
+                .collect(),
+            Argument::Variable(s)
+            | Argument::BracedVariable(s)
+            | Argument::CommandSubstitution(s) => vec![AssignmentPart::Expand(s)],
+            Argument::Literal(s) | Argument::Flag(s) | Argument::Path(s) | Argument::Glob(s) => {
+                vec![AssignmentPart::Literal(s)]
             }
-            Some(Token::Path(_)) => match self.advance() {
-                Some(Token::Path(s)) => Ok(s.clone()),
-                _ => unreachable!(),
-            },
-            Some(Token::CommandSubstitution(_)) | Some(Token::BacktickSubstitution(_)) => {
-                match self.advance() {
-                    Some(Token::CommandSubstitution(s)) | Some(Token::BacktickSubstitution(s)) => {
-                        Ok(s.clone())
-                    }
-                    _ => unreachable!(),
-                }
-            }
-            Some(Token::BracedVariable(_)) => match self.advance() {
-                Some(Token::BracedVariable(s)) => Ok(s.clone()),
-                _ => unreachable!(),
-            },
-            Some(Token::Float(_)) => match self.advance() {
-                Some(Token::Float(f)) => Ok(f.to_string()),
-                _ => unreachable!(),
-            },
-            Some(Token::Tilde) => {
-                self.advance();
-                Ok("~".to_string())
-            }
-            Some(Token::Dash) => {
-                self.advance();
-                Ok("-".to_string())
-            }
-            Some(Token::DoubleDash) => {
-                self.advance();
-                Ok("--".to_string())
-            }
-            Some(Token::ShortFlag(_)) => match self.advance() {
-                Some(Token::ShortFlag(s)) => Ok(s.clone()),
-                _ => unreachable!(),
-            },
-            Some(Token::Dot) => {
-                self.advance();
-                Ok(".".to_string())
-            }
-            _ => Ok(String::new()),
         }
     }
 
     fn parse_command(&mut self) -> Result<Command> {
         let name = match self.advance() {
-            Some(Token::Identifier(s)) | Some(Token::Path(s)) | Some(Token::GlobPattern(s)) => {
-                s.clone()
-            }
+            Some(Token::DoubleLeftBracket) => "test".to_string(),
+            Some(Token::Identifier(s))
+            | Some(Token::ShortFlag(s))
+            | Some(Token::LongFlag(s))
+            | Some(Token::Path(s))
+            | Some(Token::GlobPattern(s)) => s.clone(),
             Some(Token::String(s)) => {
                 let unquoted = Self::strip_outer_quotes(s, '"');
                 Self::process_double_quote_escapes(&unquoted)
@@ -784,7 +999,7 @@ impl Parser {
             Some(Token::LeftBracket) => "[".to_string(),
             Some(Token::Colon) => ":".to_string(),
             Some(Token::Dot) => ".".to_string(),
-            _ => return Err(anyhow!("Expected command name")),
+            _ => return Err(anyhow!("Expected command name: {:?}", self.peek())),
         };
 
         let mut args = Vec::new();
@@ -796,14 +1011,52 @@ impl Parser {
             && !self.match_token(&Token::ParallelPipe)
             && !self.match_token(&Token::Newline)
             && !self.match_token(&Token::Semicolon)
-            && !self.match_token(&Token::And)
-            && !self.match_token(&Token::Or)
+            && !matches!(self.peek(), Some(Token::And))
+            && !matches!(self.peek(), Some(Token::Or))
             && !self.match_token(&Token::Ampersand)
             && !self.match_token(&Token::RightParen)
             && !self.match_token(&Token::DoubleSemicolon)
             && !self.match_token(&Token::RightBrace)
+            && !self.match_token(&Token::DoubleRightBracket)
         {
             match self.peek() {
+                Some(Token::DoubleRightBracket) => {
+                    self.advance();
+                    break;
+                }
+                Some(Token::ProcessSubstitutionInputRedirect(raw)) => {
+                    let raw = raw.clone();
+                    let command = parse_process_substitution_input(&raw);
+                    let marker = crate::executor::commands::process_substitution_argument_path(
+                        &command, false,
+                    )?;
+                    self.advance();
+                    if raw.trim_start().starts_with("<(") {
+                        args.push(Argument::Literal(marker));
+                    } else {
+                        redirects.push(Redirect {
+                            kind: RedirectKind::ProcessSubstitutionInputArg,
+                            target: Some(marker),
+                        });
+                    }
+                }
+                Some(Token::ProcessSubstitutionOutputRedirect(raw)) => {
+                    let raw = raw.clone();
+                    let command = parse_process_substitution_input(&raw);
+                    let marker = crate::executor::commands::process_substitution_argument_path(
+                        &command, true,
+                    )?;
+                    self.advance();
+                    args.push(Argument::Literal(marker));
+                }
+                Some(Token::SpacedStdinRedirect(raw)) => {
+                    let target = raw.trim_start_matches('<').trim().to_string();
+                    self.advance();
+                    redirects.push(Redirect {
+                        kind: RedirectKind::Stdin,
+                        target: Some(target),
+                    });
+                }
                 Some(Token::GreaterThan) => {
                     self.advance();
                     let target = self.parse_redirect_target()?;
@@ -845,11 +1098,116 @@ impl Parser {
                         target: None,
                     });
                 }
+                Some(Token::StdoutToStderr) => {
+                    self.advance();
+                    redirects.push(Redirect {
+                        kind: RedirectKind::StdoutToStderr,
+                        target: None,
+                    });
+                }
+                Some(Token::StdoutToFd(raw)) => {
+                    let fd = parse_redirect_fd(raw, ">&")?;
+                    self.advance();
+                    redirects.push(Redirect {
+                        kind: RedirectKind::StdoutToFd(fd),
+                        target: None,
+                    });
+                }
+                Some(Token::FdDuplicate(raw)) => {
+                    let (from, to) = parse_fd_duplicate(raw)?;
+                    self.advance();
+                    redirects.push(Redirect {
+                        kind: fd_duplicate_kind(from, to),
+                        target: None,
+                    });
+                }
+                Some(Token::InvalidFdDuplicate(_)) => {
+                    self.advance();
+                    let target = self.parse_redirect_target()?;
+                    redirects.push(Redirect {
+                        kind: RedirectKind::Invalid(format!("{}: ambiguous redirect", target)),
+                        target: None,
+                    });
+                }
+                Some(Token::FdInputDuplicate(raw)) => {
+                    let (from, to) = parse_fd_duplicate(raw)?;
+                    self.advance();
+                    redirects.push(Redirect {
+                        kind: RedirectKind::FdInputFrom(from, to),
+                        target: None,
+                    });
+                }
+                Some(Token::FdOutputRedirect(raw)) => {
+                    let fd = parse_redirect_fd(raw, ">")?;
+                    self.advance();
+                    let target = self.parse_redirect_target()?;
+                    redirects.push(Redirect {
+                        kind: if fd == 1 {
+                            RedirectKind::Stdout
+                        } else {
+                            RedirectKind::FdOut(fd)
+                        },
+                        target: Some(target),
+                    });
+                }
+                Some(Token::FdInputRedirect(raw)) => {
+                    let fd = parse_redirect_fd(raw, "<")?;
+                    self.advance();
+                    let target = self.parse_redirect_target()?;
+                    redirects.push(Redirect {
+                        kind: if fd == 0 {
+                            RedirectKind::Stdin
+                        } else {
+                            RedirectKind::FdIn(fd)
+                        },
+                        target: Some(target),
+                    });
+                }
+                Some(Token::FdClose(raw)) | Some(Token::FdInputClose(raw)) => {
+                    let fd = parse_fd_close(raw)?;
+                    self.advance();
+                    redirects.push(Redirect {
+                        kind: RedirectKind::CloseFd(fd),
+                        target: None,
+                    });
+                }
+                Some(Token::StdoutClose) => {
+                    self.advance();
+                    redirects.push(Redirect {
+                        kind: RedirectKind::CloseFd(1),
+                        target: None,
+                    });
+                }
+                Some(Token::ReadWriteRedirect) => {
+                    self.advance();
+                    let target = self.parse_redirect_target()?;
+                    redirects.push(Redirect {
+                        kind: RedirectKind::ReadWrite,
+                        target: Some(target),
+                    });
+                }
+                Some(Token::InvalidBothAppendRedirect) => {
+                    redirects.push(Redirect {
+                        kind: RedirectKind::Invalid(
+                            "bash: -c: line 1: syntax error near unexpected token `>'\nbash: -c: line 1: `ls -d . non-existent-dir &>>/dev/null'\n".to_string(),
+                        ),
+                        target: None,
+                    });
+                    self.advance();
+                }
                 Some(Token::BothRedirect) => {
                     self.advance();
                     let target = self.parse_redirect_target()?;
                     redirects.push(Redirect {
                         kind: RedirectKind::Both,
+                        target: Some(target),
+                    });
+                }
+                Some(Token::BothAppendRedirect) => {
+                    self.advance();
+                    let target = self.parse_redirect_target()?;
+                    redirects.push(Redirect {
+                        kind: RedirectKind::BothAppend,
                         target: Some(target),
                     });
                 }
@@ -871,6 +1229,10 @@ impl Parser {
                     args.push(self.parse_argument()?);
                 }
             }
+        }
+
+        if name == "test" && matches!(self.peek(), Some(Token::DoubleRightBracket)) {
+            self.advance();
         }
 
         Ok(Command {
@@ -898,6 +1260,10 @@ impl Parser {
             parts.extend(Self::argument_to_parts(&next));
         }
         Ok(Argument::DoubleQuoted(parts))
+    }
+
+    fn assignment_value_to_source(value: &AssignmentValue) -> String {
+        value.to_source()
     }
 
     /// Convert an Argument into DoubleQuoted parts for concatenation.
@@ -945,6 +1311,7 @@ impl Parser {
                 {
                     self.advance(); // consume '='
                     let value = self.parse_assignment_value()?;
+                    let value = Self::assignment_value_to_source(&value);
                     Ok(Argument::Literal(format!("{}={}", s, value)))
                 } else {
                     Ok(Argument::Literal(s))
@@ -1841,7 +2208,216 @@ impl Parser {
 
         self.expect_token(&Token::RightParen)?;
 
-        Ok(Statement::Subshell(statements))
+        let redirects = self.parse_trailing_redirects()?;
+        Ok(if redirects.is_empty() {
+            Statement::Subshell(statements)
+        } else {
+            Statement::RedirectedCompound {
+                statement: Box::new(Statement::Subshell(statements)),
+                redirects,
+            }
+        })
+    }
+
+    fn parse_redirect_in_place(&mut self) -> Result<Redirect> {
+        match self.peek() {
+            Some(Token::GreaterThan) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::Stdout,
+                    target: Some(target),
+                })
+            }
+            Some(Token::StdoutAppend) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::StdoutAppend,
+                    target: Some(target),
+                })
+            }
+            Some(Token::StdinRedirect) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::Stdin,
+                    target: Some(target),
+                })
+            }
+            Some(Token::StderrRedirect) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::Stderr,
+                    target: Some(target),
+                })
+            }
+            Some(Token::StderrToStdout) => {
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::StderrToStdout,
+                    target: None,
+                })
+            }
+            Some(Token::StdoutToStderr) => {
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::StdoutToStderr,
+                    target: None,
+                })
+            }
+            Some(Token::StdoutToFd(raw)) => {
+                let fd = parse_redirect_fd(raw, ">&")?;
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::StdoutToFd(fd),
+                    target: None,
+                })
+            }
+            Some(Token::FdDuplicate(raw)) => {
+                let (from, to) = parse_fd_duplicate(raw)?;
+                self.advance();
+                Ok(Redirect {
+                    kind: fd_duplicate_kind(from, to),
+                    target: None,
+                })
+            }
+            Some(Token::InvalidFdDuplicate(_)) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::Invalid(format!("{}: ambiguous redirect", target)),
+                    target: None,
+                })
+            }
+            Some(Token::FdInputDuplicate(raw)) => {
+                let (from, to) = parse_fd_duplicate(raw)?;
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::FdInputFrom(from, to),
+                    target: None,
+                })
+            }
+            Some(Token::FdOutputRedirect(raw)) => {
+                let fd = parse_redirect_fd(raw, ">")?;
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: if fd == 1 {
+                        RedirectKind::Stdout
+                    } else {
+                        RedirectKind::FdOut(fd)
+                    },
+                    target: Some(target),
+                })
+            }
+            Some(Token::FdInputRedirect(raw)) => {
+                let fd = parse_redirect_fd(raw, "<")?;
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: if fd == 0 {
+                        RedirectKind::Stdin
+                    } else {
+                        RedirectKind::FdIn(fd)
+                    },
+                    target: Some(target),
+                })
+            }
+            Some(Token::FdClose(raw)) | Some(Token::FdInputClose(raw)) => {
+                let fd = parse_fd_close(raw)?;
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::CloseFd(fd),
+                    target: None,
+                })
+            }
+            Some(Token::StdoutClose) => {
+                self.advance();
+                Ok(Redirect {
+                    kind: RedirectKind::CloseFd(1),
+                    target: None,
+                })
+            }
+            Some(Token::ReadWriteRedirect) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::ReadWrite,
+                    target: Some(target),
+                })
+            }
+            Some(Token::InvalidBothAppendRedirect) => {
+                Err(anyhow!("syntax error near unexpected token `>'"))
+            }
+            Some(Token::BothRedirect) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::Both,
+                    target: Some(target),
+                })
+            }
+            Some(Token::BothAppendRedirect) => {
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: RedirectKind::BothAppend,
+                    target: Some(target),
+                })
+            }
+            Some(Token::HereDoc) | Some(Token::HereDocStrip) => {
+                let literal = matches!(self.peek(), Some(Token::HereDocStrip));
+                self.advance();
+                let target = self.parse_redirect_target()?;
+                Ok(Redirect {
+                    kind: if literal {
+                        RedirectKind::HereDocLiteral
+                    } else {
+                        RedirectKind::HereDoc
+                    },
+                    target: Some(target),
+                })
+            }
+            _ => Err(anyhow!("Expected redirect")),
+        }
+    }
+
+    fn parse_trailing_redirects(&mut self) -> Result<Vec<Redirect>> {
+        let mut redirects = Vec::new();
+        loop {
+            match self.peek() {
+                Some(Token::ProcessSubstitutionInputRedirect(_))
+                | Some(Token::ProcessSubstitutionOutputRedirect(_))
+                | Some(Token::SpacedStdinRedirect(_))
+                | Some(Token::GreaterThan)
+                | Some(Token::StdoutAppend)
+                | Some(Token::StdinRedirect)
+                | Some(Token::StderrRedirect)
+                | Some(Token::StderrToStdout)
+                | Some(Token::StdoutToStderr)
+                | Some(Token::StdoutToFd(_))
+                | Some(Token::FdDuplicate(_))
+                | Some(Token::InvalidFdDuplicate(_))
+                | Some(Token::FdInputDuplicate(_))
+                | Some(Token::FdOutputRedirect(_))
+                | Some(Token::FdInputRedirect(_))
+                | Some(Token::FdClose(_))
+                | Some(Token::FdInputClose(_))
+                | Some(Token::StdoutClose)
+                | Some(Token::ReadWriteRedirect)
+                | Some(Token::InvalidBothAppendRedirect)
+                | Some(Token::BothRedirect)
+                | Some(Token::BothAppendRedirect)
+                | Some(Token::HereDoc)
+                | Some(Token::HereDocStrip) => {
+                    redirects.push(self.parse_redirect_in_place()?);
+                }
+                _ => break,
+            }
+        }
+        Ok(redirects)
     }
 
     // Helper methods
@@ -2344,6 +2920,14 @@ mod tests {
         }
     }
 
+    fn assert_literal_assignment_value(value: &AssignmentValue, expected: &str) {
+        assert!(
+            value.parts.len() == 1
+                && matches!(&value.parts[0], AssignmentPart::Literal(s) if s == expected),
+            "expected literal assignment value {expected:?}, got {value:?}"
+        );
+    }
+
     #[test]
     fn test_parse_bare_assignment() {
         let tokens = Lexer::tokenize("FOO=bar").unwrap();
@@ -2352,12 +2936,9 @@ mod tests {
 
         assert_eq!(statements.len(), 1);
         match &statements[0] {
-            Statement::Assignment(assignment) => {
+            Statement::WordAssignment(assignment) => {
                 assert_eq!(assignment.name, "FOO");
-                match &assignment.value {
-                    Expression::Literal(Literal::String(s)) => assert_eq!(s, "bar"),
-                    _ => panic!("Expected string literal value"),
-                }
+                assert_literal_assignment_value(&assignment.value, "bar");
             }
             _ => panic!("Expected assignment, got {:?}", statements[0]),
         }
@@ -2371,12 +2952,9 @@ mod tests {
 
         assert_eq!(statements.len(), 1);
         match &statements[0] {
-            Statement::Assignment(assignment) => {
+            Statement::WordAssignment(assignment) => {
                 assert_eq!(assignment.name, "FOO");
-                match &assignment.value {
-                    Expression::Literal(Literal::String(s)) => assert_eq!(s, "hello world"),
-                    _ => panic!("Expected string literal value"),
-                }
+                assert_literal_assignment_value(&assignment.value, "hello world");
             }
             _ => panic!("Expected assignment, got {:?}", statements[0]),
         }
@@ -2392,7 +2970,7 @@ mod tests {
         match &statements[0] {
             Statement::Command(cmd) => {
                 assert_eq!(cmd.name, "echo");
-                assert_eq!(cmd.prefix_env, vec![("FOO".to_string(), "bar".to_string())]);
+                assert_literal_assignment_value(&cmd.prefix_env[0].1, "bar");
                 assert_eq!(cmd.args.len(), 1);
             }
             _ => panic!("Expected command with prefix env, got {:?}", statements[0]),
@@ -2428,12 +3006,9 @@ mod tests {
 
         assert_eq!(statements.len(), 1);
         match &statements[0] {
-            Statement::Assignment(assignment) => {
+            Statement::WordAssignment(assignment) => {
                 assert_eq!(assignment.name, "COUNT");
-                match &assignment.value {
-                    Expression::Literal(Literal::String(s)) => assert_eq!(s, "42"),
-                    _ => panic!("Expected string literal value"),
-                }
+                assert_literal_assignment_value(&assignment.value, "42");
             }
             _ => panic!("Expected assignment, got {:?}", statements[0]),
         }
@@ -2447,12 +3022,9 @@ mod tests {
 
         assert_eq!(statements.len(), 1);
         match &statements[0] {
-            Statement::Assignment(assignment) => {
+            Statement::WordAssignment(assignment) => {
                 assert_eq!(assignment.name, "FOO");
-                match &assignment.value {
-                    Expression::Literal(Literal::String(s)) => assert_eq!(s, ""),
-                    _ => panic!("Expected empty string literal value"),
-                }
+                assert!(assignment.value.parts.is_empty());
             }
             _ => panic!("Expected assignment, got {:?}", statements[0]),
         }
@@ -2469,8 +3041,10 @@ mod tests {
             Statement::Command(cmd) => {
                 assert_eq!(cmd.name, "cmd");
                 assert_eq!(cmd.prefix_env.len(), 2);
-                assert_eq!(cmd.prefix_env[0], ("A".to_string(), "1".to_string()));
-                assert_eq!(cmd.prefix_env[1], ("B".to_string(), "2".to_string()));
+                assert_eq!(cmd.prefix_env[0].0, "A");
+                assert_literal_assignment_value(&cmd.prefix_env[0].1, "1");
+                assert_eq!(cmd.prefix_env[1].0, "B");
+                assert_literal_assignment_value(&cmd.prefix_env[1].1, "2");
             }
             _ => panic!("Expected command with prefix env, got {:?}", statements[0]),
         }

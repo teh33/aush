@@ -111,7 +111,7 @@ impl ScriptAnalyzer {
             Statement::Pipeline(_pipeline) => {
                 self.add_feature("pipe", 0, 0, "pipeline", result);
             }
-            Statement::Assignment(_assign) => {
+            Statement::Assignment(_) | Statement::WordAssignment(_) => {
                 self.add_feature("variable_assignment", 0, 0, "assignment", result);
             }
             Statement::FunctionDef(_func) => {
@@ -152,6 +152,15 @@ impl ScriptAnalyzer {
             }
             Statement::BraceGroup(_brace_group) => {
                 self.add_feature("brace_group", 0, 0, "brace group", result);
+            }
+            Statement::RedirectedCompound {
+                statement,
+                redirects,
+            } => {
+                self.analyze_statement(statement, lines, result);
+                for redirect in redirects {
+                    self.analyze_redirect(redirect, result);
+                }
             }
             Statement::PipeAsk(_pipe_ask) => {
                 self.add_feature("pipe_ask", 0, 0, "pipe to AI", result);
@@ -236,10 +245,56 @@ impl ScriptAnalyzer {
             RedirectKind::Stderr => {
                 self.add_feature("redirect_stderr", 0, 0, "stderr redirect", result);
             }
+            RedirectKind::FdOut(_) => {
+                self.add_feature("redirect_fd", 0, 0, "file descriptor redirect", result);
+            }
+            RedirectKind::FdIn(_) => {
+                self.add_feature(
+                    "redirect_fd",
+                    0,
+                    0,
+                    "input file descriptor redirect",
+                    result,
+                );
+            }
+            RedirectKind::ReadWrite => {
+                self.add_feature(
+                    "redirect_fd",
+                    0,
+                    0,
+                    "read-write file descriptor redirect",
+                    result,
+                );
+            }
             RedirectKind::StderrToStdout => {
                 self.add_feature("redirect_stderr", 0, 0, "stderr to stdout", result);
             }
-            RedirectKind::Both => {
+            RedirectKind::StdoutToStderr => {
+                self.add_feature("redirect_stderr", 0, 0, "stdout to stderr", result);
+            }
+            RedirectKind::StdoutToFd(_) => {
+                self.add_feature("redirect_fd", 0, 0, "stdout to fd", result);
+            }
+            RedirectKind::FdInputFrom(_, _) => {
+                self.add_feature("redirect_fd", 0, 0, "input fd duplication", result);
+            }
+            RedirectKind::ProcessSubstitutionInputArg
+            | RedirectKind::ProcessSubstitutionOutputArg => {
+                self.add_feature("process_substitution", 0, 0, "process substitution", result);
+            }
+            RedirectKind::CloseFd(_) => {
+                self.add_feature("redirect_fd", 0, 0, "close file descriptor", result);
+            }
+            RedirectKind::Invalid(_) => {
+                self.add_feature(
+                    "redirect_fd",
+                    0,
+                    0,
+                    "invalid file descriptor redirect",
+                    result,
+                );
+            }
+            RedirectKind::Both | RedirectKind::BothAppend => {
                 self.add_feature("redirect_both", 0, 0, "both streams redirect", result);
             }
             RedirectKind::HereDoc | RedirectKind::HereDocLiteral => {
