@@ -242,7 +242,8 @@ Describe 'POSIX Shell Functions'
   End
 
   Describe 'function local variables'
-    Skip 'local keyword creates function-scoped variables'
+    It 'local keyword creates function-scoped variables'
+      Skip
       When call rush_c "foo() { local X=local; echo \$X; }; X=global; foo; echo \$X"
       The output should include "local"
       The output should include "global"

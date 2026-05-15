@@ -14,21 +14,32 @@ This directory contains comprehensive POSIX compliance tests for the AUSH shell.
 
 ## Test Frameworks
 
-We use three complementary testing frameworks:
+The external harness currently uses:
 
-1. **ShellSpec** - BDD-style testing (113 tests)
-2. **Bats-core** - TAP-compliant testing (25 tests)
-3. **ShellCheck** - Static analysis
+1. **ShellSpec** - BDD-style executable POSIX behavior checks under `shellspec/`.
+2. **Bats-core** - TAP-compliant tests when `.bats` files are present under `bats/`.
+
+`run_tests.sh` builds/locates `target/release/aush`, exports `AUSH_BINARY`, runs ShellSpec from `tests/posix/shellspec`, and then runs any Bats files.
+
+## Current Local External Harness Result
+
+Latest complete `bash tests/posix/run_tests.sh` result:
+
+- ShellSpec: 286 examples, 55 failures, 33 warnings, 5 skips.
+- Bats: no `.bats` files currently present.
+
+These are regression numbers, not POSIX certification.
 
 ## Test Coverage
 
-- Builtin Commands (33 tests)
-- Control Flow (25 tests)
-- I/O Redirection (20 tests)
-- Variables/Expansion (35 tests)
-- Pipelines (20 tests)
+ShellSpec currently covers:
 
-**Total**: 133 tests
+- Builtin commands
+- Control flow
+- I/O redirection
+- Variables and expansion
+- Pipelines and jobs
+- Signal handling
 
 ## Documentation
 

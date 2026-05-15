@@ -99,7 +99,8 @@ Describe 'POSIX Signal Handling'
   End
 
   Describe 'SIGINT handling'
-    Skip 'SIGINT interrupts foreground job'
+    It 'SIGINT interrupts foreground job'
+      Skip
       When call rush_c "sleep 10"
       # This test requires sending SIGINT which is complex to test
       The status should be success

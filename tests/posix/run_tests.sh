@@ -41,7 +41,10 @@ if command -v shellspec &> /dev/null; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     cd "$SCRIPT_DIR"
     if [[ -d "shellspec" ]] && ls shellspec/*_spec.sh &> /dev/null; then
-        shellspec --format documentation || true
+        (
+            cd "$SCRIPT_DIR/shellspec"
+            shellspec *_spec.sh --format documentation --shell /bin/sh || true
+        )
     else
         echo "No ShellSpec tests found"
     fi

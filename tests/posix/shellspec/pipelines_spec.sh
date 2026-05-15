@@ -160,12 +160,14 @@ Describe 'POSIX Pipelines'
   End
 
   Describe 'fg and bg builtins'
-    Skip 'fg brings job to foreground'
+    It 'fg brings job to foreground'
+      Skip
       When call rush_c "sleep 0.1 & fg"
       The status should be success
     End
 
-    Skip 'bg continues stopped job in background'
+    It 'bg continues stopped job in background'
+      Skip
       When call rush_c "sleep 1 & jobs"
       The status should be success
     End
@@ -212,7 +214,8 @@ Describe 'POSIX Pipelines'
   End
 
   Describe 'named pipes (FIFOs)'
-    Skip 'can use named pipes'
+    It 'can use named pipes'
+      Skip
       When call rush_c "mkfifo /tmp/aush_fifo_$$; echo test > /tmp/aush_fifo_$$ & cat < /tmp/aush_fifo_$$; rm /tmp/aush_fifo_$$"
       The output should equal "test"
       The status should be success
