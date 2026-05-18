@@ -489,12 +489,10 @@ impl Executor {
                     match res {
                         Ok(r) => Ok(r),
                         Err(e) => {
-                            if let Some(exit_sig) =
-                                e.downcast_ref::<crate::builtins::exit_builtin::ExitSignal>()
+                            if e.downcast_ref::<crate::builtins::exit_builtin::ExitSignal>()
+                                .is_some()
                             {
-                                let mut result = ExecutionResult::success(String::new());
-                                result.exit_code = exit_sig.exit_code;
-                                return Ok(result);
+                                return Err(e);
                             }
                             if crate::executor::flow_signals::is_flow_control_signal(&e) {
                                 return Err(e);

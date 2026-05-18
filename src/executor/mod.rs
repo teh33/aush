@@ -26,6 +26,7 @@ fn max_substitution_output() -> usize {
         .unwrap_or(DEFAULT_MAX_SUBSTITUTION_OUTPUT)
 }
 use crate::arithmetic;
+use crate::builtins::exit_builtin::ExitSignal;
 use crate::builtins::Builtins;
 use crate::correction::Corrector;
 use crate::daemon::pi_rpc::{PiEvent, PiRpcError, PiRpcManager};
@@ -189,7 +190,26 @@ impl Executor {
 
             let result = match self.execute_statement(statement) {
                 Ok(result) => result,
-                Err(err) => ExecutionResult::error(err.to_string()),
+                Err(err) => {
+                    if let Some(signal) = err.downcast_ref::<ExitSignal>() {
+                        last_exit_code = signal.exit_code;
+                        self.runtime.set_last_exit_code(last_exit_code);
+                        if streaming_output {
+                            if !accumulated_stdout.is_empty() {
+                                let _ = std::io::stdout().write_all(accumulated_stdout.as_bytes());
+                                let _ = std::io::stdout().flush();
+                            }
+                            if !accumulated_stderr.is_empty() {
+                                let _ = std::io::stderr().write_all(accumulated_stderr.as_bytes());
+                                let _ = std::io::stderr().flush();
+                            }
+                        }
+                        return Err(anyhow::Error::new(ExitSignal {
+                            exit_code: last_exit_code,
+                        }));
+                    }
+                    ExecutionResult::error(err.to_string())
+                }
             };
             if streaming_output {
                 use std::io::Write;
