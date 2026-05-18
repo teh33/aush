@@ -33,6 +33,7 @@ pub mod run_api;
 pub use run_api::{run, RunOptions, RunResult};
 pub mod jobs;
 pub mod lexer;
+#[cfg(feature = "lua")]
 pub mod lua;
 pub mod output;
 pub mod parser;

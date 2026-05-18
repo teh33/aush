@@ -1,5 +1,6 @@
 use crate::correction::Corrector;
 use crate::executor::{ExecutionResult, Output};
+#[cfg(feature = "lua")]
 use crate::lua::LuaRuntime;
 use crate::runtime::Runtime;
 use anyhow::{anyhow, Context, Result};
@@ -11,6 +12,7 @@ use std::sync::{Arc, LazyLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Re-export so callers can use `builtins::LuaBuiltin` without knowing the lua module path.
+#[cfg(feature = "lua")]
 pub use crate::lua::LuaBuiltin;
 
 pub mod cat;
@@ -136,6 +138,7 @@ static BUILTIN_MAP: LazyLock<HashMap<&'static str, BuiltinFn>> = LazyLock::new(|
 pub struct Builtins {
     /// Optional Lua runtime for dispatching Lua-registered builtins.
     /// `None` when the Lua extension system is not active.
+    #[cfg(feature = "lua")]
     lua: Option<Arc<LuaRuntime>>,
 }
 
@@ -148,10 +151,14 @@ impl Default for Builtins {
 impl Builtins {
     /// Create a `Builtins` dispatcher without Lua support.
     pub fn new() -> Self {
-        Self { lua: None }
+        Self {
+            #[cfg(feature = "lua")]
+            lua: None,
+        }
     }
 
     /// Create a `Builtins` dispatcher backed by a Lua runtime.
+    #[cfg(feature = "lua")]
     pub fn with_lua(lua_runtime: Arc<LuaRuntime>) -> Self {
         Self {
             lua: Some(lua_runtime),
@@ -159,6 +166,7 @@ impl Builtins {
     }
 
     /// Attach (or replace) the Lua runtime after construction.
+    #[cfg(feature = "lua")]
     pub fn set_lua_runtime(&mut self, lua_runtime: Arc<LuaRuntime>) {
         self.lua = Some(lua_runtime);
     }
@@ -169,6 +177,7 @@ impl Builtins {
         if BUILTIN_MAP.contains_key(name) {
             return true;
         }
+        #[cfg(feature = "lua")]
         if let Some(lua) = &self.lua {
             return lua.get_registered_builtins().iter().any(|b| b.name == name);
         }
@@ -177,7 +186,10 @@ impl Builtins {
 
     /// Names of all available builtins — native and Lua-registered.
     pub fn builtin_names(&self) -> Vec<String> {
-        let mut names: Vec<String> = BUILTIN_MAP.keys().map(|k| k.to_string()).collect();
+        let names: Vec<String> = BUILTIN_MAP.keys().map(|k| k.to_string()).collect();
+        #[cfg(feature = "lua")]
+        let mut names = names;
+        #[cfg(feature = "lua")]
         if let Some(lua) = &self.lua {
             for b in lua.get_registered_builtins() {
                 names.push(b.name);
@@ -218,6 +230,7 @@ impl Builtins {
         if let Some(func) = BUILTIN_MAP.get(name) {
             return func(&args, runtime);
         }
+        #[cfg(feature = "lua")]
         if let Some(lua) = &self.lua {
             return dispatch_lua_builtin(lua, name, args);
         }
@@ -304,6 +317,7 @@ impl Builtins {
 /// native builtins receive `&[String]`). The return value is converted:
 /// - Primitive `Value` types → `Output::Text` (via `to_text()`)
 /// - `Value::List`, `Value::Record`, `Value::Table` → `Output::Structured` (via JSON)
+#[cfg(feature = "lua")]
 fn dispatch_lua_builtin(
     lua: &LuaRuntime,
     name: &str,

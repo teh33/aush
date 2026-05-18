@@ -26,6 +26,7 @@ mod history;
 mod intent;
 mod jobs;
 mod lexer;
+#[cfg(feature = "lua")]
 mod lua;
 mod output;
 mod parser;

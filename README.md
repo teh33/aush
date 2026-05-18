@@ -304,6 +304,23 @@ AUSH includes native implementations for common shell and utility commands, incl
 
 Native builtins are ordinary shell commands from the user’s perspective, but they avoid fork/exec when AUSH can handle the operation itself.
 
+### Optional Lua scripting
+
+AUSH has an experimental embedded Lua extension system for custom builtins,
+hooks, prompts, and completions. It is intentionally **not enabled by default**
+for the public alpha because it expands the dependency and execution surface.
+Install or build with the `lua` feature to try it:
+
+```bash
+cargo install aush --features lua
+# or from source:
+cargo build --release --features lua --bins
+```
+
+When enabled, Lua scripts under `~/.aush/lua/*.lua` can run local code with the
+same permissions as AUSH. Treat them like shell startup files: only load scripts
+you trust.
+
 ### Structured output
 
 Several native commands support `--json` for programmatic access. That lets scripts and agents consume command results without parsing human-formatted text.

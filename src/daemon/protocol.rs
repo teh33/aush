@@ -2,13 +2,13 @@
 //!
 //! This module contains two protocols:
 //!
-//! ## 1. Daemon Protocol (Binary/Bincode)
+//! ## 1. Daemon Protocol (JSON)
 //!
-//! Used for AUSH client ↔ Daemon communication. Length-prefixed binary messages.
+//! Used for AUSH client ↔ Daemon communication. Length-prefixed JSON messages.
 //!
 //! ```text
 //! ┌────────────┬──────────────┬──────────────────────┐
-//! │   Length   │  Message ID  │  Payload (bincode)   │
+//! │   Length   │  Message ID  │    Payload (JSON)    │
 //! │  (4 bytes) │  (4 bytes)   │  (variable length)   │
 //! └────────────┴──────────────┴──────────────────────┘
 //! ```
@@ -156,11 +156,15 @@ pub struct StatsResponse {
 
 /// Encode a message into the wire format
 ///
-/// Format: [4-byte length][4-byte message ID][bincode payload]
+/// Format: [4-byte length][4-byte message ID][JSON payload]
 pub fn encode_message(message: &Message, message_id: MessageId) -> io::Result<Vec<u8>> {
-    // Serialize the message to bincode
+    validate_message(message)?;
+
+    // Serialize the message to JSON. The daemon protocol is experimental, so
+    // prefer the already-required serde_json over carrying a binary codec in
+    // the default public-alpha dependency graph.
     let payload =
-        bincode::serialize(message).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        serde_json::to_vec(message).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
     // Check size limit
     let payload_len = payload.len() as u32;
@@ -213,13 +217,13 @@ pub fn decode_message<R: Read>(reader: &mut R) -> io::Result<(Message, MessageId
     reader.read_exact(&mut id_bytes)?;
     let message_id = u32::from_le_bytes(id_bytes);
 
-    // Read bincode payload
+    // Read JSON payload
     let data_len = (payload_len - 4) as usize;
     let mut payload = vec![0u8; data_len];
     reader.read_exact(&mut payload)?;
 
     // Deserialize message
-    let message: Message = bincode::deserialize(&payload)
+    let message: Message = serde_json::from_slice(&payload)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
     validate_message(&message)?;
 

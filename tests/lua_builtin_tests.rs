@@ -1,3 +1,5 @@
+#![cfg(feature = "lua")]
+
 //! Integration tests for Lua builtin registration and structured data dispatch.
 //!
 //! These tests verify that:
