@@ -102,7 +102,7 @@ echo $!
     fs::write(script_path, script).unwrap();
 
     // Run the script
-    let output = Command::new("./target/debug/aush")
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg(script_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
