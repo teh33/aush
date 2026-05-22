@@ -1,7 +1,7 @@
 use std::process::Command;
 
 fn run_aush(script: &str) -> String {
-    let output = Command::new("./target/debug/aush")
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg("-c")
         .arg(script)
         .output()

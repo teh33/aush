@@ -681,7 +681,7 @@ fn init_environment_variables() -> Result<()> {
     }
 
     // Set $TERM if not already set
-    if env::var("TERM").is_err() {
+    if env::var("TERM").map_or(true, |term| term.is_empty()) {
         env::set_var("TERM", "xterm-256color");
     }
 
@@ -1242,6 +1242,15 @@ fn fast_execute_c(
                         .runtime_mut()
                         .set_variable("USER".to_string(), user);
                 }
+            }
+            "TERM" => {
+                let value = env::var("TERM")
+                    .ok()
+                    .filter(|term| !term.is_empty())
+                    .unwrap_or_else(|| "xterm-256color".to_string());
+                executor
+                    .runtime_mut()
+                    .set_variable("TERM".to_string(), value);
             }
             _ => {
                 if let Ok(value) = env::var(key) {
