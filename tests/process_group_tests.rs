@@ -1,5 +1,4 @@
 use std::fs;
-use std::io::Write;
 use std::process::{Command, Stdio};
 
 /// Test that background jobs are in their own process group
@@ -17,7 +16,7 @@ echo $!
     fs::write(script_path, script).unwrap();
 
     // Run the script
-    let output = Command::new("./target/debug/aush")
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg(script_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -73,7 +72,7 @@ echo "test"
     fs::write(script_path, script).unwrap();
 
     // Run the script
-    let output = Command::new("./target/debug/aush")
+    let output = Command::new(env!("CARGO_BIN_EXE_aush"))
         .arg(script_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

@@ -2,9 +2,13 @@
 use aush::error::{should_output_json_errors, AUSHError};
 use std::env;
 use std::path::Path;
+use std::sync::Mutex;
+
+static ENV_LOCK: Mutex<()> = Mutex::new(());
 
 #[test]
 fn test_error_json_format_env_var() {
+    let _env_lock = ENV_LOCK.lock().unwrap();
     // Clean slate
     env::remove_var("AUSH_ERROR_FORMAT");
     assert!(!should_output_json_errors());
@@ -109,6 +113,7 @@ fn test_json_output_with_context() {
 
 #[test]
 fn test_error_backwards_compatibility() {
+    let _env_lock = ENV_LOCK.lock().unwrap();
     // Ensure text format is the default
     env::remove_var("AUSH_ERROR_FORMAT");
     assert!(!should_output_json_errors());
