@@ -60,19 +60,19 @@ jobs:
 
             ```bash
             # Example for Linux x86_64
-            curl -LO https://github.com/kfcafe/aush/releases/download/${{ steps.get_version.outputs.version }}/aush-linux-x86_64.tar.gz
+            curl -LO https://github.com/teh33/aush/releases/download/${{ steps.get_version.outputs.version }}/aush-linux-x86_64.tar.gz
             tar xzf aush-linux-x86_64.tar.gz
             sudo mv aush /usr/local/bin/
 
             # Example for macOS ARM (Apple Silicon)
-            curl -LO https://github.com/kfcafe/aush/releases/download/${{ steps.get_version.outputs.version }}/aush-macos-aarch64.tar.gz
+            curl -LO https://github.com/teh33/aush/releases/download/${{ steps.get_version.outputs.version }}/aush-macos-aarch64.tar.gz
             tar xzf aush-macos-aarch64.tar.gz
             sudo mv aush /usr/local/bin/
             ```
 
             #### Build from Source
             ```bash
-            cargo install --git https://github.com/kfcafe/aush --tag ${{ steps.get_version.outputs.version }}
+            cargo install --git https://github.com/teh33/aush --tag ${{ steps.get_version.outputs.version }}
             ```
 
             ### Verify Download

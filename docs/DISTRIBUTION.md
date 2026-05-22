@@ -102,7 +102,7 @@ The Homebrew formula is stored in `/homebrew/Formula/aush.rb`:
 ```ruby
 class Aush < Formula
   desc "High-performance, POSIX-compliant shell written in Rust"
-  homepage "https://github.com/kfcafe/aush"
+  homepage "https://github.com/teh33/aush"
   version "0.1.0"
 
   # Detects platform and downloads correct binary
@@ -113,7 +113,7 @@ end
 ### How Users Install via Homebrew
 
 ```bash
-brew tap kfcafe/aush https://github.com/kfcafe/aush
+brew tap kfcafe/aush https://github.com/teh33/aush
 brew install aush
 ```
 
@@ -132,7 +132,7 @@ The formula currently has placeholder SHA256 values that need to be updated for 
 1. **Manual update** (if needed):
    ```bash
    # Get actual checksums from GitHub release
-   curl https://github.com/kfcafe/aush/releases/latest/download/SHA256SUMS.txt
+   curl https://github.com/teh33/aush/releases/latest/download/SHA256SUMS.txt
 
    # Update homebrew/Formula/aush.rb with actual values
    ```
@@ -233,21 +233,21 @@ Before marking as complete, test on real machines:
 
 1. **macOS ARM (Apple Silicon)**:
    ```bash
-   curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-macos-aarch64.tar.gz
+   curl -LO https://github.com/teh33/aush/releases/latest/download/aush-macos-aarch64.tar.gz
    tar xzf aush-macos-aarch64.tar.gz
    ./aush -c 'echo "Hello from AUSH"'
    ```
 
 2. **macOS Intel**:
    ```bash
-   curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-macos-x86_64.tar.gz
+   curl -LO https://github.com/teh33/aush/releases/latest/download/aush-macos-x86_64.tar.gz
    tar xzf aush-macos-x86_64.tar.gz
    ./aush -c 'echo "Hello from AUSH"'
    ```
 
 3. **Linux x86_64**:
    ```bash
-   curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-linux-x86_64.tar.gz
+   curl -LO https://github.com/teh33/aush/releases/latest/download/aush-linux-x86_64.tar.gz
    tar xzf aush-linux-x86_64.tar.gz
    ./aush -c 'echo "Hello from AUSH"'
    ```
@@ -257,7 +257,7 @@ Before marking as complete, test on real machines:
 ### Build Failures
 
 Check GitHub Actions logs:
-1. Go to https://github.com/kfcafe/aush/actions
+1. Go to https://github.com/teh33/aush/actions
 2. Select "Release" workflow
 3. Click failed job
 4. Review logs
@@ -354,8 +354,8 @@ Currently, only the latest version is actively supported. Users on older version
 
 ## Contact and Support
 
-- **Issues**: https://github.com/kfcafe/aush/issues
-- **Discussions**: https://github.com/kfcafe/aush/discussions
+- **Issues**: https://github.com/teh33/aush/issues
+- **Discussions**: https://github.com/teh33/aush/discussions
 - **Email**: See GitHub profile
 
 ## License

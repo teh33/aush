@@ -1,6 +1,6 @@
 # AUSH
 
-[![CI](https://github.com/kfcafe/aush/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/kfcafe/aush/actions/workflows/integration-tests.yml)
+[![CI](https://github.com/teh33/aush/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/teh33/aush/actions/workflows/integration-tests.yml)
 [![Crates.io](https://img.shields.io/crates/v/aush.svg)](https://crates.io/crates/aush)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
@@ -79,14 +79,14 @@ This installs:
 ### Homebrew
 
 ```sh
-brew tap kfcafe/aush https://github.com/kfcafe/aush
+brew tap kfcafe/aush https://github.com/teh33/aush
 brew install aush
 ```
 
 ### Build from source
 
 ```sh
-git clone https://github.com/kfcafe/aush.git
+git clone https://github.com/teh33/aush.git
 cd aush
 cargo install --path .
 ```

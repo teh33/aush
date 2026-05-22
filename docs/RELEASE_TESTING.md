@@ -68,10 +68,10 @@ mkdir -p ~/aush-test-intel
 cd ~/aush-test-intel
 
 # Download the binary
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-macos-x86_64.tar.gz
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-macos-x86_64.tar.gz
 
 # Download checksums
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-macos-x86_64-SHA256SUMS.txt
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-macos-x86_64-SHA256SUMS.txt
 
 # Verify checksum
 shasum -a 256 -c aush-macos-x86_64-SHA256SUMS.txt
@@ -136,7 +136,7 @@ aush -c 'echo -e "apple\nbanana" | grep apple'
 
 ```bash
 # Test the daemon archive if downloaded separately
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-macos-x86_64-daemon.tar.gz
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-macos-x86_64-daemon.tar.gz
 tar xzf aush-macos-x86_64-daemon.tar.gz
 chmod +x aushd
 
@@ -166,8 +166,8 @@ Follow the same steps as Intel, but with:
 
 ```bash
 # Step 1: Download ARM binary
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-macos-aarch64.tar.gz
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-macos-aarch64-SHA256SUMS.txt
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-macos-aarch64.tar.gz
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-macos-aarch64-SHA256SUMS.txt
 ```
 
 Verify that the binary is ARM-compiled:
@@ -186,10 +186,10 @@ mkdir -p ~/aush-test-linux
 cd ~/aush-test-linux
 
 # Download the binary
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-linux-x86_64.tar.gz
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-linux-x86_64.tar.gz
 
 # Download checksums
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-linux-x86_64-SHA256SUMS.txt
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-linux-x86_64-SHA256SUMS.txt
 
 # Verify checksum
 sha256sum -c aush-linux-x86_64-SHA256SUMS.txt
@@ -264,7 +264,7 @@ aush -c 'sleep 1 & echo "Background job started"'
 
 ```bash
 # Test the daemon archive if downloaded separately
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-linux-x86_64-daemon.tar.gz
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-linux-x86_64-daemon.tar.gz
 tar xzf aush-linux-x86_64-daemon.tar.gz
 chmod +x aushd
 
@@ -285,7 +285,7 @@ The musl variant should work on any Linux system without dependencies:
 
 ```bash
 # Download musl variant
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-linux-x86_64-musl.tar.gz
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-linux-x86_64-musl.tar.gz
 tar xzf aush-linux-x86_64-musl.tar.gz
 
 # Verify it's static
@@ -302,7 +302,7 @@ ldd ./aush
 
 ```bash
 # Add tap
-brew tap kfcafe/aush https://github.com/kfcafe/aush
+brew tap kfcafe/aush https://github.com/teh33/aush
 
 # Install
 brew install aush
@@ -335,7 +335,7 @@ Verify the combined checksum file works:
 
 ```bash
 # Download combined checksums
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/SHA256SUMS.txt
+curl -LO https://github.com/teh33/aush/releases/latest/download/SHA256SUMS.txt
 
 # Verify all files
 sha256sum -c SHA256SUMS.txt --ignore-missing
@@ -355,7 +355,7 @@ Current releases don't include GPG signatures, but future releases might. When a
 
 ```bash
 # Download public key
-curl https://github.com/kfcafe/aush.gpg | gpg --import
+curl https://github.com/teh33/aush.gpg | gpg --import
 
 # Verify signature
 gpg --verify aush-*.tar.gz.sig aush-*.tar.gz
@@ -536,7 +536,7 @@ xattr -d com.apple.quarantine aush
 ```bash
 # Re-download files (might be incomplete)
 rm *.tar.gz *.txt
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/...
+curl -LO https://github.com/teh33/aush/releases/latest/download/...
 
 # Try different hash tool
 md5 aush-*.tar.gz

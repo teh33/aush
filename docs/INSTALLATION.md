@@ -9,7 +9,7 @@ AUSH is a Rust shell for Unix-style command execution, native builtins, structur
 The easiest way to install AUSH on macOS:
 
 ```bash
-brew tap kfcafe/aush https://github.com/kfcafe/aush
+brew tap kfcafe/aush https://github.com/teh33/aush
 brew install aush
 ```
 
@@ -29,22 +29,22 @@ PLATFORM=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
 # macOS ARM (Apple Silicon)
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-macos-aarch64.tar.gz
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-macos-aarch64.tar.gz
 tar xzf aush-macos-aarch64.tar.gz
 sudo mv aush /usr/local/bin/
 
 # macOS Intel
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-macos-x86_64.tar.gz
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-macos-x86_64.tar.gz
 tar xzf aush-macos-x86_64.tar.gz
 sudo mv aush /usr/local/bin/
 
 # Linux x86_64
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-linux-x86_64.tar.gz
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-linux-x86_64.tar.gz
 tar xzf aush-linux-x86_64.tar.gz
 sudo mv aush /usr/local/bin/
 
 # Linux x86_64 (static binary - more portable)
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/aush-linux-x86_64-musl.tar.gz
+curl -LO https://github.com/teh33/aush/releases/latest/download/aush-linux-x86_64-musl.tar.gz
 tar xzf aush-linux-x86_64-musl.tar.gz
 sudo mv aush /usr/local/bin/
 ```
@@ -55,7 +55,7 @@ Each release includes SHA256 checksums for verification:
 
 ```bash
 # Download the checksum file
-curl -LO https://github.com/kfcafe/aush/releases/latest/download/SHA256SUMS.txt
+curl -LO https://github.com/teh33/aush/releases/latest/download/SHA256SUMS.txt
 
 # Verify on Linux
 sha256sum -c SHA256SUMS.txt --ignore-missing
@@ -77,13 +77,13 @@ The crates.io package is `aush`. It installs `aush` as the primary command.
 To install from git instead:
 
 ```bash
-cargo install --git https://github.com/kfcafe/aush
+cargo install --git https://github.com/teh33/aush
 ```
 
 To install a specific git tag:
 
 ```bash
-cargo install --git https://github.com/kfcafe/aush --tag v0.1.0
+cargo install --git https://github.com/teh33/aush --tag v0.1.0
 ```
 
 ### Build from Source
@@ -91,7 +91,7 @@ cargo install --git https://github.com/kfcafe/aush --tag v0.1.0
 Clone the repository and build:
 
 ```bash
-git clone https://github.com/kfcafe/aush.git
+git clone https://github.com/teh33/aush.git
 cd aush
 cargo build --release
 sudo cp target/release/aush /usr/local/bin/
@@ -200,7 +200,7 @@ Download and install the latest release using the instructions above.
 ### Cargo
 
 ```bash
-cargo install --git https://github.com/kfcafe/aush --force
+cargo install --git https://github.com/teh33/aush --force
 ```
 
 ## Uninstalling
@@ -314,9 +314,9 @@ All binaries are:
 
 ## Getting Help
 
-- **Documentation**: https://github.com/kfcafe/aush
-- **Issues**: https://github.com/kfcafe/aush/issues
-- **Discussions**: https://github.com/kfcafe/aush/discussions
+- **Documentation**: https://github.com/teh33/aush
+- **Issues**: https://github.com/teh33/aush/issues
+- **Discussions**: https://github.com/teh33/aush/discussions
 
 ## License
 

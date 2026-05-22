@@ -1,17 +1,17 @@
 # Homebrew Tap for AUSH
 
-This directory contains the Homebrew formula for [AUSH](https://github.com/kfcafe/aush), a public-alpha Unix-style shell written in Rust.
+This repository can be used as a Homebrew tap for [AUSH](https://github.com/teh33/aush), a public-alpha Unix-style shell written in Rust.
 
 ## Installation
 
 ```bash
-brew tap kfcafe/aush https://github.com/kfcafe/aush
+brew tap kfcafe/aush https://github.com/teh33/aush
 brew install aush
 ```
 
 ## Usage
 
-The formula installs `aush` and, when present in the selected release archive, `aushd`.
+The formula builds from the tagged source release and installs `aush` and `aushd`.
 
 ```bash
 aush --no-rc -c 'echo hello'
@@ -29,21 +29,6 @@ chsh -s "$AUSH_PATH"
 
 # Roll back if needed
 chsh -s /bin/zsh
-```
-
-## Daemon Mode
-
-`aushd` is experimental daemon infrastructure for trusted local clients.
-
-```bash
-aushd --help
-```
-
-## Updating
-
-```bash
-brew update
-brew upgrade aush
 ```
 
 ## Uninstalling
