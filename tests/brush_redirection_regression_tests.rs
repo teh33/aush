@@ -1,5 +1,8 @@
 use aush::{executor::Executor, lexer::Lexer, parser::Parser};
+use std::sync::Mutex;
 use tempfile::TempDir;
+
+static PROCESS_SUBSTITUTION_LOCK: Mutex<()> = Mutex::new(());
 
 fn run_result_in(
     dir: &std::path::Path,
@@ -19,6 +22,7 @@ fn run_in(dir: &std::path::Path, script: &str) -> anyhow::Result<String> {
 
 #[test]
 fn process_substitution_feeds_arguments_and_stdin_redirects() -> anyhow::Result<()> {
+    let _lock = PROCESS_SUBSTITUTION_LOCK.lock().unwrap();
     let temp = TempDir::new()?;
 
     let arg_output = run_in(temp.path(), "cat <(echo hi)")?;
@@ -32,6 +36,7 @@ fn process_substitution_feeds_arguments_and_stdin_redirects() -> anyhow::Result<
 
 #[test]
 fn process_substitution_preserves_outer_variables() -> anyhow::Result<()> {
+    let _lock = PROCESS_SUBSTITUTION_LOCK.lock().unwrap();
     let temp = TempDir::new()?;
     let output = run_in(
         temp.path(),

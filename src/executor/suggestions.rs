@@ -138,7 +138,7 @@ impl SuggestionEngine {
     /// Format suggestions as a user-friendly string
     ///
     /// Example output:
-    /// ```
+    /// ```text
     /// Did you mean?
     ///   ls (95%, builtin)
     ///   lst (85%, command)
