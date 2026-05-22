@@ -56,6 +56,7 @@ mod test;
 pub mod time; // Public so executor can access timing functions
 pub mod trap; // Public so runtime and executor can access TrapSignal
 mod type_builtin;
+mod umask;
 mod undo;
 mod unset;
 mod wait;
@@ -126,6 +127,7 @@ static BUILTIN_MAP: LazyLock<HashMap<&'static str, BuiltinFn>> = LazyLock::new(|
     m.insert("profile", profile::builtin_profile);
     m.insert("time", time::builtin_time);
     m.insert("getopts", getopts::builtin_getopts);
+    m.insert("umask", umask::builtin_umask);
     m
 });
 

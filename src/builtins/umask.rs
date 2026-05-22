@@ -69,10 +69,22 @@ fn parse_symbolic(s: &str, current_mask: libc::mode_t) -> Result<libc::mode_t> {
         let mut who: libc::mode_t = 0;
         loop {
             match chars.peek() {
-                Some('u') => { who |= 0o700; chars.next(); }
-                Some('g') => { who |= 0o070; chars.next(); }
-                Some('o') => { who |= 0o007; chars.next(); }
-                Some('a') => { who |= 0o777; chars.next(); }
+                Some('u') => {
+                    who |= 0o700;
+                    chars.next();
+                }
+                Some('g') => {
+                    who |= 0o070;
+                    chars.next();
+                }
+                Some('o') => {
+                    who |= 0o007;
+                    chars.next();
+                }
+                Some('a') => {
+                    who |= 0o777;
+                    chars.next();
+                }
                 _ => break,
             }
         }
@@ -81,7 +93,9 @@ fn parse_symbolic(s: &str, current_mask: libc::mode_t) -> Result<libc::mode_t> {
         }
 
         // Parse operator: +, -, =
-        let op = chars.next().ok_or_else(|| anyhow!("umask: invalid symbolic mask: {}", s))?;
+        let op = chars
+            .next()
+            .ok_or_else(|| anyhow!("umask: invalid symbolic mask: {}", s))?;
         if op != '+' && op != '-' && op != '=' {
             return Err(anyhow!("umask: invalid operator '{}' in mask: {}", op, s));
         }
@@ -118,12 +132,23 @@ fn format_symbolic(mask: libc::mode_t) -> String {
     let format_class = |shift: u32| -> String {
         let bits = (allowed >> shift) & 0o7;
         let mut s = String::new();
-        if bits & 0o4 != 0 { s.push('r'); }
-        if bits & 0o2 != 0 { s.push('w'); }
-        if bits & 0o1 != 0 { s.push('x'); }
+        if bits & 0o4 != 0 {
+            s.push('r');
+        }
+        if bits & 0o2 != 0 {
+            s.push('w');
+        }
+        if bits & 0o1 != 0 {
+            s.push('x');
+        }
         s
     };
-    format!("u={},g={},o={}\n", format_class(6), format_class(3), format_class(0))
+    format!(
+        "u={},g={},o={}\n",
+        format_class(6),
+        format_class(3),
+        format_class(0)
+    )
 }
 
 #[cfg(test)]
