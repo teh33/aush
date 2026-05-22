@@ -1,50 +1,42 @@
 # Homebrew Tap for AUSH
 
-This directory contains the Homebrew formula for [AUSH](https://github.com/opus-workshop/aush), a high-performance POSIX-compliant shell written in Rust.
+This directory contains the Homebrew formula for [AUSH](https://github.com/kfcafe/aush), a public-alpha Unix-style shell written in Rust.
 
 ## Installation
 
 ```bash
-# Add the tap
-brew tap opus-workshop/aush https://github.com/opus-workshop/aush
-
-# Install AUSH
+brew tap kfcafe/aush https://github.com/kfcafe/aush
 brew install aush
 ```
 
 ## Usage
 
-The formula installs `aush` as the primary command and installs `aushd` when the selected archive includes daemon support.
-
-
-After installation, you can run AUSH:
+The formula installs `aush` and, when present in the selected release archive, `aushd`.
 
 ```bash
-aush                      # Start interactive shell
-aush -c "echo hello"      # Run a command
-aush script.sh            # Run a script
+aush --no-rc -c 'echo hello'
+aush
 ```
 
 ## Setting as Default Shell
 
-To use AUSH as your default shell:
+AUSH is alpha software. Prefer a terminal-specific trial before changing your system login shell. If you do change it, keep another terminal open and know your rollback shell.
 
 ```bash
-# Add to allowed shells
-echo "$(brew --prefix)/bin/aush" | sudo tee -a /etc/shells
+AUSH_PATH="$(brew --prefix)/bin/aush"
+grep -qxF "$AUSH_PATH" /etc/shells || echo "$AUSH_PATH" | sudo tee -a /etc/shells
+chsh -s "$AUSH_PATH"
 
-# Change your shell
-chsh -s "$(brew --prefix)/bin/aush"
+# Roll back if needed
+chsh -s /bin/zsh
 ```
 
 ## Daemon Mode
 
-For ultra-fast startup (~0.4ms), use daemon mode:
+`aushd` is experimental daemon infrastructure for trusted local clients.
 
 ```bash
-aushd start               # Start the daemon
-aush -c "ls"              # Commands use the daemon
-aushd stop                # Stop the daemon
+aushd --help
 ```
 
 ## Updating
@@ -58,5 +50,5 @@ brew upgrade aush
 
 ```bash
 brew uninstall aush
-brew untap opus-workshop/aush
+brew untap kfcafe/aush
 ```

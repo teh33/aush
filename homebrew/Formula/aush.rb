@@ -1,25 +1,25 @@
 # Homebrew formula for AUSH shell
-# To use this tap: brew tap opus-workshop/aush https://github.com/opus-workshop/aush
+# To use this tap: brew tap kfcafe/aush https://github.com/kfcafe/aush
 # Then: brew install aush
 
 class Aush < Formula
-  desc "High-performance, POSIX-compliant shell written in Rust"
-  homepage "https://github.com/opus-workshop/aush"
+  desc "Public-alpha Unix-style shell written in Rust"
+  homepage "https://github.com/kfcafe/aush"
   version "0.1.0"
   license any_of: ["MIT", "Apache-2.0"]
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/opus-workshop/aush/releases/download/v#{version}/aush-macos-aarch64.tar.gz"
+      url "https://github.com/kfcafe/aush/releases/download/v#{version}/aush-macos-aarch64.tar.gz"
       # sha256 "PLACEHOLDER_ARM64_SHA256"
     else
-      url "https://github.com/opus-workshop/aush/releases/download/v#{version}/aush-macos-x86_64.tar.gz"
+      url "https://github.com/kfcafe/aush/releases/download/v#{version}/aush-macos-x86_64.tar.gz"
       # sha256 "PLACEHOLDER_X86_64_SHA256"
     end
   end
 
   on_linux do
-    url "https://github.com/opus-workshop/aush/releases/download/v#{version}/aush-linux-x86_64.tar.gz"
+    url "https://github.com/kfcafe/aush/releases/download/v#{version}/aush-linux-x86_64.tar.gz"
     # sha256 "PLACEHOLDER_LINUX_SHA256"
   end
 
@@ -30,22 +30,24 @@ class Aush < Formula
 
   def caveats
     <<~EOS
-      AUSH has been installed!
+      AUSH is alpha software. Prefer trying it in a terminal profile before
+      changing your system login shell.
 
-      To use AUSH as your default shell, add it to /etc/shells:
-        echo "#{HOMEBREW_PREFIX}/bin/aush" | sudo tee -a /etc/shells
+      To use AUSH as your default shell after testing it:
+        AUSH_PATH="#{HOMEBREW_PREFIX}/bin/aush"
+        grep -qxF "$AUSH_PATH" /etc/shells || echo "$AUSH_PATH" | sudo tee -a /etc/shells
+        chsh -s "$AUSH_PATH"
 
-      Then change your shell:
-        chsh -s #{HOMEBREW_PREFIX}/bin/aush
+      Rollback example:
+        chsh -s /bin/zsh
 
-      For daemon mode (faster startup):
-        aushd start    # Start the daemon
-        aushd stop     # Stop the daemon
+      Daemon help:
+        aushd --help
     EOS
   end
 
   test do
-    assert_match "Hello from AUSH", shell_output("#{bin}/aush -c 'echo Hello from AUSH'")
-    assert_match "/", shell_output("#{bin}/aush -c 'pwd'")
+    assert_match "Hello from AUSH", shell_output("#{bin}/aush --no-rc -c 'echo Hello from AUSH'")
+    assert_match "/", shell_output("#{bin}/aush --no-rc -c 'pwd'")
   end
 end
