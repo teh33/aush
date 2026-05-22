@@ -4,7 +4,9 @@
 [![Crates.io](https://img.shields.io/crates/v/aush.svg)](https://crates.io/crates/aush)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-**Actually Usable Shell** — an alpha Unix-style shell written in Rust, with native builtins, structured output, and deterministic command execution for automation-heavy workflows.
+**Actually Usable Shell** — a shell for automation, coding agents, and developer workflows where shell syntax is useful but stringly text plumbing is the bottleneck.
+
+AUSH is not trying to be “a better Bash” for your `.bashrc`. Bash is already excellent at being Bash. AUSH is trying to make the shell a better **programmable command runtime**: deterministic startup, native hot-path commands, structured output, and a daemon path for low-latency local clients.
 
 ```sh
 # deterministic command execution: no startup files
@@ -23,15 +25,43 @@ echo $?
 aush --no-rc -c 'find src --json -name "*.rs" | head -n 3'
 ```
 
+## Why would this exist?
+
+Unix shells are still the best glue language for local machines, but they are awkward as an embedding/runtime layer for modern tools:
+
+- startup is often nondeterministic because user rc files mutate behavior;
+- every tiny text/file operation usually means another process spawn;
+- pipelines collapse structured state into text and force lossy reparsing;
+- automation wants predictable errors, machine-readable output, and cheap repeated calls;
+- coding agents need a local command runtime, not a pretend sandbox or a pile of ad hoc subprocess wrappers.
+
+AUSH keeps the shell-shaped interface — commands, pipes, redirects, variables, scripts — but moves common operations into one Rust runtime that can expose structured values and eventually stay warm behind `aushd`.
+
+## What is different from Bash/Zsh/Fish?
+
+| If you want... | Use... | Why |
+| --- | --- | --- |
+| Maximum POSIX/Bash compatibility | Bash | It is the compatibility target. |
+| A polished daily interactive shell | Zsh/Fish | Completion, themes, plugins, and terminal UX are much more mature. |
+| Deterministic shell execution inside tools/tests/agents | AUSH | `--no-rc` and non-interactive modes avoid user startup-file drift. |
+| Native file/text/Git/JSON operations without fork-per-step overhead | AUSH | Common operations can run in-process and emit structured output. |
+| Shell pipelines that can grow toward typed/structured dataflow | AUSH | Selected builtins already support `--json`; structured operators are part of the design. |
+| Low-latency repeated local command execution | AUSH | `aushd` is the experimental warm-runtime path. |
+
+The bet is not that AUSH replaces Bash everywhere. The bet is that many developer and agent workflows use the shell as an execution substrate, and that substrate should be deterministic, inspectable, structured, and cheap to call repeatedly.
+
 ## What is it?
 
-AUSH is a real local shell. It runs commands, pipelines, redirections, variables, functions, control flow, background jobs, and common shell builtins. The design goal is not “Bash clone in Rust”; it is a shell-shaped runtime that is pleasant for both humans and programs:
+AUSH is a real local shell. It runs commands, pipelines, redirections, variables, functions, control flow, background jobs, and common shell builtins.
 
-- familiar Unix shell syntax for common work;
-- native implementations of hot-path commands such as `ls`, `cat`, `find`, `grep`, `head`, `tail`, `sort`, `wc`, and shell/session builtins;
-- optional `--json` output on selected native commands;
-- deterministic `aush --no-rc -c '...'` execution for tests, scripts, and coding agents;
-- experimental `aushd` daemon infrastructure for warm local clients.
+Its current differentiators are:
+
+- **Deterministic command mode:** `aush --no-rc -c '...'` is the primary automation path and skips startup files.
+- **Native hot-path commands:** `ls`, `cat`, `find`, `grep`, `head`, `tail`, `sort`, `wc`, file operations, and shell/session builtins can run inside the shell process.
+- **Structured output:** selected native commands support `--json`, so scripts can inspect data without brittle text parsing.
+- **Developer-workflow builtins:** Git, HTTP, JSON, and structured-output helpers are built as first-class shell commands behind the default feature set.
+- **Agent-friendly errors:** error formatting can be made machine-readable for tools that need to classify failures.
+- **Warm runtime direction:** `aushd` exists as experimental infrastructure for clients that need lower latency than repeated process startup.
 
 ## Status
 
@@ -115,9 +145,24 @@ aush --no-rc -c 'find . -name "*.rs" -print -quit'
 aush --no-rc -c 'ls -d src'
 aush --no-rc -c 'grep -c "TODO" README.md'
 
+# Structured output for tools/scripts
+aush --no-rc -c 'find . --json -name "*.rs"'
+aush --no-rc -c 'grep --json "CommandNotFound" src'
+aush --no-rc -c 'ls --json src'
+
 # Interactive shell
 aush
 ```
+
+## Programming model
+
+AUSH is meant to be used in three modes:
+
+1. **One-shot command runner** — `aush --no-rc -c '...'` for deterministic local command execution.
+2. **Script/runtime shell** — familiar shell syntax plus native structured commands for developer automation.
+3. **Warm local service** — experimental `aushd` for clients that want shell semantics without paying full startup every call.
+
+That makes it closer to “a local automation runtime with shell syntax” than to “another login shell with a prompt theme.” Interactive use matters, but it is not the reason the project exists.
 
 ## Security model
 
@@ -172,7 +217,7 @@ For a terminal-specific trial, prefer configuring your terminal to run `aush --l
 
 Native builtins include:
 
-- shell/session: `cd`, `pwd`, `echo`, `printf`, `read`, `export`, `unset`, `source`, `eval`, `exec`, `exit`;
+- shell/session: `cd`, `pwd`, `echo`, `printf`, `read`, `export`, `unset`, `source`, `eval`, `exec`, `exit`, `umask`;
 - tests/control: `test`, `[`, `true`, `false`, `return`, `shift`;
 - jobs/signals: `jobs`, `fg`, `bg`, `kill`, `wait`, `trap`;
 - files/directories: `ls`, `cat`, `mkdir`, `rm`, `cp`, `mv`, `chmod`, `readlink`, `find`;
@@ -203,6 +248,7 @@ Recent compatibility work includes:
 - `grep -q`, `grep -c`, `grep -l`, and `grep -L`;
 - `find -print` and `find -quit`;
 - `ls -d`;
+- `umask`;
 - GNU-style non-interactive `rm -r` behavior;
 - conservative handling for unsupported follow/watch-style commands.
 
