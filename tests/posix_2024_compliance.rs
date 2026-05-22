@@ -29,7 +29,19 @@ fn project_root() -> PathBuf {
 
 /// Get the AUSH binary path.
 fn rush_binary() -> std::path::PathBuf {
-    std::path::PathBuf::from(env!("CARGO_BIN_EXE_aush"))
+    std::env::var_os("CARGO_BIN_EXE_aush")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| {
+            let profile = if cfg!(debug_assertions) {
+                "debug"
+            } else {
+                "release"
+            };
+            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("target")
+                .join(profile)
+                .join("aush")
+        })
 }
 
 /// Cargo builds the integration-test binary before running these tests.
