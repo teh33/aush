@@ -19,7 +19,6 @@
 //    - Job control
 //    - Signal handling
 
-use std::env;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -28,32 +27,13 @@ fn project_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
 
-/// Get the AUSH binary path (debug for faster tests)
-fn rush_binary() -> PathBuf {
-    let mut path = project_root();
-    path.push("target");
-    path.push("debug");
-    path.push("aush");
-    path
+/// Get the AUSH binary path.
+fn rush_binary() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_BIN_EXE_aush"))
 }
 
-/// Build AUSH in debug mode if not already built
+/// Cargo builds the integration-test binary before running these tests.
 fn ensure_rush_binary() -> Result<(), String> {
-    let binary = rush_binary();
-
-    if !binary.exists() {
-        eprintln!("Building AUSH binary...");
-        let status = Command::new("cargo")
-            .args(["build"])
-            .current_dir(project_root())
-            .status()
-            .map_err(|e| format!("Failed to run cargo build: {}", e))?;
-
-        if !status.success() {
-            return Err("Failed to build AUSH binary".to_string());
-        }
-    }
-
     Ok(())
 }
 
