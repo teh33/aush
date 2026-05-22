@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 /// Get an environment variable.
 pub fn env_var(name: &str) -> Option<String> {
-    env::var(name).ok()
+    env::var(name).ok().filter(|value| !value.is_empty())
 }
 
 /// Get a flag-like environment variable.
