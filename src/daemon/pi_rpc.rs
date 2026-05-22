@@ -157,8 +157,10 @@ impl PiRpcManager {
         // Clean up any stale state
         self.cleanup();
 
-        // Check for AUSH_PI_PATH/AUSH_PI_PATH override (for testing), otherwise use "pi"
-        let pi_path = crate::brand::env_var("AUSH_PI_PATH").unwrap_or_else(|| "pi".to_string());
+        // Check for AUSH_PI_PATH/RUSH_PI_PATH override (for testing), otherwise use "pi"
+        let pi_path = crate::brand::env_var("AUSH_PI_PATH")
+            .or_else(|| crate::brand::env_var("RUSH_PI_PATH"))
+            .unwrap_or_else(|| "pi".to_string());
 
         // Spawn pi --rpc
         let mut child = Command::new(&pi_path)
