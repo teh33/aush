@@ -9,17 +9,18 @@
 use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
-use tempfile::NamedTempFile;
+use tempfile::TempDir;
 
-/// Create a mock "pi" script that responds with canned RPC output
-fn create_mock_pi() -> NamedTempFile {
-    let mut file = NamedTempFile::new().unwrap();
+/// Create a mock "pi" executable in a temporary directory.
+fn create_mock_pi() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    let pi_path = dir.path().join("pi");
+    let mut file = std::fs::File::create(&pi_path).unwrap();
     writeln!(
         file,
         r#"#!/bin/bash
 # Mock pi --rpc that echoes back streaming response
 while IFS= read -r line; do
-    # Parse the prompt command and respond
     echo '{{"type":"content_delta","content":"Mock "}}'
     echo '{{"type":"content_delta","content":"response"}}'
     echo '{{"type":"agent_end"}}'
@@ -27,24 +28,27 @@ done
 "#
     )
     .unwrap();
-
-    // Make executable
-    std::fs::set_permissions(file.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
-    file
+    drop(file);
+    std::fs::set_permissions(&pi_path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    dir
 }
 
 fn aush_binary() -> &'static str {
     env!("CARGO_BIN_EXE_aush")
 }
 
+fn command_with_mock_pi(mock_pi: &TempDir) -> Command {
+    let mut command = Command::new(aush_binary());
+    command
+        .env("AUSH_AI_PROVIDER", "disabled")
+        .env("AUSH_PI_PATH", mock_pi.path().join("pi"));
+    command
+}
+
 #[test]
 fn test_pipe_ask_basic() {
     let mock_pi = create_mock_pi();
-
-    // Run aush with mock pi in PATH
-    let output = Command::new(aush_binary())
-        .env("AUSH_AI_PROVIDER", "disabled")
-        .env("RUSH_PI_PATH", mock_pi.path()) // Override pi binary location
+    let output = command_with_mock_pi(&mock_pi)
         .arg("-c")
         .arg(r#"echo "test" |? "respond""#)
         .output()
@@ -52,7 +56,6 @@ fn test_pipe_ask_basic() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-
     assert!(
         output.status.success(),
         "Command failed. stdout: {}, stderr: {}",
@@ -71,7 +74,7 @@ fn test_pipe_ask_no_pi() {
     // Verify helpful error when pi is not installed
     let output = Command::new(aush_binary())
         .env("AUSH_AI_PROVIDER", "disabled")
-        .env("RUSH_PI_PATH", "/nonexistent/pi") // Force failure
+        .env("AUSH_PI_PATH", "/nonexistent/pi") // Force failure
         .env("PATH", "") // Clear PATH
         .arg("-c")
         .arg(r#"echo "test" |? "respond""#)
@@ -91,10 +94,7 @@ fn test_pipe_ask_no_pi() {
 fn test_pipe_ask_captures_stdin() {
     // Verify the command output is passed to pi
     let mock_pi = create_mock_pi();
-
-    let output = Command::new(aush_binary())
-        .env("AUSH_AI_PROVIDER", "disabled")
-        .env("RUSH_PI_PATH", mock_pi.path())
+    let output = command_with_mock_pi(&mock_pi)
         .arg("-c")
         .arg(r#"echo "hello world" |? "summarize""#)
         .output()
@@ -102,7 +102,6 @@ fn test_pipe_ask_captures_stdin() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-
     assert!(
         output.status.success(),
         "Command failed. stdout: {}, stderr: {}",
@@ -115,10 +114,7 @@ fn test_pipe_ask_captures_stdin() {
 fn test_pipe_ask_in_pipeline() {
     // cat file | grep pattern |? "explain"
     let mock_pi = create_mock_pi();
-
-    let output = Command::new(aush_binary())
-        .env("AUSH_AI_PROVIDER", "disabled")
-        .env("RUSH_PI_PATH", mock_pi.path())
+    let output = command_with_mock_pi(&mock_pi)
         .arg("-c")
         .arg(r#"echo -e "error: foo\nwarning: bar" | grep error |? "explain""#)
         .output()
@@ -126,7 +122,6 @@ fn test_pipe_ask_in_pipeline() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-
     assert!(
         output.status.success(),
         "Command failed. stdout: {}, stderr: {}",
@@ -139,10 +134,7 @@ fn test_pipe_ask_in_pipeline() {
 fn test_pipe_ask_empty_prompt() {
     // Test |? without explicit prompt (should use default)
     let mock_pi = create_mock_pi();
-
-    let output = Command::new(aush_binary())
-        .env("AUSH_AI_PROVIDER", "disabled")
-        .env("RUSH_PI_PATH", mock_pi.path())
+    let output = command_with_mock_pi(&mock_pi)
         .arg("-c")
         .arg(r#"echo "test output" |?"#)
         .output()
@@ -150,7 +142,6 @@ fn test_pipe_ask_empty_prompt() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-
     assert!(
         output.status.success(),
         "Command failed. stdout: {}, stderr: {}",
@@ -167,10 +158,7 @@ fn test_pipe_ask_empty_prompt() {
 #[test]
 fn test_pipe_ask_single_quoted_prompt() {
     let mock_pi = create_mock_pi();
-
-    let output = Command::new(aush_binary())
-        .env("AUSH_AI_PROVIDER", "disabled")
-        .env("RUSH_PI_PATH", mock_pi.path())
+    let output = command_with_mock_pi(&mock_pi)
         .arg("-c")
         .arg(r#"echo "test" |? 'analyze this'"#)
         .output()
@@ -178,7 +166,6 @@ fn test_pipe_ask_single_quoted_prompt() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-
     assert!(
         output.status.success(),
         "Command failed. stdout: {}, stderr: {}",
@@ -190,10 +177,7 @@ fn test_pipe_ask_single_quoted_prompt() {
 #[test]
 fn test_pipe_ask_multiword_prompt() {
     let mock_pi = create_mock_pi();
-
-    let output = Command::new(aush_binary())
-        .env("AUSH_AI_PROVIDER", "disabled")
-        .env("RUSH_PI_PATH", mock_pi.path())
+    let output = command_with_mock_pi(&mock_pi)
         .arg("-c")
         .arg(r#"ls -la |? "explain what each column means""#)
         .output()
@@ -201,7 +185,6 @@ fn test_pipe_ask_multiword_prompt() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-
     assert!(
         output.status.success(),
         "Command failed. stdout: {}, stderr: {}",
