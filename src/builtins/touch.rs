@@ -50,7 +50,9 @@ impl TouchOptions {
                             let stamp_str = if rest.is_empty() {
                                 i += 1;
                                 args.get(i)
-                                    .ok_or_else(|| anyhow!("touch: option '-t' requires an argument"))?
+                                    .ok_or_else(|| {
+                                        anyhow!("touch: option '-t' requires an argument")
+                                    })?
                                     .clone()
                             } else {
                                 rest.clone()
@@ -89,7 +91,10 @@ fn parse_timestamp(s: &str) -> Result<(i64, i64)> {
             .parse()
             .map_err(|_| anyhow!("touch: invalid timestamp '{}'", s))?;
         if ss > 59 {
-            return Err(anyhow!("touch: invalid timestamp '{}': seconds out of range", s));
+            return Err(anyhow!(
+                "touch: invalid timestamp '{}': seconds out of range",
+                s
+            ));
         }
         (m, ss)
     } else {
@@ -136,22 +141,42 @@ fn parse_timestamp(s: &str) -> Result<(i64, i64)> {
         _ => unreachable!(),
     };
 
-    let month: u32 = rest[..2].parse().map_err(|_| anyhow!("touch: invalid timestamp '{}'", s))?;
-    let day: u32 = rest[2..4].parse().map_err(|_| anyhow!("touch: invalid timestamp '{}'", s))?;
-    let hour: u32 = rest[4..6].parse().map_err(|_| anyhow!("touch: invalid timestamp '{}'", s))?;
-    let minute: u32 = rest[6..8].parse().map_err(|_| anyhow!("touch: invalid timestamp '{}'", s))?;
+    let month: u32 = rest[..2]
+        .parse()
+        .map_err(|_| anyhow!("touch: invalid timestamp '{}'", s))?;
+    let day: u32 = rest[2..4]
+        .parse()
+        .map_err(|_| anyhow!("touch: invalid timestamp '{}'", s))?;
+    let hour: u32 = rest[4..6]
+        .parse()
+        .map_err(|_| anyhow!("touch: invalid timestamp '{}'", s))?;
+    let minute: u32 = rest[6..8]
+        .parse()
+        .map_err(|_| anyhow!("touch: invalid timestamp '{}'", s))?;
 
     if month < 1 || month > 12 {
-        return Err(anyhow!("touch: invalid timestamp '{}': month out of range", s));
+        return Err(anyhow!(
+            "touch: invalid timestamp '{}': month out of range",
+            s
+        ));
     }
     if day < 1 || day > 31 {
-        return Err(anyhow!("touch: invalid timestamp '{}': day out of range", s));
+        return Err(anyhow!(
+            "touch: invalid timestamp '{}': day out of range",
+            s
+        ));
     }
     if hour > 23 {
-        return Err(anyhow!("touch: invalid timestamp '{}': hour out of range", s));
+        return Err(anyhow!(
+            "touch: invalid timestamp '{}': hour out of range",
+            s
+        ));
     }
     if minute > 59 {
-        return Err(anyhow!("touch: invalid timestamp '{}': minute out of range", s));
+        return Err(anyhow!(
+            "touch: invalid timestamp '{}': minute out of range",
+            s
+        ));
     }
 
     // Convert to unix timestamp using a simple formula (ignores leap seconds)
@@ -179,8 +204,8 @@ fn days_since_epoch(year: i32, month: u32, day: u32) -> i64 {
     let year_leap = leap_days_before(year);
 
     let year_days = (year as i64 - 1970) * 365 + (year_leap - epoch_leap);
-    let month_days = days_before_month[month as usize] as i64
-        + if month > 2 && is_leap(year) { 1 } else { 0 };
+    let month_days =
+        days_before_month[month as usize] as i64 + if month > 2 && is_leap(year) { 1 } else { 0 };
 
     year_days + month_days + (day as i64 - 1)
 }
@@ -293,10 +318,7 @@ pub fn builtin_touch(args: &[String], runtime: &mut Runtime) -> Result<Execution
                         .track_create(path.clone(), description);
                 }
                 Err(e) => {
-                    stderr_output.push_str(&format!(
-                        "touch: cannot touch '{}': {}\n",
-                        file_arg, e
-                    ));
+                    stderr_output.push_str(&format!("touch: cannot touch '{}': {}\n", file_arg, e));
                     exit_code = 1;
                     continue;
                 }
@@ -384,7 +406,11 @@ mod tests {
         let mut rt = make_runtime(&tmp);
 
         let result = builtin_touch(
-            &["a.txt".to_string(), "b.txt".to_string(), "c.txt".to_string()],
+            &[
+                "a.txt".to_string(),
+                "b.txt".to_string(),
+                "c.txt".to_string(),
+            ],
             &mut rt,
         )
         .unwrap();
@@ -438,11 +464,7 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let mut rt = make_runtime(&tmp);
 
-        let result = builtin_touch(
-            &["-c".to_string(), "ghost.txt".to_string()],
-            &mut rt,
-        )
-        .unwrap();
+        let result = builtin_touch(&["-c".to_string(), "ghost.txt".to_string()], &mut rt).unwrap();
 
         assert_eq!(result.exit_code, 0);
         assert!(!tmp.path().join("ghost.txt").exists());
@@ -456,11 +478,8 @@ mod tests {
         let file = tmp.path().join("present.txt");
         fs::write(&file, "data").unwrap();
 
-        let result = builtin_touch(
-            &["-c".to_string(), "present.txt".to_string()],
-            &mut rt,
-        )
-        .unwrap();
+        let result =
+            builtin_touch(&["-c".to_string(), "present.txt".to_string()], &mut rt).unwrap();
 
         assert_eq!(result.exit_code, 0);
         assert!(file.exists());
@@ -560,7 +579,11 @@ mod tests {
         fs::write(&file, "").unwrap();
 
         let result = builtin_touch(
-            &["-t".to_string(), "202506011200".to_string(), "ts.txt".to_string()],
+            &[
+                "-t".to_string(),
+                "202506011200".to_string(),
+                "ts.txt".to_string(),
+            ],
             &mut rt,
         )
         .unwrap();

@@ -120,9 +120,7 @@ fn copy_file(
     if dest.exists() {
         // Overwriting: back up existing file so undo can restore it
         let description = format!("cp {} -> {}", src.display(), dest.display());
-        runtime
-            .undo_manager_mut()
-            .track_modify(dest, description)?;
+        runtime.undo_manager_mut().track_modify(dest, description)?;
     } else {
         // Creating a new file: undo will delete it
         let description = format!("cp {} -> {}", src.display(), dest.display());
@@ -138,7 +136,14 @@ fn copy_file(
         }
     }
 
-    fs::copy(src, dest).map_err(|e| anyhow!("cp: cannot copy '{}' to '{}': {}", src.display(), dest.display(), e))?;
+    fs::copy(src, dest).map_err(|e| {
+        anyhow!(
+            "cp: cannot copy '{}' to '{}': {}",
+            src.display(),
+            dest.display(),
+            e
+        )
+    })?;
 
     if opts.preserve {
         preserve_metadata(src, dest)?;
@@ -271,10 +276,7 @@ pub fn builtin_cp(args: &[String], runtime: &mut Runtime) -> Result<ExecutionRes
     if opts.sources.len() > 1 && !dest_raw.is_dir() {
         return Ok(ExecutionResult {
             output: Output::Text(String::new()),
-            stderr: format!(
-                "cp: target '{}' is not a directory\n",
-                opts.destination
-            ),
+            stderr: format!("cp: target '{}' is not a directory\n", opts.destination),
             exit_code: 1,
             error: None,
         });
@@ -294,10 +296,7 @@ pub fn builtin_cp(args: &[String], runtime: &mut Runtime) -> Result<ExecutionRes
 
         if src.is_dir() && !src.is_symlink() {
             if !opts.recursive {
-                stderr.push_str(&format!(
-                    "cp: omitting directory '{}'\n",
-                    src_arg
-                ));
+                stderr.push_str(&format!("cp: omitting directory '{}'\n", src_arg));
                 exit_code = 1;
                 continue;
             }
@@ -394,7 +393,10 @@ mod tests {
 
         assert_eq!(result.exit_code, 0, "stderr: {}", result.stderr);
         assert!(tmp.path().join("dest.txt").exists());
-        assert_eq!(fs::read_to_string(tmp.path().join("dest.txt")).unwrap(), "hello");
+        assert_eq!(
+            fs::read_to_string(tmp.path().join("dest.txt")).unwrap(),
+            "hello"
+        );
         // Source remains
         assert!(src.exists());
     }
@@ -409,7 +411,10 @@ mod tests {
         fs::write(&src, "data").unwrap();
 
         let result = builtin_cp(
-            &[src.to_string_lossy().to_string(), dest.to_string_lossy().to_string()],
+            &[
+                src.to_string_lossy().to_string(),
+                dest.to_string_lossy().to_string(),
+            ],
             &mut rt,
         )
         .unwrap();
@@ -465,7 +470,11 @@ mod tests {
         fs::write(tmp.path().join("b.txt"), "bbb").unwrap();
 
         let result = builtin_cp(
-            &["a.txt".to_string(), "b.txt".to_string(), "notadir.txt".to_string()],
+            &[
+                "a.txt".to_string(),
+                "b.txt".to_string(),
+                "notadir.txt".to_string(),
+            ],
             &mut rt,
         )
         .unwrap();
@@ -487,13 +496,20 @@ mod tests {
         fs::write(src_dir.join("root.txt"), "root").unwrap();
         fs::write(sub.join("child.txt"), "child").unwrap();
 
-        let result = builtin_cp(&["-r".to_string(), "src".to_string(), "dest".to_string()], &mut rt).unwrap();
+        let result = builtin_cp(
+            &["-r".to_string(), "src".to_string(), "dest".to_string()],
+            &mut rt,
+        )
+        .unwrap();
 
         assert_eq!(result.exit_code, 0, "stderr: {}", result.stderr);
         let dest = tmp.path().join("dest");
         assert!(dest.is_dir());
         assert_eq!(fs::read_to_string(dest.join("root.txt")).unwrap(), "root");
-        assert_eq!(fs::read_to_string(dest.join("sub/child.txt")).unwrap(), "child");
+        assert_eq!(
+            fs::read_to_string(dest.join("sub/child.txt")).unwrap(),
+            "child"
+        );
     }
 
     #[test]
@@ -543,14 +559,21 @@ mod tests {
         fs::write(tmp.path().join("dest.txt"), "original").unwrap();
 
         let result = builtin_cp(
-            &["-n".to_string(), "src.txt".to_string(), "dest.txt".to_string()],
+            &[
+                "-n".to_string(),
+                "src.txt".to_string(),
+                "dest.txt".to_string(),
+            ],
             &mut rt,
         )
         .unwrap();
 
         assert_eq!(result.exit_code, 0);
         // Destination unchanged
-        assert_eq!(fs::read_to_string(tmp.path().join("dest.txt")).unwrap(), "original");
+        assert_eq!(
+            fs::read_to_string(tmp.path().join("dest.txt")).unwrap(),
+            "original"
+        );
     }
 
     #[test]
@@ -564,7 +587,10 @@ mod tests {
         let result = builtin_cp(&["src.txt".to_string(), "dest.txt".to_string()], &mut rt).unwrap();
 
         assert_eq!(result.exit_code, 0);
-        assert_eq!(fs::read_to_string(tmp.path().join("dest.txt")).unwrap(), "new content");
+        assert_eq!(
+            fs::read_to_string(tmp.path().join("dest.txt")).unwrap(),
+            "new content"
+        );
     }
 
     // ---- preserve ----
@@ -579,7 +605,11 @@ mod tests {
         fs::set_permissions(&src, fs::Permissions::from_mode(0o755)).unwrap();
 
         let result = builtin_cp(
-            &["-p".to_string(), "exec.sh".to_string(), "copy.sh".to_string()],
+            &[
+                "-p".to_string(),
+                "exec.sh".to_string(),
+                "copy.sh".to_string(),
+            ],
             &mut rt,
         )
         .unwrap();
@@ -601,7 +631,11 @@ mod tests {
         fs::write(tmp.path().join("v.txt"), "x").unwrap();
 
         let result = builtin_cp(
-            &["-v".to_string(), "v.txt".to_string(), "v_copy.txt".to_string()],
+            &[
+                "-v".to_string(),
+                "v.txt".to_string(),
+                "v_copy.txt".to_string(),
+            ],
             &mut rt,
         )
         .unwrap();
@@ -618,11 +652,8 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let mut rt = make_runtime(&tmp);
 
-        let result = builtin_cp(
-            &["ghost.txt".to_string(), "dest.txt".to_string()],
-            &mut rt,
-        )
-        .unwrap();
+        let result =
+            builtin_cp(&["ghost.txt".to_string(), "dest.txt".to_string()], &mut rt).unwrap();
 
         assert_eq!(result.exit_code, 1);
         assert!(result.stderr.contains("No such file or directory"));
@@ -639,7 +670,11 @@ mod tests {
     #[test]
     fn test_builtin_cp_invalid_option() {
         let mut rt = Runtime::new();
-        let result = builtin_cp(&["-z".to_string(), "a".to_string(), "b".to_string()], &mut rt).unwrap();
+        let result = builtin_cp(
+            &["-z".to_string(), "a".to_string(), "b".to_string()],
+            &mut rt,
+        )
+        .unwrap();
         assert_eq!(result.exit_code, 1);
         assert!(result.stderr.contains("invalid option"));
     }
@@ -661,11 +696,8 @@ mod tests {
 
         fs::write(tmp.path().join("orig.txt"), "original").unwrap();
 
-        let result = builtin_cp(
-            &["orig.txt".to_string(), "copy.txt".to_string()],
-            &mut rt,
-        )
-        .unwrap();
+        let result =
+            builtin_cp(&["orig.txt".to_string(), "copy.txt".to_string()], &mut rt).unwrap();
         assert_eq!(result.exit_code, 0);
 
         let copy = tmp.path().join("copy.txt");
@@ -688,18 +720,20 @@ mod tests {
         fs::write(tmp.path().join("src.txt"), "new").unwrap();
         fs::write(tmp.path().join("dest.txt"), "old").unwrap();
 
-        let result = builtin_cp(
-            &["src.txt".to_string(), "dest.txt".to_string()],
-            &mut rt,
-        )
-        .unwrap();
+        let result = builtin_cp(&["src.txt".to_string(), "dest.txt".to_string()], &mut rt).unwrap();
         assert_eq!(result.exit_code, 0);
 
         // After cp dest.txt contains "new"
-        assert_eq!(fs::read_to_string(tmp.path().join("dest.txt")).unwrap(), "new");
+        assert_eq!(
+            fs::read_to_string(tmp.path().join("dest.txt")).unwrap(),
+            "new"
+        );
 
         // Undo should restore "old"
         rt.undo_manager_mut().undo().unwrap();
-        assert_eq!(fs::read_to_string(tmp.path().join("dest.txt")).unwrap(), "old");
+        assert_eq!(
+            fs::read_to_string(tmp.path().join("dest.txt")).unwrap(),
+            "old"
+        );
     }
 }

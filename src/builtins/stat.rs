@@ -209,7 +209,6 @@ fn apply_format(fmt: &str, meta: &std::fs::Metadata, path: &Path) -> String {
                 Some('X') => out.push_str(&format!("{:04o}", meta.mode() & 0o7777)),
                 Some('%') => out.push('%'),
                 Some('t') => out.push('\t'),
-                Some('n') => out.push('\n'),
                 Some(other) => {
                     out.push('%');
                     out.push(other);

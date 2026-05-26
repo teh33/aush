@@ -62,9 +62,7 @@ pub fn builtin_history(args: &[String], runtime: &mut Runtime) -> Result<Executi
         }
         "clear" => {
             history.clear()?;
-            Ok(ExecutionResult::success(
-                "History cleared\n".to_string(),
-            ))
+            Ok(ExecutionResult::success("History cleared\n".to_string()))
         }
         _ => {
             // Try to parse as a number
@@ -87,9 +85,7 @@ pub fn builtin_history(args: &[String], runtime: &mut Runtime) -> Result<Executi
 
                 Ok(ExecutionResult::success(output))
             } else {
-                Err(anyhow!(
-                    "Usage: history [N | search <query> | clear]"
-                ))
+                Err(anyhow!("Usage: history [N | search <query> | clear]"))
             }
         }
     }
@@ -125,18 +121,16 @@ mod tests {
     fn test_history_n() {
         let mut runtime = setup_test_runtime();
         let result = builtin_history(&["3".to_string()], &mut runtime).unwrap();
-        let lines: Vec<&str> = result.stdout().lines().collect();
+        let stdout = result.stdout();
+        let lines: Vec<&str> = stdout.lines().collect();
         assert_eq!(lines.len(), 3);
     }
 
     #[test]
     fn test_history_search() {
         let mut runtime = setup_test_runtime();
-        let result = builtin_history(
-            &["search".to_string(), "cargo".to_string()],
-            &mut runtime,
-        )
-        .unwrap();
+        let result =
+            builtin_history(&["search".to_string(), "cargo".to_string()], &mut runtime).unwrap();
         assert!(result.stdout().contains("cargo build"));
         assert!(result.stdout().contains("cargo test"));
     }

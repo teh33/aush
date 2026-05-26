@@ -33,10 +33,22 @@ impl WcOptions {
             if arg.starts_with('-') && arg.len() > 1 && arg != "-" {
                 for ch in arg[1..].chars() {
                     match ch {
-                        'l' => { opts.lines = true; explicit = true; }
-                        'w' => { opts.words = true; explicit = true; }
-                        'c' => { opts.bytes = true; explicit = true; }
-                        'm' => { opts.chars = true; explicit = true; }
+                        'l' => {
+                            opts.lines = true;
+                            explicit = true;
+                        }
+                        'w' => {
+                            opts.words = true;
+                            explicit = true;
+                        }
+                        'c' => {
+                            opts.bytes = true;
+                            explicit = true;
+                        }
+                        'm' => {
+                            opts.chars = true;
+                            explicit = true;
+                        }
                         _ => return Err(anyhow!("wc: invalid option -- '{}'", ch)),
                     }
                 }
@@ -54,7 +66,6 @@ impl WcOptions {
 
         Ok(opts)
     }
-
 }
 
 /// Count lines, words, bytes, and chars in a byte slice (single pass).
@@ -89,14 +100,25 @@ fn count_bytes(data: &[u8]) -> Counts {
 /// Format one row of counts for a single source.
 fn format_counts(counts: &Counts, opts: &WcOptions, label: &str) -> String {
     let mut parts = Vec::new();
-    if opts.lines { parts.push(counts.lines.to_string()); }
-    if opts.words { parts.push(counts.words.to_string()); }
-    if opts.chars { parts.push(counts.chars.to_string()); }
-    if opts.bytes { parts.push(counts.bytes.to_string()); }
+    if opts.lines {
+        parts.push(counts.lines.to_string());
+    }
+    if opts.words {
+        parts.push(counts.words.to_string());
+    }
+    if opts.chars {
+        parts.push(counts.chars.to_string());
+    }
+    if opts.bytes {
+        parts.push(counts.bytes.to_string());
+    }
 
     // Right-align numbers with a consistent width (matches GNU wc behaviour for single-column)
     let width = parts.iter().map(|s| s.len()).max().unwrap_or(1).max(7);
-    let row: Vec<String> = parts.iter().map(|s| format!("{:>width$}", s, width = width)).collect();
+    let row: Vec<String> = parts
+        .iter()
+        .map(|s| format!("{:>width$}", s, width = width))
+        .collect();
 
     if label.is_empty() {
         row.join(" ")

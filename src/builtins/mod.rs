@@ -27,20 +27,42 @@ mod git_status;
 mod alias;
 pub mod break_builtin; // Public so executor can access BreakSignal
 mod builtin;
+mod chmod;
+mod chown;
 mod command;
+mod contains;
 pub mod continue_builtin; // Public so executor can access ContinueSignal
+mod count;
+mod cp;
+mod cut;
+mod date;
+mod dir_stack;
+mod disown;
+mod du;
+mod env_cmd;
 mod eval;
 mod exec;
 pub mod exit_builtin; // Public so executor/main can access ExitSignal
+mod fc;
 mod fetch;
 mod grep;
+mod hash_cmd;
+mod head;
 mod help;
+mod history;
 mod jobs;
 mod json;
 mod kill;
+mod ln;
 mod local;
 mod ls;
+mod mapfile;
+mod math_cmd;
 mod mkdir;
+mod mktemp;
+mod mv;
+mod niche;
+mod path_cmd;
 mod printf;
 mod profile;
 mod read;
@@ -51,15 +73,26 @@ mod rm;
 mod set;
 mod shift;
 mod shopt;
+mod sleep_cmd;
+mod sort_cmd;
+mod stat;
+mod status_cmd;
 mod tail;
+mod tee;
 mod test;
 pub mod time; // Public so executor can access timing functions
+mod times_cmd;
+mod touch;
+mod tr;
 pub mod trap; // Public so runtime and executor can access TrapSignal
 mod type_builtin;
+mod ulimit;
 mod umask;
 mod undo;
+mod uniq;
 mod unset;
 mod wait;
+mod wc;
 mod write_file;
 
 type BuiltinFn = fn(&[String], &mut Runtime) -> Result<ExecutionResult>;
@@ -127,6 +160,48 @@ static BUILTIN_MAP: LazyLock<HashMap<&'static str, BuiltinFn>> = LazyLock::new(|
     m.insert("profile", profile::builtin_profile);
     m.insert("time", time::builtin_time);
     m.insert("getopts", getopts::builtin_getopts);
+    m.insert("head", head::builtin_head);
+    m.insert("cp", cp::builtin_cp);
+    m.insert("mv", mv::builtin_mv);
+    m.insert("chmod", chmod::builtin_chmod);
+    m.insert("chown", chown::builtin_chown);
+    m.insert("ln", ln::builtin_ln);
+    m.insert("touch", touch::builtin_touch);
+    m.insert("stat", stat::builtin_stat);
+    m.insert("du", du::builtin_du);
+    m.insert("wc", wc::builtin_wc);
+    m.insert("sort", sort_cmd::builtin_sort);
+    m.insert("uniq", uniq::builtin_uniq);
+    m.insert("cut", cut::builtin_cut);
+    m.insert("tr", tr::builtin_tr);
+    m.insert("tee", tee::builtin_tee);
+    m.insert("sleep", sleep_cmd::builtin_sleep);
+    m.insert("date", date::builtin_date);
+    m.insert("env", env_cmd::builtin_env);
+    m.insert("mktemp", mktemp::builtin_mktemp);
+    m.insert("history", history::builtin_history);
+    m.insert("hash", hash_cmd::builtin_hash);
+    m.insert("fc", fc::builtin_fc);
+    m.insert("mapfile", mapfile::builtin_mapfile);
+    m.insert("pushd", dir_stack::builtin_pushd);
+    m.insert("popd", dir_stack::builtin_popd);
+    m.insert("dirs", dir_stack::builtin_dirs);
+    m.insert("disown", disown::builtin_disown);
+    m.insert("ulimit", ulimit::builtin_ulimit);
+    m.insert("times", times_cmd::builtin_times);
+    m.insert("contains", contains::builtin_contains);
+    m.insert("count", count::builtin_count);
+    m.insert("math", math_cmd::builtin_math);
+    m.insert("path", path_cmd::builtin_path);
+    m.insert("status", status_cmd::builtin_status);
+    m.insert("let", niche::builtin_let);
+    m.insert("bind", niche::builtin_bind);
+    m.insert("suspend", niche::builtin_suspend);
+    m.insert("enable", niche::builtin_enable);
+    m.insert("select", niche::builtin_select);
+    m.insert("coproc", niche::builtin_coproc);
+    m.insert("newgrp", niche::builtin_newgrp);
+    m.insert("logout", niche::builtin_logout);
     m.insert("umask", umask::builtin_umask);
     m
 });
@@ -304,6 +379,60 @@ impl Builtins {
         if name == "write" {
             if let Some(stdin_data) = stdin {
                 return write_file::builtin_write_with_stdin(&args, runtime, Some(stdin_data));
+            }
+        }
+
+        if name == "head" {
+            if let Some(stdin_data) = stdin {
+                return head::builtin_head_with_stdin(&args, runtime, stdin_data);
+            }
+        }
+
+        if name == "wc" {
+            if let Some(stdin_data) = stdin {
+                return wc::builtin_wc_with_stdin(&args, runtime, stdin_data);
+            }
+        }
+
+        if name == "sort" {
+            if let Some(stdin_data) = stdin {
+                return sort_cmd::builtin_sort_with_stdin(&args, runtime, stdin_data);
+            }
+        }
+
+        if name == "uniq" {
+            if let Some(stdin_data) = stdin {
+                return uniq::builtin_uniq_with_stdin(&args, runtime, stdin_data);
+            }
+        }
+
+        if name == "cut" {
+            if let Some(stdin_data) = stdin {
+                return cut::builtin_cut_with_stdin(&args, runtime, stdin_data);
+            }
+        }
+
+        if name == "tr" {
+            if let Some(stdin_data) = stdin {
+                return tr::builtin_tr_with_stdin(&args, runtime, stdin_data);
+            }
+        }
+
+        if name == "tee" {
+            if let Some(stdin_data) = stdin {
+                return tee::builtin_tee_with_stdin(&args, runtime, stdin_data);
+            }
+        }
+
+        if name == "mapfile" {
+            if let Some(stdin_data) = stdin {
+                return mapfile::builtin_mapfile_with_stdin(&args, runtime, stdin_data);
+            }
+        }
+
+        if name == "path" {
+            if let Some(stdin_data) = stdin {
+                return path_cmd::builtin_path_with_stdin(&args, runtime, stdin_data);
             }
         }
 

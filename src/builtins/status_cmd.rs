@@ -19,13 +19,19 @@ pub fn builtin_status(args: &[String], runtime: &mut Runtime) -> Result<Executio
             // Print a brief summary of the shell status.
             let interactive = is_interactive();
             let login = is_login();
-            let filename = runtime.get_variable("0").unwrap_or_else(|| "aush".to_string());
+            let filename = runtime
+                .get_variable("0")
+                .unwrap_or_else(|| "aush".to_string());
 
             let mut out = String::new();
             out.push_str(&format!(
                 "This is a {}{}shell\n",
                 if login { "login, " } else { "" },
-                if interactive { "interactive " } else { "non-interactive " },
+                if interactive {
+                    "interactive "
+                } else {
+                    "non-interactive "
+                },
             ));
             out.push_str(&format!("Current script: {}\n", filename));
             Ok(ExecutionResult::success(out))
@@ -52,7 +58,9 @@ pub fn builtin_status(args: &[String], runtime: &mut Runtime) -> Result<Executio
         }
 
         "filename" => {
-            let name = runtime.get_variable("0").unwrap_or_else(|| "aush".to_string());
+            let name = runtime
+                .get_variable("0")
+                .unwrap_or_else(|| "aush".to_string());
             Ok(ExecutionResult::success(format!("{}\n", name)))
         }
 

@@ -11,11 +11,36 @@ struct Resource {
 }
 
 const RESOURCES: &[Resource] = &[
-    Resource { flag: 'c', resource: libc::RLIMIT_CORE,   label: "core file size",          unit: "blocks" },
-    Resource { flag: 'n', resource: libc::RLIMIT_NOFILE, label: "open files",               unit: ""       },
-    Resource { flag: 's', resource: libc::RLIMIT_STACK,  label: "stack size",               unit: "kbytes" },
-    Resource { flag: 'u', resource: libc::RLIMIT_NPROC,  label: "max user processes",       unit: ""       },
-    Resource { flag: 'v', resource: libc::RLIMIT_AS,     label: "virtual memory",           unit: "kbytes" },
+    Resource {
+        flag: 'c',
+        resource: libc::RLIMIT_CORE,
+        label: "core file size",
+        unit: "blocks",
+    },
+    Resource {
+        flag: 'n',
+        resource: libc::RLIMIT_NOFILE,
+        label: "open files",
+        unit: "",
+    },
+    Resource {
+        flag: 's',
+        resource: libc::RLIMIT_STACK,
+        label: "stack size",
+        unit: "kbytes",
+    },
+    Resource {
+        flag: 'u',
+        resource: libc::RLIMIT_NPROC,
+        label: "max user processes",
+        unit: "",
+    },
+    Resource {
+        flag: 'v',
+        resource: libc::RLIMIT_AS,
+        label: "virtual memory",
+        unit: "kbytes",
+    },
 ];
 
 pub fn builtin_ulimit(args: &[String], _runtime: &mut Runtime) -> Result<ExecutionResult> {
@@ -54,15 +79,16 @@ pub fn builtin_ulimit(args: &[String], _runtime: &mut Runtime) -> Result<Executi
     }
 
     let flag = resource_flag.unwrap_or('n');
-    let res = find_resource(flag)
-        .ok_or_else(|| anyhow!("ulimit: no resource for flag -{}", flag))?;
+    let res =
+        find_resource(flag).ok_or_else(|| anyhow!("ulimit: no resource for flag -{}", flag))?;
 
     if let Some(val_str) = set_value {
         // Set the limit
         let new_val: libc::rlim_t = if val_str == "unlimited" {
             libc::RLIM_INFINITY
         } else {
-            val_str.parse::<libc::rlim_t>()
+            val_str
+                .parse::<libc::rlim_t>()
                 .map_err(|_| anyhow!("ulimit: invalid limit value: {}", val_str))?
         };
 
@@ -117,7 +143,10 @@ fn get_rlimit(resource: libc::c_int) -> Result<libc::rlimit> {
     };
     let ret = unsafe { libc::getrlimit(resource, &mut rlim) };
     if ret != 0 {
-        return Err(anyhow!("ulimit: getrlimit failed: {}", std::io::Error::last_os_error()));
+        return Err(anyhow!(
+            "ulimit: getrlimit failed: {}",
+            std::io::Error::last_os_error()
+        ));
     }
     Ok(rlim)
 }
@@ -125,7 +154,10 @@ fn get_rlimit(resource: libc::c_int) -> Result<libc::rlimit> {
 fn set_rlimit(resource: libc::c_int, rlim: &libc::rlimit) -> Result<()> {
     let ret = unsafe { libc::setrlimit(resource, rlim) };
     if ret != 0 {
-        return Err(anyhow!("ulimit: setrlimit failed: {}", std::io::Error::last_os_error()));
+        return Err(anyhow!(
+            "ulimit: setrlimit failed: {}",
+            std::io::Error::last_os_error()
+        ));
     }
     Ok(())
 }
@@ -158,9 +190,7 @@ mod tests {
     fn run_err(args: &[&str]) -> String {
         let args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
         let mut runtime = Runtime::new();
-        builtin_ulimit(&args, &mut runtime)
-            .unwrap_err()
-            .to_string()
+        builtin_ulimit(&args, &mut runtime).unwrap_err().to_string()
     }
 
     #[test]

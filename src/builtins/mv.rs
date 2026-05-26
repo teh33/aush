@@ -155,11 +155,7 @@ pub fn builtin_mv(args: &[String], runtime: &mut Runtime) -> Result<ExecutionRes
     let mut exit_code = 0;
 
     // Resolve all paths up front
-    let resolved: Vec<PathBuf> = opts
-        .paths
-        .iter()
-        .map(|p| resolve_path(p, &cwd))
-        .collect();
+    let resolved: Vec<PathBuf> = opts.paths.iter().map(|p| resolve_path(p, &cwd)).collect();
 
     // Last path is the destination; everything before it is sources
     let (dest_resolved, srcs_resolved) = resolved.split_last().unwrap();
@@ -282,16 +278,15 @@ mod tests {
 
         fs::write(tmp.path().join("src.txt"), "hello").unwrap();
 
-        let result = builtin_mv(
-            &["src.txt".to_string(), "dst.txt".to_string()],
-            &mut rt,
-        )
-        .unwrap();
+        let result = builtin_mv(&["src.txt".to_string(), "dst.txt".to_string()], &mut rt).unwrap();
 
         assert_eq!(result.exit_code, 0, "stderr: {}", result.stderr);
         assert!(!tmp.path().join("src.txt").exists());
         assert!(tmp.path().join("dst.txt").exists());
-        assert_eq!(fs::read_to_string(tmp.path().join("dst.txt")).unwrap(), "hello");
+        assert_eq!(
+            fs::read_to_string(tmp.path().join("dst.txt")).unwrap(),
+            "hello"
+        );
     }
 
     // ---- move into directory ----
@@ -304,11 +299,7 @@ mod tests {
         fs::write(tmp.path().join("file.txt"), "data").unwrap();
         fs::create_dir(tmp.path().join("subdir")).unwrap();
 
-        let result = builtin_mv(
-            &["file.txt".to_string(), "subdir".to_string()],
-            &mut rt,
-        )
-        .unwrap();
+        let result = builtin_mv(&["file.txt".to_string(), "subdir".to_string()], &mut rt).unwrap();
 
         assert_eq!(result.exit_code, 0, "stderr: {}", result.stderr);
         assert!(!tmp.path().join("file.txt").exists());
@@ -355,7 +346,11 @@ mod tests {
         fs::write(tmp.path().join("dst.txt"), "original").unwrap();
 
         let result = builtin_mv(
-            &["-n".to_string(), "src.txt".to_string(), "dst.txt".to_string()],
+            &[
+                "-n".to_string(),
+                "src.txt".to_string(),
+                "dst.txt".to_string(),
+            ],
             &mut rt,
         )
         .unwrap();
@@ -381,7 +376,11 @@ mod tests {
         fs::write(tmp.path().join("dst.txt"), "old").unwrap();
 
         let result = builtin_mv(
-            &["-f".to_string(), "src.txt".to_string(), "dst.txt".to_string()],
+            &[
+                "-f".to_string(),
+                "src.txt".to_string(),
+                "dst.txt".to_string(),
+            ],
             &mut rt,
         )
         .unwrap();
@@ -404,7 +403,11 @@ mod tests {
         fs::write(tmp.path().join("src.txt"), "data").unwrap();
 
         let result = builtin_mv(
-            &["-v".to_string(), "src.txt".to_string(), "dst.txt".to_string()],
+            &[
+                "-v".to_string(),
+                "src.txt".to_string(),
+                "dst.txt".to_string(),
+            ],
             &mut rt,
         )
         .unwrap();
@@ -421,11 +424,8 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let mut rt = make_runtime(&tmp);
 
-        let result = builtin_mv(
-            &["ghost.txt".to_string(), "dst.txt".to_string()],
-            &mut rt,
-        )
-        .unwrap();
+        let result =
+            builtin_mv(&["ghost.txt".to_string(), "dst.txt".to_string()], &mut rt).unwrap();
 
         assert_eq!(result.exit_code, 1);
         assert!(result.stderr.contains("No such file or directory"));
@@ -486,7 +486,11 @@ mod tests {
         let mut rt = make_runtime(&tmp);
 
         let result = builtin_mv(
-            &["-z".to_string(), "src.txt".to_string(), "dst.txt".to_string()],
+            &[
+                "-z".to_string(),
+                "src.txt".to_string(),
+                "dst.txt".to_string(),
+            ],
             &mut rt,
         )
         .unwrap();
@@ -565,11 +569,7 @@ mod tests {
         fs::create_dir(tmp.path().join("old_dir")).unwrap();
         fs::write(tmp.path().join("old_dir/file.txt"), "hi").unwrap();
 
-        let result = builtin_mv(
-            &["old_dir".to_string(), "new_dir".to_string()],
-            &mut rt,
-        )
-        .unwrap();
+        let result = builtin_mv(&["old_dir".to_string(), "new_dir".to_string()], &mut rt).unwrap();
 
         assert_eq!(result.exit_code, 0, "stderr: {}", result.stderr);
         assert!(!tmp.path().join("old_dir").exists());
@@ -640,11 +640,7 @@ mod tests {
         fs::write(tmp.path().join("src.txt"), "new content").unwrap();
         fs::write(tmp.path().join("dst.txt"), "old content").unwrap();
 
-        let result = builtin_mv(
-            &["src.txt".to_string(), "dst.txt".to_string()],
-            &mut rt,
-        )
-        .unwrap();
+        let result = builtin_mv(&["src.txt".to_string(), "dst.txt".to_string()], &mut rt).unwrap();
 
         assert_eq!(result.exit_code, 0, "stderr: {}", result.stderr);
         assert!(!tmp.path().join("src.txt").exists());

@@ -3,7 +3,9 @@ use crate::runtime::Runtime;
 use anyhow::{anyhow, Result};
 use std::collections::VecDeque;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, Read, Seek, SeekFrom};
+use std::io::{self, BufRead, BufReader, Read, Seek, SeekFrom, Write};
+use std::thread;
+use std::time::Duration;
 
 #[derive(Debug)]
 enum TailMode {
@@ -20,6 +22,8 @@ enum TailMode {
 #[derive(Debug)]
 struct TailOptions {
     mode: TailMode,
+    /// Continue printing appended data for file operands.
+    follow: bool,
     /// Files to read (empty = stdin)
     files: Vec<String>,
 }
@@ -28,6 +32,7 @@ impl Default for TailOptions {
     fn default() -> Self {
         Self {
             mode: TailMode::LastLines(10),
+            follow: false,
             files: Vec::new(),
         }
     }
@@ -60,9 +65,7 @@ impl TailOptions {
             } else if let Some(rest) = arg.strip_prefix("-c") {
                 opts.mode = parse_byte_arg(rest)?;
             } else if arg == "-f" || arg == "--follow" {
-                return Err(anyhow!(
-                    "tail: -f/--follow is not supported by the builtin; use external tail for follow mode"
-                ));
+                opts.follow = true;
             } else if arg.starts_with('-') && arg.len() > 1 {
                 // Numeric shorthand like -10 => last 10 lines
                 let rest = &arg[1..];
@@ -193,6 +196,22 @@ fn tail_reader<R: BufRead>(reader: R, output: &mut String, mode: &TailMode) -> R
     Ok(())
 }
 
+/// Continue printing bytes appended after the current file position.
+fn follow_file(file: &mut File, output: &mut impl Write) -> Result<()> {
+    loop {
+        let mut buf = [0_u8; 8192];
+        match file.read(&mut buf) {
+            Ok(0) => thread::sleep(Duration::from_millis(250)),
+            Ok(n) => {
+                output.write_all(&buf[..n])?;
+                output.flush()?;
+            }
+            Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
+            Err(e) => return Err(e.into()),
+        }
+    }
+}
+
 pub fn builtin_tail(args: &[String], _runtime: &mut Runtime) -> Result<ExecutionResult> {
     let opts = match TailOptions::parse(args) {
         Ok(opts) => opts,
@@ -205,6 +224,12 @@ pub fn builtin_tail(args: &[String], _runtime: &mut Runtime) -> Result<Execution
             });
         }
     };
+
+    if opts.follow && opts.files.is_empty() {
+        return Ok(ExecutionResult::error(
+            "tail: -f/--follow requires at least one file".to_string(),
+        ));
+    }
 
     let mut output = String::new();
     let mut stderr_output = String::new();
@@ -228,10 +253,20 @@ pub fn builtin_tail(args: &[String], _runtime: &mut Runtime) -> Result<Execution
                 output.push_str(&format!("==> {} <==\n", file_path));
             }
             match File::open(file_path) {
-                Ok(file) => {
-                    if let Err(e) = tail_file(file, file_path, &mut output, &opts.mode) {
+                Ok(mut file) => {
+                    if let Err(e) = tail_file(file.try_clone()?, file_path, &mut output, &opts.mode)
+                    {
                         stderr_output.push_str(&format!("tail: {}: {}\n", file_path, e));
                         exit_code = 1;
+                    } else if opts.follow && idx + 1 == opts.files.len() {
+                        file.seek(SeekFrom::End(0))?;
+                        print!("{}", output);
+                        io::stdout().flush()?;
+                        output.clear();
+                        if let Err(e) = follow_file(&mut file, &mut io::stdout()) {
+                            stderr_output.push_str(&format!("tail: {}: {}\n", file_path, e));
+                            exit_code = 1;
+                        }
                     }
                 }
                 Err(e) => {
@@ -267,6 +302,12 @@ pub fn builtin_tail_with_stdin(
             });
         }
     };
+
+    if opts.follow && opts.files.is_empty() {
+        return Ok(ExecutionResult::error(
+            "tail: -f/--follow requires at least one file".to_string(),
+        ));
+    }
 
     let mut output = String::new();
 
@@ -462,32 +503,6 @@ mod tests {
     }
 
     #[test]
-    fn test_builtin_tail_follow_flag_errors() {
-        let file = create_test_file("line 1\nline 2\n");
-        let path = file.path().to_str().unwrap().to_string();
-
-        let mut runtime = Runtime::new();
-        let result = builtin_tail(&["-f".to_string(), path], &mut runtime).unwrap();
-
-        assert_eq!(result.exit_code, 1);
-        assert!(result.stderr.contains("-f/--follow"));
-        assert_eq!(result.stdout(), "");
-    }
-
-    #[test]
-    fn test_builtin_tail_follow_long_flag_errors() {
-        let file = create_test_file("line 1\nline 2\n");
-        let path = file.path().to_str().unwrap().to_string();
-
-        let mut runtime = Runtime::new();
-        let result = builtin_tail(&["--follow".to_string(), path], &mut runtime).unwrap();
-
-        assert_eq!(result.exit_code, 1);
-        assert!(result.stderr.contains("-f/--follow"));
-        assert_eq!(result.stdout(), "");
-    }
-
-    #[test]
     fn test_builtin_tail_with_stdin_follow_flag_errors() {
         let data = make_lines(5);
         let mut runtime = Runtime::new();
@@ -495,7 +510,7 @@ mod tests {
             builtin_tail_with_stdin(&["-f".to_string()], &mut runtime, data.as_bytes()).unwrap();
 
         assert_eq!(result.exit_code, 1);
-        assert!(result.stderr.contains("-f/--follow"));
+        assert!(result.stderr.contains("requires at least one file"));
         assert_eq!(result.stdout(), "");
     }
 }

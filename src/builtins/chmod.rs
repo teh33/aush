@@ -195,7 +195,7 @@ fn apply_symbolic_clause(clause: &str, current: u32) -> Result<u32> {
 
     // Parse permission bits: [rwxXst]*
     let mut perm_bits: u32 = 0;
-    let mut has_X = false; // capital X is conditional execute
+    let mut has_x = false; // capital X is conditional execute
 
     while idx < bytes.len() {
         match bytes[idx] {
@@ -212,7 +212,7 @@ fn apply_symbolic_clause(clause: &str, current: u32) -> Result<u32> {
                 idx += 1;
             }
             b'X' => {
-                has_X = true;
+                has_x = true;
                 idx += 1;
             }
             b's' => {
@@ -241,7 +241,7 @@ fn apply_symbolic_clause(clause: &str, current: u32) -> Result<u32> {
     }
 
     // Capital X: add execute only if it's a directory or already has execute for anyone
-    if has_X {
+    if has_x {
         let already_exec = current & 0o111 != 0;
         // We can't check if it's a directory here without metadata, so callers
         // handle the is-directory case. We rely on the file type from the mode:

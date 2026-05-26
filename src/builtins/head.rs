@@ -88,11 +88,7 @@ impl HeadOptions {
 }
 
 /// Print the first N lines (or bytes) of a reader into output
-fn head_reader<R: BufRead>(
-    reader: R,
-    output: &mut String,
-    opts: &HeadOptions,
-) -> Result<()> {
+fn head_reader<R: BufRead>(reader: R, output: &mut String, opts: &HeadOptions) -> Result<()> {
     if let Some(byte_count) = opts.bytes {
         // Byte mode: read exactly N bytes
         let mut buf = vec![0u8; byte_count];
@@ -275,7 +271,8 @@ mod tests {
         let path = file.path().to_str().unwrap().to_string();
 
         let mut runtime = Runtime::new();
-        let result = builtin_head(&["-n".to_string(), "5".to_string(), path], &mut runtime).unwrap();
+        let result =
+            builtin_head(&["-n".to_string(), "5".to_string(), path], &mut runtime).unwrap();
 
         assert_eq!(result.exit_code, 0);
         let _stdout = result.stdout();
@@ -290,7 +287,8 @@ mod tests {
         let path = file.path().to_str().unwrap().to_string();
 
         let mut runtime = Runtime::new();
-        let result = builtin_head(&["-c".to_string(), "5".to_string(), path], &mut runtime).unwrap();
+        let result =
+            builtin_head(&["-c".to_string(), "5".to_string(), path], &mut runtime).unwrap();
 
         assert_eq!(result.exit_code, 0);
         assert_eq!(result.stdout(), "Hello");
@@ -303,7 +301,8 @@ mod tests {
         let path = file.path().to_str().unwrap().to_string();
 
         let mut runtime = Runtime::new();
-        let result = builtin_head(&["-n".to_string(), "10".to_string(), path], &mut runtime).unwrap();
+        let result =
+            builtin_head(&["-n".to_string(), "10".to_string(), path], &mut runtime).unwrap();
 
         assert_eq!(result.exit_code, 0);
         let _stdout = result.stdout();

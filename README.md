@@ -217,14 +217,16 @@ For a terminal-specific trial, prefer configuring your terminal to run `aush --l
 
 Native builtins include:
 
-- shell/session: `cd`, `pwd`, `echo`, `printf`, `read`, `export`, `unset`, `source`, `eval`, `exec`, `exit`, `umask`;
-- tests/control: `test`, `[`, `true`, `false`, `return`, `shift`;
-- jobs/signals: `jobs`, `fg`, `bg`, `kill`, `wait`, `trap`;
-- files/directories: `ls`, `cat`, `mkdir`, `rm`, `cp`, `mv`, `chmod`, `readlink`, `find`;
-- text: `grep`, `head`, `tail`, `wc`, `sort`;
-- developer helpers: Git, HTTP, JSON, and structured-output commands behind the default feature set.
+- shell/session: `cd`, `pwd`, `echo`, `printf`, `read`, `mapfile`, `export`, `unset`, `readonly`, `local`, `set`, `shopt`, `source`, `.`, `eval`, `exec`, `exit`, `umask`, `history`, `fc`, `hash`, `type`, `command`, `builtin`, `help`;
+- tests/control: `test`, `[`, `true`, `false`, `:`, `return`, `shift`, `break`, `continue`, `getopts`, `time`, `times`;
+- jobs/signals: `jobs`, `fg`, `bg`, `disown`, `kill`, `wait`, `trap`, `ulimit`;
+- directories/files: `ls`, `pwd`, `cd`, `dirs`, `pushd`, `popd`, `cat`, `mkdir`, `rm`, `cp`, `mv`, `chmod`, `chown`, `ln`, `touch`, `readlink`, `stat`, `du`, `find`, `mktemp`;
+- text/data: `grep`, `head`, `tail`, `wc`, `sort`, `uniq`, `cut`, `tr`, `tee`, `contains`, `count`, `math`, `path`;
+- IO/network/structured helpers: `fetch`, `json_get`, `json_set`, `json_query`, `write`, `edit`, `profile`, `status`;
+- compatibility stubs/helpers: `let`, `bind`, `suspend`, `enable`, `select`, `coproc`, `newgrp`, `logout`;
+- Git: `git` dispatches to native Git builtins when built with `git-builtins`, otherwise to external `git`.
 
-Native commands are ordinary shell commands from the user’s perspective; they avoid fork/exec when AUSH can handle the operation itself.
+Native commands are ordinary shell commands from the user’s perspective; they avoid fork/exec when AUSH can handle the operation itself. Some builtins are compatibility-focused and do not yet implement every Bash/POSIX/GNU option.
 
 ## Structured output
 
