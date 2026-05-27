@@ -252,7 +252,8 @@ Recent compatibility work includes:
 - `ls -d`;
 - `umask`;
 - GNU-style non-interactive `rm -r` behavior;
-- conservative handling for unsupported follow/watch-style commands.
+- `tail -f` / `tail --follow` for following appended file data;
+- broader native builtin coverage for common file/text/session utilities;
 
 Known gaps include some POSIX edge cases around case patterns, dynamic file descriptors, `read -d`, `cd -e`, `set -u`, traps, here-strings, arithmetic extensions, and platform-specific job-control behavior.
 
